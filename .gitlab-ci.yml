@@ -1,0 +1,21 @@
+include:
+  - 'https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/ArtifactoryPyPI.gitlab-ci.yml'
+
+.runner_tags: &runner_tags
+  tags:
+    - docker
+
+stages:
+  - build
+  - test
+  - release
+
+test-python36:
+  <<: *runner_tags
+  stage: test
+  image: python:3.6
+  before_script:
+    - pip install .
+    - pip install -r requirements-tests.txt
+  script:
+    - pytest --cov -v

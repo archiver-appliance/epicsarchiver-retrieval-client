@@ -1,0 +1,12 @@
+*.swp
+.DS_Store
+__pycache__
+*.pyc
+*.egg-info
+*.eggs
+.coverage
+pkg/
+/dist
+/build
+/docs/_build
+.pytest_cache
