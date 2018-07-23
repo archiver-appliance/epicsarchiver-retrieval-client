@@ -11,6 +11,7 @@ requirements = [
     'requests',
     'pandas',
     'python-dateutil',
+    'Click>=6.0',
 ]
 
 test_requirements = [
@@ -41,4 +42,9 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
     ],
+    entry_points={
+        'console_scripts': [
+            'epicsarchiver=epicsarchiver.command:cli',
+        ],
+    },
 )
