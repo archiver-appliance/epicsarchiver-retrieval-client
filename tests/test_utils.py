@@ -10,7 +10,9 @@ SAMPLES_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "samples
 def test_format_date():
     assert utils.format_date("20180715") == "2018-07-15T00:00:00.000000Z"
     assert utils.format_date("20180715 17:45") == "2018-07-15T17:45:00.000000Z"
-    assert utils.format_date(datetime(2018, 7, 15, 19, 5)) == "2018-07-15T19:05:00.000000Z"
+    assert (
+        utils.format_date(datetime(2018, 7, 15, 19, 5)) == "2018-07-15T19:05:00.000000Z"
+    )
 
 
 def test_parse_archive_file():
