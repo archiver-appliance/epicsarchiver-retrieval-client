@@ -12,7 +12,7 @@ requirements = ["requests", "pandas", "python-dateutil", "Click>=6.0"]
 test_requirements = ["pytest"]
 
 setup(
-    name="epicsarchiver",
+    name="py-epicsarchiver",
     author="Benjamin Bertrand",
     author_email="benjamin.bertrand@esss.se",
     description="Python package to interact with the EPICS Archiver Appliance",
