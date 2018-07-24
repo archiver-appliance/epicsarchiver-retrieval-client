@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Utility functions"""
 import datetime
+import itertools
 from dateutil import parser
 
 
@@ -32,3 +33,11 @@ def parse_archive_file(filename, period, method):
                 "samplingperiod": str(values[1]) if len(values) > 1 else period,
                 "samplingmethod": values[2].upper() if len(values) > 2 else method,
             }
+
+
+def get_pvs_from_files(files, period, method):
+    return list(
+        itertools.chain.from_iterable(
+            [parse_archive_file(filename, period, method) for filename in files]
+        )
+    )

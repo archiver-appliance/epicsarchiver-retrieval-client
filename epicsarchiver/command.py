@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """Command module."""
 import click
-import itertools
-from . import ArchiverAppliance, utils
+from . import ArchiverAppliance
 
 
 @click.group()
@@ -34,12 +33,7 @@ def cli(ctx, hostname, debug):
 @click.pass_context
 def archive(ctx, period, method, files):
     """Archive all PVs included in the files passed as parameters"""
-    pvs = list(
-        itertools.chain(
-            [utils.parse_archive_file(filename, period, method) for filename in files]
-        )
-    )
-    if ctx.obj["debug"]:
-        click.echo(f"PVs to archive: {pvs}")
     archiver = ctx.obj["archiver"]
-    archiver.archive(pvs)
+    result = archiver.archive_pvs_from_files(files, period, method)
+    if ctx.obj["debug"]:
+        click.echo(result)
