@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
-with open("README.md") as readme_file:
+with open("README.rst") as readme_file:
     readme = readme_file.read()
 
-with open("CHANGELOG.md") as changelog_file:
+with open("CHANGELOG.rst") as changelog_file:
     changelog = changelog_file.read()
 
 requirements = ["requests", "pandas", "python-dateutil", "Click>=6.0"]
