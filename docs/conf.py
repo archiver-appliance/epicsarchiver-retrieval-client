@@ -25,10 +25,9 @@ project = "epicsarchiver"
 copyright = "2018, Benjamin Bertrand"
 author = "Benjamin Bertrand"
 
-# The short X.Y version
-version = ""
 # The full version, including alpha/beta/rc tags
 release = get_distribution("py-epicsarchiver").version
+version = release
 
 
 # -- General configuration ---------------------------------------------------
