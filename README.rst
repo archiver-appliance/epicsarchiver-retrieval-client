@@ -40,6 +40,10 @@ py-epicsarchiver can be installed using artifactory PyPI repository::
 
     $ pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 
+Documentation
+-------------
+
+http://ics-infrastructure.pages.esss.lu.se/py-epicsarchiver/index.html
 
 
 License

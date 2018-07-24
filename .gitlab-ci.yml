@@ -19,3 +19,19 @@ test-python36:
     - pip install -r requirements-tests.txt
   script:
     - pytest --cov -v
+
+pages:
+  <<: *runner_tags
+  stage: release
+  image: python:3.6
+  before_script:
+    - pip install .
+    - pip install sphinx
+  script:
+    - sphinx-build -M html docs docs/_build
+    - mv docs/_build/html public
+  artifacts:
+    paths:
+      - public
+  only:
+    - tags
