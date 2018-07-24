@@ -1,6 +1,6 @@
-include CHANGELOG.rst
+include CHANGELOG.md
 include LICENSE
-include README.rst
+include README.md
 
 recursive-include tests *
 recursive-exclude * __pycache__
