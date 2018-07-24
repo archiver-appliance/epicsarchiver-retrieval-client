@@ -7,6 +7,7 @@ Quick start
 -----------
 
 ::
+
     >>> from epicsarchiver import ArchiverAppliance
     >>> archiver = ArchiverAppliance("archiver-01.example.com")
     >>> print(archiver.version)
@@ -20,11 +21,12 @@ The package also installs a command line tool. It can be used to send a list of 
 See https://gitlab.esss.lu.se/ics-infrastructure/epicsarchiver-config for the file format.
 
 ::
+
     $ epicsarchiver archive --help
     Usage: epicsarchiver archive [OPTIONS] [FILES]...
-    
+
       Archive all PVs included in the files passed as parameters
-    
+
     Options:
       --period TEXT            Sampling period in seconds to use if not provided
                                in the archive file [default: 1]
