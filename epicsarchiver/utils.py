@@ -20,7 +20,7 @@ def format_date(date_or_str):
     return dt.isoformat(timespec="microseconds") + "Z"
 
 
-def parse_archive_file(filename, period, method):
+def parse_archive_file(filename):
     with open(filename, "r") as f:
         for line in f:
             line = line.strip()
@@ -28,16 +28,16 @@ def parse_archive_file(filename, period, method):
                 # Remove empty lines and lines that start with "#"
                 continue
             values = line.split()
-            yield {
-                "pv": values[0],
-                "samplingperiod": str(values[1]) if len(values) > 1 else period,
-                "samplingmethod": values[2].upper() if len(values) > 2 else method,
-            }
+            # Only return the PV name
+            # Passing samplingmethod and samplingperiod via the API
+            # overwrites what is defined in the site policies.py.
+            # We don't want that.
+            yield {"pv": values[0]}
 
 
-def get_pvs_from_files(files, period, method):
+def get_pvs_from_files(files):
     return list(
         itertools.chain.from_iterable(
-            [parse_archive_file(filename, period, method) for filename in files]
+            [parse_archive_file(filename) for filename in files]
         )
     )

@@ -22,17 +22,17 @@ See https://gitlab.esss.lu.se/ics-infrastructure/epicsarchiver-config for the fi
 
 ::
 
-    $ epicsarchiver archive --help
-    Usage: epicsarchiver archive [OPTIONS] [FILES]...
-
-      Archive all PVs included in the files passed as parameters
+    $ epicsarchiver --help
+    Usage: epicsarchiver [OPTIONS] COMMAND [ARGS]...
 
     Options:
-      --period TEXT            Sampling period in seconds to use if not provided
-                               in the archive file [default: 1]
-      --method [MONITOR|SCAN]  Sampling method to use if not provided in the
-                               archive file [default: MONITOR]
-      --help                   Show this message and exit.
+      --version        Show the version and exit.
+      --hostname TEXT  Achiver Appliance hostname or IP [default: localhost]
+      --debug          Enable debug logging
+      --help           Show this message and exit.
+
+    Commands:
+      archive  Archive all PVs included in the files passed...
 
 
 Installation

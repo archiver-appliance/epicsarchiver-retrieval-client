@@ -146,27 +146,21 @@ class ArchiverAppliance:
         r = self.get("/getPVStatus", params={"pv": pv})
         return r.json()
 
-    def archive_pv(self, pv, samplingperiod=1.0, samplingmethod="MONITOR", **kwargs):
+    def archive_pv(self, pv, **kwargs):
         """Archive a PV
 
         :param pv: name of the pv to be achived.
                    Can be a comma separated list of names.
-        :param samplingperiod: the sampling period to be used.
-                               Default to 1.0 second.
-        :param samplingmethod: the sampling method to be used [SCAN|MONITOR].
-                               Default to MONITOR.
         :param \*\*kwargs: optional extra keyword arguments
+            - samplingperiod
+            - samplingmethod
             - controllingPV
             - policy
             - appliance
         :return: list of submitted PVs
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivePVAction.html
-        params = {
-            "pv": pv,
-            "samplingperiod": samplingperiod,
-            "samplingmethod": samplingmethod,
-        }
+        params = {"pv": pv}
         params.update(kwargs)
         r = self.get("/archivePV", params=params)
         return r.json()
@@ -181,17 +175,13 @@ class ArchiverAppliance:
         r = self.post("/archivePV", json=pvs)
         return r.json()
 
-    def archive_pvs_from_files(self, files, period=1, method="MONITOR"):
+    def archive_pvs_from_files(self, files):
         """Archive PVs from a list of files
 
         :param files: list of files in CSV format with PVs to archive.
-        :param period: sampling period in second if not specified in the file.
-                       Default to 1.0 second.
-        :param method: sampling method to be used if not specified in the file [SCAN|MONITOR].
-                       Default to MONITOR.
         :return: list of submitted PVs
         """
-        pvs = utils.get_pvs_from_files(files, period, method)
+        pvs = utils.get_pvs_from_files(files)
         return self.archive_pvs(pvs)
 
     def _get_or_post(self, endpoint, pv):
