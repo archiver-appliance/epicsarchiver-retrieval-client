@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Command module."""
 import click
-from . import ArchiverAppliance
+from .epicsarchiver import ArchiverAppliance
 
 
 @click.group()

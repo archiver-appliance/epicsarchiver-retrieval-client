@@ -18,7 +18,7 @@ test-python36:
     - pip install .
     - pip install -r requirements-tests.txt
   script:
-    - pytest --cov -v
+    - pytest --cov=epicsarchiver -v
 
 pages:
   <<: *runner_tags

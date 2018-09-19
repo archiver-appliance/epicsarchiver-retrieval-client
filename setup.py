@@ -9,7 +9,7 @@ with open("CHANGELOG.rst") as changelog_file:
 
 requirements = ["requests", "pandas", "python-dateutil", "Click>=6.0"]
 
-test_requirements = ["pytest"]
+test_requirements = ["pytest", "pytest-cov", "responses", "pytest-mock"]
 
 setup(
     name="py-epicsarchiver",

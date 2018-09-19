@@ -60,7 +60,7 @@ class ArchiverAppliance:
         :return: :class:`requests.Response <Response>` object
         """
         url = urllib.parse.urljoin(self.mgmt_url, endpoint.lstrip("/"))
-        return self.request("GET", url, **kwargs)
+        return self.request("POST", url, **kwargs)
 
     @property
     def info(self):
