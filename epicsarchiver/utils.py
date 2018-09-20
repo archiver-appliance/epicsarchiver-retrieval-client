@@ -36,6 +36,7 @@ def parse_archive_file(filename):
 
 
 def get_pvs_from_files(files):
+    """Return a list of PV (as dict) from a list of files"""
     return list(
         itertools.chain.from_iterable(
             [parse_archive_file(filename) for filename in files]

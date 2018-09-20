@@ -5,3 +5,6 @@ Developer Interface
 
 .. autoclass:: epicsarchiver.ArchiverAppliance
    :members:
+
+.. automodule:: epicsarchiver.utils
+   :members:
