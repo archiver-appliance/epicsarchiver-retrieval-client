@@ -329,9 +329,9 @@ def test_archive_pvs_from_files(tmpdir):
     tmp = tmpdir.mkdir("archiver01")
     file1 = tmp.join("file1.archive")
     file1.write("\n".join([item["pv"] for item in pvs1]))
-    pvs2 = [{"pv": "LEBT-010:PBI-NPM-001:HCAM-COM"}]
+    pvs2 = [{"pv": "LEBT-010:PBI-NPM-001:HCAM-COM", "policy": "slow"}]
     file2 = tmp.join("file2")
-    file2.write(pvs2[0]["pv"] + "\n")
+    file2.write(pvs2[0]["pv"] + " " + pvs2[0]["policy"] + "\n")
     archiver = ArchiverAppliance("archiver.example.org")
     data = [1, 2, 3]
     responses.add(

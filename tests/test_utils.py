@@ -7,13 +7,13 @@ from epicsarchiver import utils
 SAMPLES_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "samples")
 FILE1_PVS = [
     {"pv": "CrS-ACCP:CRYO-GT-34884:Val"},
-    {"pv": "CrS-ACCP:CRYO-TT-31650:Val"},
-    {"pv": "CrS-ACCP:CRYO-TT-31355:Val"},
+    {"pv": "CrS-ACCP:CRYO-TT-31650:Val", "policy": "slow"},
+    {"pv": "CrS-ACCP:CRYO-TT-31355:Val", "policy": "default"},
     {"pv": "CrS-ACCP:CRYO-TT-31730:Val"},
 ]
 FILE2_PVS = [
     {"pv": "CrS-TICP:Cryo-TE-31459B:Val"},
-    {"pv": "CrS-TICP:Cryo-TE-33483:Val"},
+    {"pv": "CrS-TICP:Cryo-TE-33483:Val", "policy": "slow"},
 ]
 
 

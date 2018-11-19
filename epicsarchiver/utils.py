@@ -28,11 +28,14 @@ def parse_archive_file(filename):
                 # Remove empty lines and lines that start with "#"
                 continue
             values = line.split()
-            # Only return the PV name
+            pv = {"pv": values[0]}
             # Passing samplingmethod and samplingperiod via the API
             # overwrites what is defined in the site policies.py.
             # We don't want that.
-            yield {"pv": values[0]}
+            # But we allow to force the policy
+            if len(values) > 1:
+                pv["policy"] = values[1]
+            yield pv
 
 
 def get_pvs_from_files(files):
