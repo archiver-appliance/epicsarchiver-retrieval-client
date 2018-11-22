@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.3.0 (2018-11-22)
+------------------
+
+* Allow to force the policy via CSV files (INFRA-528)
+* Allow to pass the appliance to be used in a cluster (INFRA-670)
+
 0.2.0 (2018-09-20)
 ------------------
 
