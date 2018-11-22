@@ -345,6 +345,15 @@ def test_archive_pvs_from_files(tmpdir):
     body = json.loads(responses.calls[0].request.body.decode("utf-8"))
     assert body == pvs1 + pvs2
     assert r == data
+    # With appliance as parameter
+    r = archiver.archive_pvs_from_files(
+        [str(file1), str(file2)], appliance="appliance0"
+    )
+    body = json.loads(responses.calls[1].request.body.decode("utf-8"))
+    pvs = pvs1 + pvs2
+    for pv in pvs:
+        pv["appliance"] = "appliance0"
+    assert body == pvs
 
 
 @responses.activate

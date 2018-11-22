@@ -18,11 +18,16 @@ def cli(ctx, hostname, debug):
 
 
 @cli.command()
+@click.option(
+    "--appliance",
+    default=None,
+    help="Force PVs to be archived on the specified appliance (in a cluster)",
+)
 @click.argument("files", nargs=-1, type=click.Path(exists=True))
 @click.pass_context
-def archive(ctx, files):
+def archive(ctx, appliance, files):
     """Archive all PVs included in the files passed as parameters"""
     archiver = ctx.obj["archiver"]
-    result = archiver.archive_pvs_from_files(files)
+    result = archiver.archive_pvs_from_files(files, appliance)
     if ctx.obj["debug"]:
         click.echo(result)

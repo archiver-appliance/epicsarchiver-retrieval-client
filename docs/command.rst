@@ -47,4 +47,7 @@ Check the help for more information::
       Archive all PVs included in the files passed as parameters
 
     Options:
-      --help  Show this message and exit.
+      --appliance TEXT  Force PVs to be archived on the specified appliance (in a
+                        cluster)
+      --help            Show this message and exit.
+        Usage: epicsarchiver archive [OPTIONS] [FILES]...

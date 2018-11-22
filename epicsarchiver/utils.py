@@ -20,7 +20,7 @@ def format_date(date_or_str):
     return dt.isoformat(timespec="microseconds") + "Z"
 
 
-def parse_archive_file(filename):
+def parse_archive_file(filename, appliance=None):
     with open(filename, "r") as f:
         for line in f:
             line = line.strip()
@@ -35,13 +35,15 @@ def parse_archive_file(filename):
             # But we allow to force the policy
             if len(values) > 1:
                 pv["policy"] = values[1]
+            if appliance:
+                pv["appliance"] = appliance
             yield pv
 
 
-def get_pvs_from_files(files):
+def get_pvs_from_files(files, appliance=None):
     """Return a list of PV (as dict) from a list of files"""
     return list(
         itertools.chain.from_iterable(
-            [parse_archive_file(filename) for filename in files]
+            [parse_archive_file(filename, appliance) for filename in files]
         )
     )

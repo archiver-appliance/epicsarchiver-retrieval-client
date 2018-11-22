@@ -15,6 +15,10 @@ FILE2_PVS = [
     {"pv": "CrS-TICP:Cryo-TE-31459B:Val"},
     {"pv": "CrS-TICP:Cryo-TE-33483:Val", "policy": "slow"},
 ]
+FILE2_PVS_APPLIANCE = [
+    {"pv": "CrS-TICP:Cryo-TE-31459B:Val", "appliance": "appliance0"},
+    {"pv": "CrS-TICP:Cryo-TE-33483:Val", "policy": "slow", "appliance": "appliance0"},
+]
 
 
 def test_format_date():
@@ -38,3 +42,9 @@ def test_get_pvs_from_files():
     ]
     pvs = utils.get_pvs_from_files(files)
     assert pvs == FILE1_PVS + FILE2_PVS
+
+
+def test_get_pvs_from_files_with_appliance():
+    files = [os.path.join(SAMPLES_PATH, "file2.archive")]
+    pvs = utils.get_pvs_from_files(files, appliance="appliance0")
+    assert pvs == FILE2_PVS_APPLIANCE

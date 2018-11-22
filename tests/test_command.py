@@ -23,7 +23,9 @@ def test_archive_file_does_exist(tmpdir, mocker):
     result = runner.invoke(command.cli, ["archive"] + list(files))
     assert result.exit_code == 0
     assert result.output == ""
-    mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(files)
+    mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
+        files, None
+    )
     mock_archiver.assert_called_once_with("localhost")
 
 
@@ -36,3 +38,19 @@ def test_archive_hostname(tmpdir, mocker):
     result = runner.invoke(command.cli, ["--hostname", hostname, "archive", str(file1)])
     assert result.exit_code == 0
     mock_archiver.assert_called_once_with(hostname)
+
+
+def test_archive_with_appliance(tmpdir, mocker):
+    mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
+    appliance = "foo"
+    file1 = tmpdir.join("file1")
+    file1.write("test")
+    runner = CliRunner()
+    result = runner.invoke(
+        command.cli, ["archive", "--appliance", appliance, str(file1)]
+    )
+    assert result.exit_code == 0
+    assert result.output == ""
+    mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
+        (str(file1),), appliance
+    )

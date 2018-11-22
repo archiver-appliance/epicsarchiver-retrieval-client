@@ -175,13 +175,14 @@ class ArchiverAppliance:
         r = self.post("/archivePV", json=pvs)
         return r.json()
 
-    def archive_pvs_from_files(self, files):
+    def archive_pvs_from_files(self, files, appliance=None):
         """Archive PVs from a list of files
 
         :param files: list of files in CSV format with PVs to archive.
+        :param appliance: optional appliance to use to archive PVs (in a cluster)
         :return: list of submitted PVs
         """
-        pvs = utils.get_pvs_from_files(files)
+        pvs = utils.get_pvs_from_files(files, appliance)
         return self.archive_pvs(pvs)
 
     def _get_or_post(self, endpoint, pv):
