@@ -147,7 +147,7 @@ def test_data_url_with_same_archiver_host(host):
     )
     data_url = archiver.data_url
     assert len(responses.calls) == 1
-    assert data_url == f"http://{host}:17668/retrieval/data/getData.json"
+    assert data_url == f"http://archiver-01:17668/retrieval/data/getData.json"
     # data_url shall be cached
     archiver.data_url
     assert len(responses.calls) == 1
@@ -165,7 +165,7 @@ def test_data_url_with_no_specific_port():
     )
     data_url = archiver.data_url
     assert len(responses.calls) == 1
-    assert data_url == "http://archiver-01.example.com/foo/data/getData.json"
+    assert data_url == "http://archiver-01/foo/data/getData.json"
 
 
 @responses.activate
@@ -604,7 +604,7 @@ def test_get_data():
     )
     responses.add(
         responses.GET,
-        f"http://{host}:17668/retrieval/data/getData.json?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z",
+        f"http://archiver-01:17668/retrieval/data/getData.json?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z",
         json=data,
         status=200,
         match_querystring=True,

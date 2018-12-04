@@ -85,17 +85,7 @@ class ArchiverAppliance:
     def data_url(self):
         """EPICS Archiver Appliance data retrieval url"""
         if self._data_url is None:
-            retrieval_url = self.info.get("dataRetrievalURL") + "/data/getData.json"
-            # The Archiver Appliance always returns the server hostname.
-            # We might want the FQDN or an IP. Use the hostname specified
-            # to initialize the instance.
-            parsed = urllib.parse.urlparse(retrieval_url)
-            if parsed.port is None:
-                netloc = self.hostname
-            else:
-                netloc = f"{self.hostname}:{parsed.port}"
-            parsed_new_hostname = parsed._replace(netloc=netloc)
-            self._data_url = urllib.parse.urlunparse(parsed_new_hostname)
+            self._data_url = self.info.get("dataRetrievalURL") + "/data/getData.json"
         return self._data_url
 
     def get_all_expanded_pvs(self):
