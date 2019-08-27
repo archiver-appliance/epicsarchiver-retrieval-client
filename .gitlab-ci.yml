@@ -1,4 +1,5 @@
 include:
+  - 'https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/PreCommit.gitlab-ci.yml'
   - 'https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/ArtifactoryPyPI.gitlab-ci.yml'
 
 .runner_tags: &runner_tags
@@ -6,6 +7,7 @@ include:
     - docker
 
 stages:
+  - check
   - build
   - test
   - release
