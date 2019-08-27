@@ -31,7 +31,7 @@ class ArchiverAppliance:
         self.session = requests.Session()
 
     def request(self, method, *args, **kwargs):
-        """Sends a request using the session
+        r"""Sends a request using the session
 
         :param method: HTTP method
         :param \*args: Optional arguments
@@ -43,7 +43,7 @@ class ArchiverAppliance:
         return r
 
     def get(self, endpoint, **kwargs):
-        """Send a GET request to the given endpoint
+        r"""Send a GET request to the given endpoint
 
         :param endpoint: API endpoint (relative or absolute)
         :param \*\*kwargs: Optional arguments to be sent
@@ -53,7 +53,7 @@ class ArchiverAppliance:
         return self.request("GET", url, **kwargs)
 
     def post(self, endpoint, **kwargs):
-        """Send a POST request to the given endpoint
+        r"""Send a POST request to the given endpoint
 
         :param endpoint: API endpoint (relative or absolute)
         :param \*\*kwargs: Optional arguments to be sent
@@ -137,7 +137,7 @@ class ArchiverAppliance:
         return r.json()
 
     def archive_pv(self, pv, **kwargs):
-        """Archive a PV
+        r"""Archive a PV
 
         :param pv: name of the pv to be achived.
                    Can be a comma separated list of names.
