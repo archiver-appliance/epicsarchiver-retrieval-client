@@ -18,9 +18,9 @@ class ArchiverAppliance:
 
         >>> from epicsarchiver import ArchiverAppliance
         >>> archappl = ArchiverAppliance('archiver-01.tn.esss.lu.se')
-        >>> print(archapp.version)
-        >>> archapp.get_pv_status(pv='BPM*')
-        >>> df = archapp.get_data('my:pv', start='2018-07-04 13:00', end=datetime.utcnow())
+        >>> print(archappl.version)
+        >>> archappl.get_pv_status(pv='BPM*')
+        >>> df = archappl.get_data('my:pv', start='2018-07-04 13:00', end=datetime.utcnow())
     """
 
     def __init__(self, hostname="localhost", port=17665):
@@ -232,9 +232,9 @@ class ArchiverAppliance:
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/DeletePV.html
         r = self.get("/deletePV", params={"pv": pv, "delete_data": delete_data})
         return r.json()
-    
+
     def rename_pv(self, pv, newname):
-        """ Rename this pv to a new name.
+        """Rename this pv to a new name.
 
         The PV needs to be paused first.
 
@@ -242,11 +242,9 @@ class ArchiverAppliance:
         :param newname: new name of the pv
         :return: list of submitted PVs
         """
-        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/RenamePVAction.html 
+        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/RenamePVAction.html
         r = self.get("/renamePV", params={"pv": pv, "newname": newname})
         return r.json()
-    
-    
 
     def update_pv(self, pv, samplingperiod, samplingmethod=None):
         """Change the archival parameters for a PV
