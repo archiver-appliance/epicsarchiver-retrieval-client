@@ -234,7 +234,7 @@ class ArchiverAppliance:
         return r.json()
     
     def rename_pv(self, pv, newname):
-        """ Rename this pv to a new name. 
+        """ Rename this pv to a new name.
 
         The PV needs to be paused first.
 
