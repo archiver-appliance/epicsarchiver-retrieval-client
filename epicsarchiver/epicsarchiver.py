@@ -232,6 +232,21 @@ class ArchiverAppliance:
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/DeletePV.html
         r = self.get("/deletePV", params={"pv": pv, "delete_data": delete_data})
         return r.json()
+    
+    def rename_pv(self, pv, newname):
+        """ Rename this pv to a new name. 
+
+        The PV needs to be paused first.
+
+        :param pv: name of the pv.
+        :param newname: new name of the pv
+        :return: list of submitted PVs
+        """
+        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/RenamePVAction.html 
+        r = self.get("/renamePV", params={"pv": pv, "newname": newname})
+        return r.json()
+    
+    
 
     def update_pv(self, pv, samplingperiod, samplingmethod=None):
         """Change the archival parameters for a PV
