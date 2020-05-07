@@ -9,7 +9,7 @@ def test_archive_file_does_not_exist():
     files = ["file1", "file2"]
     result = runner.invoke(command.cli, ["archive"] + files)
     assert result.exit_code == 2
-    assert 'Path "file1" does not exist.' in result.output
+    assert "Path 'file1' does not exist." in result.output
 
 
 def test_archive_file_does_exist(tmpdir, mocker):
