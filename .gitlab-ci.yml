@@ -17,18 +17,34 @@ test-python36:
   stage: test
   image: python:3.6
   before_script:
-    - pip install -e .
-    - pip install -r requirements-tests.txt
+    - pip install -e .[tests]
+  script:
+    - pytest -v
+
+test-python37:
+  <<: *runner_tags
+  stage: test
+  image: python:3.7
+  before_script:
+    - pip install -e .[tests]
   script:
     - pytest --cov=epicsarchiver -v
+
+test-python38:
+  <<: *runner_tags
+  stage: test
+  image: python:3.8
+  before_script:
+    - pip install -e .[tests]
+  script:
+    - pytest -v
 
 pages:
   <<: *runner_tags
   stage: release
-  image: python:3.6
+  image: python:3.7
   before_script:
-    - pip install .
-    - pip install sphinx
+    - pip install .[docs]
   script:
     - sphinx-build -M html docs docs/_build
     - mv docs/_build/html public

@@ -10,5 +10,5 @@ except DistributionNotFound:
     pass
 
 __author__ = """Benjamin Bertrand"""
-__email__ = "benjamin.bertrand@esss.se"
+__email__ = "benjamin.bertrand@ess.eu"
 __all__ = ["ArchiverAppliance"]

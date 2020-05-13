@@ -8,13 +8,13 @@ with open("CHANGELOG.rst") as changelog_file:
     changelog = changelog_file.read()
 
 requirements = ["requests", "pandas", "python-dateutil", "Click>=6.0"]
-
-test_requirements = ["pytest", "pytest-cov", "responses", "pytest-mock"]
+docs_requires = ["sphinx"]
+tests_requires = ["pytest", "pytest-cov", "responses", "pytest-mock"]
 
 setup(
     name="py-epicsarchiver",
     author="Benjamin Bertrand",
-    author_email="benjamin.bertrand@esss.se",
+    author_email="benjamin.bertrand@ess.eu",
     description="Python package to interact with the EPICS Archiver Appliance",
     long_description=readme + "\n\n" + changelog,
     url="https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver",
@@ -23,7 +23,7 @@ setup(
     setup_requires=["setuptools_scm"],
     install_requires=requirements,
     test_suite="tests",
-    tests_require=test_requirements,
+    tests_require=tests_requires,
     include_package_data=True,
     packages=find_packages(include=["epicsarchiver"]),
     keywords="epicsarchiver",
@@ -34,6 +34,13 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
+    extras_require={
+        "docs": docs_requires,
+        "tests": tests_requires,
+        "dev": (docs_requires + tests_requires),
+    },
+    python_requires=">=3.6",
     entry_points={"console_scripts": ["epicsarchiver=epicsarchiver.command:cli"]},
 )
