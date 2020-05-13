@@ -136,6 +136,40 @@ class ArchiverAppliance:
         r = self.get("/getPVStatus", params={"pv": pv})
         return r.json()
 
+    def get_pv_status_from_files(self, files, appliance=None):
+        """Return the status of PVs from a list of files
+
+        :param files: list of files in CSV format with PVs to archive.
+        :param appliance: optional appliance to use to archive PVs (in a cluster)
+        :return: list of dict with the status of the matching PVs
+        """
+        pvs = utils.get_pvs_from_files(files, appliance)
+        pvs = ",".join(map(lambda pv: pv["pv"], pvs))
+        return self.get_pv_status(pvs)
+
+    def get_unarchived_pvs(self, pvs):
+        """Return the list of unarchived PVs out of PVs specified in pvs
+
+        :param pvs: a list of PVs either in CSV format or as a python string list
+        :return: list of unarchived PV names
+        """
+        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/UnarchivedPVsAction.html
+        if isinstance(pvs, list):
+            pvs = ",".join(pvs)
+        r = self.post("/unarchivedPVs", data={"pv":pvs})
+        return r.json()
+
+    def get_unarchived_pvs_from_files(self, files, appliance=None):
+        """Return the list of unarchived PVs from a list of files
+
+        :param files: list of files in CSV format with PVs to archive.
+        :param appliance: optional appliance to use to archive PVs (in a cluster)
+        :return: list of unarchived PV names
+        """
+        pvs = utils.get_pvs_from_files(files, appliance)
+        pvs = ",".join(map(lambda pv: pv["pv"], pvs))
+        return self.get_unarchived_pvs(pvs)
+
     def archive_pv(self, pv, **kwargs):
         r"""Archive a PV
 
