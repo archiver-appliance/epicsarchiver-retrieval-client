@@ -147,7 +147,7 @@ def test_data_url_with_same_archiver_host(host):
     )
     data_url = archiver.data_url
     assert len(responses.calls) == 1
-    assert data_url == f"http://archiver-01:17668/retrieval/data/getData.json"
+    assert data_url == "http://archiver-01:17668/retrieval/data/getData.json"
     # data_url shall be cached
     archiver.data_url
     assert len(responses.calls) == 1

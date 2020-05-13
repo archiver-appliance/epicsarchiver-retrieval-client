@@ -156,7 +156,7 @@ class ArchiverAppliance:
         # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/UnarchivedPVsAction.html
         if isinstance(pvs, list):
             pvs = ",".join(pvs)
-        r = self.post("/unarchivedPVs", data={"pv":pvs})
+        r = self.post("/unarchivedPVs", data={"pv": pvs})
         return r.json()
 
     def get_unarchived_pvs_from_files(self, files, appliance=None):
