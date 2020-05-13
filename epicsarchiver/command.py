@@ -31,3 +31,12 @@ def archive(ctx, appliance, files):
     result = archiver.archive_pvs_from_files(files, appliance)
     if ctx.obj["debug"]:
         click.echo(result)
+
+
+@cli.command()
+@click.argument("files", nargs=-1, type=click.Path(exists=True))
+@click.pass_context
+def rename(ctx, files):
+    """Rename all PVs included in the files passed as parameters"""
+    archiver = ctx.obj["archiver"]
+    archiver.rename_pvs_from_files(files, debug=ctx.obj["debug"])

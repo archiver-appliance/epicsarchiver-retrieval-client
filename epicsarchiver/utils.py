@@ -2,6 +2,7 @@
 """Utility functions"""
 import datetime
 import itertools
+import sys
 from dateutil import parser
 
 
@@ -40,6 +41,20 @@ def parse_archive_file(filename, appliance=None):
             yield pv
 
 
+def parse_rename_file(filename):
+    with open(filename, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("#") or line == "":
+                # Remove empty lines and lines that start with "#"
+                continue
+            values = line.split()
+            if len(values) >= 2:
+                yield tuple(values[:2])
+            else:
+                sys.stderr.write(f"Skipping: {line}. Not enough values.\n")
+
+
 def get_pvs_from_files(files, appliance=None):
     """Return a list of PV (as dict) from a list of files"""
     return list(
@@ -47,3 +62,26 @@ def get_pvs_from_files(files, appliance=None):
             [parse_archive_file(filename, appliance) for filename in files]
         )
     )
+
+
+def get_rename_pvs_from_files(files):
+    """Return a list of (current, new) PV names from a list of files"""
+    return list(
+        itertools.chain.from_iterable(
+            [parse_rename_file(filename) for filename in files]
+        )
+    )
+
+
+def check_result(result, default_message=None):
+    """Check a result returned by the Archiver Appliance
+
+    Return True if the status is ok
+    Return False otherwise and print the default_message or validation value
+    """
+    status = result.get("status", "nok")
+    if status.lower() != "ok":
+        message = result.get("validation", default_message)
+        sys.stderr.write(f"{message}\n")
+        return False
+    return True

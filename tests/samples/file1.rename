@@ -1,0 +1,4 @@
+# PV current name / PV new name
+CrS-TICP:Cryo-TE-31459B:Val  CrS-TICP:Cryo-TE-31459C:Val
+# Some comment
+CrS-TICP:Cryo-TE-33483:Val CrS-TICP:Cryo-TE-33484:Val  # inline comment

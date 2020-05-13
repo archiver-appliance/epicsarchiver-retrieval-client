@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for epicsarchiver.utils module."""
 import os
+import pytest
 from datetime import datetime
 from epicsarchiver import utils
 
@@ -19,6 +20,13 @@ FILE2_PVS_APPLIANCE = [
     {"pv": "CrS-TICP:Cryo-TE-31459B:Val", "appliance": "appliance0"},
     {"pv": "CrS-TICP:Cryo-TE-33483:Val", "policy": "slow", "appliance": "appliance0"},
 ]
+FILE1_RENAME = [
+    ("CrS-TICP:Cryo-TE-31459B:Val", "CrS-TICP:Cryo-TE-31459C:Val"),
+    ("CrS-TICP:Cryo-TE-33483:Val", "CrS-TICP:Cryo-TE-33484:Val"),
+]
+FILE2_RENAME = [
+    ("CrS-ACCP:CRYO-GT-34884:Val", "CrS-ACCP:CRYO-GT-34884B:Val"),
+]
 
 
 def test_format_date():
@@ -35,6 +43,20 @@ def test_parse_archive_file():
     assert list(pvs) == FILE1_PVS
 
 
+def test_parse_rename_file():
+    filename = os.path.join(SAMPLES_PATH, "file1.rename")
+    pvs = utils.parse_rename_file(filename)
+    assert list(pvs) == FILE1_RENAME
+
+
+def test_parse_rename_file_incomplete_line(capsys):
+    filename = os.path.join(SAMPLES_PATH, "file2.rename")
+    pvs = utils.parse_rename_file(filename)
+    assert list(pvs) == FILE2_RENAME
+    captured_stdout, captured_stderr = capsys.readouterr()
+    assert "Skipping: CrS-TICP:Cryo-TE-33483:Val. Not enough values." in captured_stderr
+
+
 def test_get_pvs_from_files():
     files = [
         os.path.join(SAMPLES_PATH, "file1.archive"),
@@ -48,3 +70,35 @@ def test_get_pvs_from_files_with_appliance():
     files = [os.path.join(SAMPLES_PATH, "file2.archive")]
     pvs = utils.get_pvs_from_files(files, appliance="appliance0")
     assert pvs == FILE2_PVS_APPLIANCE
+
+
+def test_get_rename_pvs_from_files():
+    files = [
+        os.path.join(SAMPLES_PATH, "file1.rename"),
+        os.path.join(SAMPLES_PATH, "file2.rename"),
+    ]
+    pvs = utils.get_rename_pvs_from_files(files)
+    assert pvs == FILE1_RENAME + FILE2_RENAME
+
+
+@pytest.mark.parametrize(
+    "input,expected",
+    [({"status": "ok"}, True), ({"status": "foo"}, False), ({"hello": "world"}, False)],
+)
+def test_check_result(input, expected):
+    output = utils.check_result(input)
+    assert output is expected
+
+
+@pytest.mark.parametrize(
+    "input,default_message,output",
+    [
+        ({"status": "nok"}, "Not OK", "Not OK\n"),
+        ({"validation": "Hello"}, None, "Hello\n"),
+        ({"validation": "Hello"}, "foo", "Hello\n"),
+    ],
+)
+def test_check_result_message(capsys, input, default_message, output):
+    utils.check_result(input, default_message)
+    captured_stdout, captured_stderr = capsys.readouterr()
+    assert captured_stderr == output

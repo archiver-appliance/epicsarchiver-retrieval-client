@@ -54,3 +54,20 @@ def test_archive_with_appliance(tmpdir, mocker):
     mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
         (str(file1),), appliance
     )
+
+
+def test_rename(tmpdir, mocker):
+    mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
+    hostname = "myarchiver.example.org"
+    file1 = tmpdir.join("file1")
+    file1.write("test")
+    file2 = tmpdir.join("file2")
+    file2.write("test2")
+    runner = CliRunner()
+    result = runner.invoke(
+        command.cli, ["--hostname", hostname, "rename", str(file1), str(file2)]
+    )
+    assert result.exit_code == 0
+    mock_archiver.return_value.rename_pvs_from_files.assert_called_once_with(
+        (str(file1), str(file2)), debug=False
+    )
