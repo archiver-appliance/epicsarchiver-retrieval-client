@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Main module."""
+import sys
 import urllib.parse
 import requests
 import pandas as pd
@@ -321,3 +322,43 @@ class ArchiverAppliance:
             df = df[["date", "val"]]
             df = df.set_index("date")
         return df
+
+    def pause_rename_resume_pv(self, pv, new, debug=False):
+        """Pause, rename and resume a PV
+
+        :param pv: name of the pv
+        :param new: new name of the pv
+        :param bool debug: enable debug logging
+        :return: None
+        """
+        result = self.get_pv_status(pv)
+        if result[0]["status"] != "Being archived":
+            sys.stderr.write(f"PV {pv} isn't being archived. Skipping.\n")
+            return
+        result = self.get_pv_status(new)
+        if result[0]["status"] != "Not being archived":
+            sys.stderr.write(f"New PV {new} already exists. Skipping.\n")
+            return
+        result = self.pause_pv(pv)
+        if not utils.check_result(result, f"Error while pausing {pv}"):
+            return
+        result = self.rename_pv(pv, new)
+        if not utils.check_result(result, f"Error while renaming {pv} to {new}"):
+            return
+        result = self.resume_pv(new)
+        if not utils.check_result(result, f"Error while resuming {new}"):
+            return
+        if debug:
+            print(f"PV {pv} successfully renamed to {new}")
+
+    def rename_pvs_from_files(self, files, debug=False):
+        """Rename PVs from a list of files
+
+        Each PV will be paused, renamed and resumed
+
+        :param files: list of files in CSV format with PVs to rename.
+        :return: None
+        """
+        pvs = utils.get_rename_pvs_from_files(files)
+        for (current, new) in pvs:
+            self.pause_rename_resume_pv(current, new, debug)

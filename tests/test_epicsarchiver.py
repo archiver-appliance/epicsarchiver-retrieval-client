@@ -612,3 +612,131 @@ def test_get_data():
     df = archiver.get_data(pv, "20180825 17:45", "20180825 18:45")
     assert len(responses.calls) == 2
     pd.testing.assert_frame_equal(ref_df, df)
+
+
+@responses.activate
+def test_pause_rename_resume_pv(capsys):
+    archiver = ArchiverAppliance("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": "Being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": "Not being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/pauseArchivingPV?pv={pv}",
+        json={"status": "ok"},
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/renamePV?pv={pv}&newname={newname}",
+        json={"status": "ok"},
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/resumeArchivingPV?pv={newname}",
+        json={"status": "ok"},
+        status=200,
+        match_querystring=True,
+    )
+    archiver.pause_rename_resume_pv(pv, newname, debug=True)
+    captured_stdout, captured_stderr = capsys.readouterr()
+    assert len(responses.calls) == 5
+    assert captured_stdout == f"PV {pv} successfully renamed to {newname}\n"
+
+
+@responses.activate
+def test_pause_rename_resume_pv_not_archived_pv(capsys):
+    archiver = ArchiverAppliance("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": "Not being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    archiver.pause_rename_resume_pv(pv, newname)
+    captured_stdout, captured_stderr = capsys.readouterr()
+    assert len(responses.calls) == 1
+    assert captured_stderr == f"PV {pv} isn't being archived. Skipping.\n"
+
+
+@responses.activate
+def test_pause_rename_resume_pv_existing_new(capsys):
+    archiver = ArchiverAppliance("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": "Being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": "Being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    archiver.pause_rename_resume_pv(pv, newname)
+    captured_stdout, captured_stderr = capsys.readouterr()
+    assert len(responses.calls) == 2
+    assert captured_stderr == f"New PV {newname} already exists. Skipping.\n"
+
+
+@responses.activate
+def test_pause_rename_resume_pv_error_rename(capsys):
+    archiver = ArchiverAppliance("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": "Being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": "Not being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/pauseArchivingPV?pv={pv}",
+        json={"status": "ok"},
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/renamePV?pv={pv}&newname={newname}",
+        json={"validation": "error during rename"},
+        status=200,
+        match_querystring=True,
+    )
+    archiver.pause_rename_resume_pv(pv, newname, debug=True)
+    captured_stdout, captured_stderr = capsys.readouterr()
+    assert len(responses.calls) == 4
+    assert captured_stderr == "error during rename\n"
