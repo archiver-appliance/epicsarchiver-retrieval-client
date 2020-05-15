@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.4.0 (2020-05-15)
+------------------
+
+* Remove dataRetrievalURL transformation
+* Add get_unarchived_pvs method
+* Add get_pv_status_from_files and get_unarchived_pvs_from_files methods
+* Add rename_pv method and rename command (INFRA-2115)
+* Add badges to README and documentation
+
 0.3.0 (2018-11-22)
 ------------------
 
