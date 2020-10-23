@@ -8,7 +8,7 @@ with open("CHANGELOG.rst") as changelog_file:
     changelog = changelog_file.read()
 
 requirements = ["requests", "pandas", "python-dateutil", "Click>=6.0"]
-docs_requires = ["sphinx"]
+docs_requires = ["sphinx", "sphinx_rtd_theme"]
 tests_requires = ["pytest", "pytest-cov", "responses", "pytest-mock"]
 
 setup(

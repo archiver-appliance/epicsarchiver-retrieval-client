@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to py-epicsarchiver's documentation!
-============================================
+py-epicsarchiver's documentation
+================================
 
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
@@ -15,7 +15,7 @@ Welcome to py-epicsarchiver's documentation!
 .. image:: https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/coverage.svg
     :target: https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver
 
-Release v\ |version|.
+Release v\ |release|.
 
 Python package to interact with the `EPICS Archiver Appliance <https://slacmshankar.github.io/epicsarchiver_docs/>`_.
 
