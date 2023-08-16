@@ -1,18 +1,18 @@
-# -*- coding: utf-8 -*-
 """Tests for epicsarchiver.command module."""
 from click.testing import CliRunner
+
 from epicsarchiver import command
 
 
 def test_archive_file_does_not_exist():
     runner = CliRunner()
     files = ["file1", "file2"]
-    result = runner.invoke(command.cli, ["archive"] + files)
+    result = runner.invoke(command.cli, ["archive", *files])
     assert result.exit_code == 2
     assert "Path 'file1' does not exist." in result.output
 
 
-def test_archive_file_does_exist(tmpdir, mocker):
+def test_archive_file_does_exist(tmpdir, mocker, capsys):
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     file1 = tmpdir.join("file1")
     file1.write("test")
@@ -20,40 +20,45 @@ def test_archive_file_does_exist(tmpdir, mocker):
     file2.write("test")
     runner = CliRunner()
     files = (str(file1), str(file2))
-    result = runner.invoke(command.cli, ["archive"] + list(files))
-    assert result.exit_code == 0
-    assert result.output == ""
-    mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
-        files, None
-    )
-    mock_archiver.assert_called_once_with("localhost")
+    with capsys.disabled():
+        result = runner.invoke(command.cli, ["archive", *list(files)])
+        assert result.exit_code == 0
+        assert result.output == ""
+        mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
+            files, None
+        )
+        mock_archiver.assert_called_once_with("localhost")
 
 
-def test_archive_hostname(tmpdir, mocker):
+def test_archive_hostname(tmpdir, mocker, capsys):
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     hostname = "myarchiver.example.org"
     file1 = tmpdir.join("file1")
     file1.write("test")
     runner = CliRunner()
-    result = runner.invoke(command.cli, ["--hostname", hostname, "archive", str(file1)])
-    assert result.exit_code == 0
-    mock_archiver.assert_called_once_with(hostname)
+    with capsys.disabled():
+        result = runner.invoke(
+            command.cli, ["--hostname", hostname, "archive", str(file1)]
+        )
+        assert result.exit_code == 0
+        mock_archiver.assert_called_once_with(hostname)
 
 
-def test_archive_with_appliance(tmpdir, mocker):
+def test_archive_with_appliance(tmpdir, mocker, capsys):
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     appliance = "foo"
     file1 = tmpdir.join("file1")
     file1.write("test")
     runner = CliRunner()
-    result = runner.invoke(
-        command.cli, ["archive", "--appliance", appliance, str(file1)]
-    )
-    assert result.exit_code == 0
-    assert result.output == ""
-    mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
-        (str(file1),), appliance
-    )
+    with capsys.disabled():
+        result = runner.invoke(
+            command.cli, ["archive", "--appliance", appliance, str(file1)]
+        )
+        assert result.exit_code == 0
+        assert result.output == ""
+        mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
+            (str(file1),), appliance
+        )
 
 
 def test_rename(tmpdir, mocker):
@@ -69,5 +74,5 @@ def test_rename(tmpdir, mocker):
     )
     assert result.exit_code == 0
     mock_archiver.return_value.rename_pvs_from_files.assert_called_once_with(
-        (str(file1), str(file2)), debug=False
+        (str(file1), str(file2))
     )

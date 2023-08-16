@@ -4,31 +4,15 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath(".."))
-
+from importlib.metadata import version as get_version
 
 # -- Project information -----------------------------------------------------
 
 project = "epicsarchiver"
-copyright = "2020, European Spallation Source ERIC"
-author = "Benjamin Bertrand"
-
-try:
-    # CI_COMMIT_REF_NAME is defined by GitLab Runner
-    # The branch or tag name for which project is built
-    release = os.environ["CI_COMMIT_REF_NAME"]
-except KeyError:
-    # dev mode
-    release = os.popen("git describe").read().strip()
+copyright = "2023, European Spallation Source ERIC"  # noqa: A001
+authors = ["Benjamin Bertrand", "Sky Brewer"]
+release = get_version("epicsarchiver")
+version = ".".join(release.split(".")[0:2])
 
 
 # -- General configuration ---------------------------------------------------
@@ -36,7 +20,16 @@ except KeyError:
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx", "sphinx.ext.viewcode"]
+extensions = [
+    "myst_parser",
+    "sphinx_click",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
+    "autoapi.extension",
+    "sphinx_copybutton",
+    "sphinx.ext.napoleon",
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -46,6 +39,8 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+
+autoapi_dirs = ["../../epicsarchiver"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -64,3 +59,14 @@ html_static_path = ["_static"]
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
 }
+
+# Enable special syntax for admonitions (:::{directive})
+myst_admonition_enable = True
+
+# Enable definition lists (Term\n: Definition)
+myst_deflist_enable = True
+
+# Allow colon fencing of directives
+myst_enable_extensions = [
+    "colon_fence",
+]

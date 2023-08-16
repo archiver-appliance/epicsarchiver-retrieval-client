@@ -1,8 +1,11 @@
-# -*- coding: utf-8 -*-
 """Tests for epicsarchiver.utils module."""
+import logging
 import os
-import pytest
 from datetime import datetime
+
+import pytest
+from pytz import UTC
+
 from epicsarchiver import utils
 
 SAMPLES_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "samples")
@@ -33,7 +36,8 @@ def test_format_date():
     assert utils.format_date("20180715") == "2018-07-15T00:00:00.000000Z"
     assert utils.format_date("20180715 17:45") == "2018-07-15T17:45:00.000000Z"
     assert (
-        utils.format_date(datetime(2018, 7, 15, 19, 5)) == "2018-07-15T19:05:00.000000Z"
+        utils.format_date(datetime(2018, 7, 15, 19, 5, tzinfo=UTC))
+        == "2018-07-15T19:05:00.000000Z"
     )
 
 
@@ -49,12 +53,16 @@ def test_parse_rename_file():
     assert list(pvs) == FILE1_RENAME
 
 
-def test_parse_rename_file_incomplete_line(capsys):
+def test_parse_rename_file_incomplete_line(caplog):
     filename = os.path.join(SAMPLES_PATH, "file2.rename")
-    pvs = utils.parse_rename_file(filename)
+    with caplog.at_level(logging.ERROR):
+        pvs = utils.parse_rename_file(filename)
     assert list(pvs) == FILE2_RENAME
-    captured_stdout, captured_stderr = capsys.readouterr()
-    assert "Skipping: CrS-TICP:Cryo-TE-33483:Val. Not enough values." in captured_stderr
+    captured_log = caplog.text
+    assert (
+        "Skipping: CrS-TICP:Cryo-TE-33483:Val. Invalid format, must be OLDNAME NEWNAME."
+        in captured_log
+    )
 
 
 def test_get_pvs_from_files():
@@ -82,23 +90,24 @@ def test_get_rename_pvs_from_files():
 
 
 @pytest.mark.parametrize(
-    "input,expected",
+    "test_input,expected",
     [({"status": "ok"}, True), ({"status": "foo"}, False), ({"hello": "world"}, False)],
 )
-def test_check_result(input, expected):
-    output = utils.check_result(input)
+def test_check_result(test_input, expected):
+    output = utils.check_result(test_input)
     assert output is expected
 
 
 @pytest.mark.parametrize(
-    "input,default_message,output",
+    "test_input,default_message,output",
     [
         ({"status": "nok"}, "Not OK", "Not OK\n"),
         ({"validation": "Hello"}, None, "Hello\n"),
         ({"validation": "Hello"}, "foo", "Hello\n"),
     ],
 )
-def test_check_result_message(capsys, input, default_message, output):
-    utils.check_result(input, default_message)
-    captured_stdout, captured_stderr = capsys.readouterr()
-    assert captured_stderr == output
+def test_check_result_message(caplog, test_input, default_message, output):
+    with caplog.at_level(logging.ERROR):
+        utils.check_result(test_input, default_message)
+    captured_log = caplog.text
+    assert output in captured_log

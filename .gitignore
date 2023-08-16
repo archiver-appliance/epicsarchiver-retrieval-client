@@ -10,3 +10,31 @@ pkg/
 /build
 /docs/_build
 .pytest_cache
+
+# Global directories
+__pycache__/
+
+# Global files
+*.py[cod]
+*.dll
+*.so
+*.log
+*.swp
+
+# Root directories
+/.benchmarks/
+/.env/
+/.idea/
+/.mypy_cache/
+/.ruff_cache/
+/.pytest_cache/
+/.vscode/
+/backend/dist/
+/dist/
+/site/
+
+# Root files
+/.coverage*
+coverage.xml
+output
+test_sets

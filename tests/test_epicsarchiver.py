@@ -1,11 +1,21 @@
-# -*- coding: utf-8 -*-
 """Tests for `epicsarchiver` package."""
 import json
+import logging
+
+import pandas as pd
 import pytest
 import requests
 import responses
-import pandas as pd
+from pytz import UTC
+from rich.logging import RichHandler
+
 from epicsarchiver import ArchiverAppliance
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
+LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def test_epicsarchiver_url():
@@ -111,7 +121,7 @@ def test_info():
     assert len(responses.calls) == 1
     assert info == data
     # info shall be cached - no more calls
-    archiver.info
+    _ = archiver.info
     assert len(responses.calls) == 1
 
 
@@ -149,7 +159,7 @@ def test_data_url_with_same_archiver_host(host):
     assert len(responses.calls) == 1
     assert data_url == "http://archiver-01:17668/retrieval/data/getData.json"
     # data_url shall be cached
-    archiver.data_url
+    _ = archiver.data_url
     assert len(responses.calls) == 1
 
 
@@ -585,13 +595,12 @@ def test_get_data():
             ],
         }
     ]
+    dates = [
+        pd.Timestamp(d["secs"] * 1e9 + d["nanos"], tz=UTC) for d in data[0]["data"]
+    ]
     dates = pd.DatetimeIndex(
-        [
-            "2018-09-18 20:26:23.931598186",
-            "2018-09-18 20:26:24.907631874",
-            "2018-09-18 20:26:25.909627438",
-            "2018-09-18 20:26:26.911606550",
-        ]
+        dates,
+        tz=UTC,
     )
     ref_df = pd.DataFrame([1, 2, 3, 4], index=dates)
     ref_df = ref_df.rename_axis("date")
@@ -615,7 +624,7 @@ def test_get_data():
 
 
 @responses.activate
-def test_pause_rename_resume_pv(capsys):
+def test_pause_rename_resume_pv(caplog):
     archiver = ArchiverAppliance("archiver.example.org")
     pv = "MY:PV"
     newname = "NEW:PV"
@@ -654,14 +663,15 @@ def test_pause_rename_resume_pv(capsys):
         status=200,
         match_querystring=True,
     )
-    archiver.pause_rename_resume_pv(pv, newname, debug=True)
-    captured_stdout, captured_stderr = capsys.readouterr()
+    with caplog.at_level(logging.DEBUG):
+        archiver.pause_rename_resume_pv(pv, newname)
+    captured_log = caplog.text
     assert len(responses.calls) == 5
-    assert captured_stdout == f"PV {pv} successfully renamed to {newname}\n"
+    assert f"PV {pv} successfully renamed to {newname}\n" in captured_log
 
 
 @responses.activate
-def test_pause_rename_resume_pv_not_archived_pv(capsys):
+def test_pause_rename_resume_pv_not_archived_pv(caplog):
     archiver = ArchiverAppliance("archiver.example.org")
     pv = "MY:PV"
     newname = "NEW:PV"
@@ -672,14 +682,15 @@ def test_pause_rename_resume_pv_not_archived_pv(capsys):
         status=200,
         match_querystring=True,
     )
-    archiver.pause_rename_resume_pv(pv, newname)
-    captured_stdout, captured_stderr = capsys.readouterr()
+    with caplog.at_level(logging.DEBUG):
+        archiver.pause_rename_resume_pv(pv, newname)
+    captured_log = caplog.text
     assert len(responses.calls) == 1
-    assert captured_stderr == f"PV {pv} isn't being archived. Skipping.\n"
+    assert f"PV {pv} isn't being archived. Skipping.\n" in captured_log
 
 
 @responses.activate
-def test_pause_rename_resume_pv_existing_new(capsys):
+def test_pause_rename_resume_pv_existing_new(caplog):
     archiver = ArchiverAppliance("archiver.example.org")
     pv = "MY:PV"
     newname = "NEW:PV"
@@ -697,14 +708,15 @@ def test_pause_rename_resume_pv_existing_new(capsys):
         status=200,
         match_querystring=True,
     )
-    archiver.pause_rename_resume_pv(pv, newname)
-    captured_stdout, captured_stderr = capsys.readouterr()
+    with caplog.at_level(logging.DEBUG):
+        archiver.pause_rename_resume_pv(pv, newname)
+    captured_log = caplog.text
     assert len(responses.calls) == 2
-    assert captured_stderr == f"New PV {newname} already exists. Skipping.\n"
+    assert f"New PV {newname} already exists. Skipping.\n" in captured_log
 
 
 @responses.activate
-def test_pause_rename_resume_pv_error_rename(capsys):
+def test_pause_rename_resume_pv_error_rename(caplog):
     archiver = ArchiverAppliance("archiver.example.org")
     pv = "MY:PV"
     newname = "NEW:PV"
@@ -736,7 +748,9 @@ def test_pause_rename_resume_pv_error_rename(capsys):
         status=200,
         match_querystring=True,
     )
-    archiver.pause_rename_resume_pv(pv, newname, debug=True)
-    captured_stdout, captured_stderr = capsys.readouterr()
+    with caplog.at_level(logging.DEBUG):
+        archiver.pause_rename_resume_pv(pv, newname)
+    captured_log = caplog.text
+    LOG.info(captured_log)
     assert len(responses.calls) == 4
-    assert captured_stderr == "error during rename\n"
+    assert "error during rename" in captured_log

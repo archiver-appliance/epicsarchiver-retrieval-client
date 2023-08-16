@@ -1,55 +1,105 @@
-include:
-  - 'https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/PreCommit.gitlab-ci.yml'
-  - 'https://gitlab.esss.lu.se/ics-infrastructure/gitlab-ci-yml/raw/master/ArtifactoryPyPI.gitlab-ci.yml'
 
-.runner_tags: &runner_tags
+variables:
+  CONTAINER_TEST_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+  TWINE_REPOSITORY_URL: https://artifactory.esss.lu.se/artifactory/api/pypi/ics-pypi
+  TWINE_USERNAME: gitlab
+  TWINE_PASSWORD: secret
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+default:
   tags:
     - docker
+
+# Pip's cache doesn't store the python packages
+# https://pip.pypa.io/en/stable/reference/pip_install/#caching
+cache:
+  paths:
+    - .cache/pip
 
 stages:
   - check
   - build
   - test
+  - analyse
   - release
+  - deploy
 
-test-python36:
-  <<: *runner_tags
-  stage: test
-  image: python:3.6
-  before_script:
-    - pip install -e .[tests]
-  script:
-    - pytest -v
 
-test-python37:
-  <<: *runner_tags
-  stage: test
-  image: python:3.7
-  before_script:
-    - pip install -e .[tests]
-  script:
-    - pytest --cov=epicsarchiver -v
+before_script:
+  - python --version  # For debugging
+  - pip install hatch
+  
+.parallel:
+  parallel:
+    matrix:
+      - IMAGE: [python:3.10, python:3.11]
 
-test-python38:
-  <<: *runner_tags
+test:
   stage: test
-  image: python:3.8
-  before_script:
-    - pip install -e .[tests]
+  image: $IMAGE
   script:
-    - pytest -v
+    - hatch run test --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+  parallel: !reference [.parallel,parallel]
+
+
+cov:
+  stage: analyse
+  image: $IMAGE
+  script:
+    - hatch run cov
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+  parallel: !reference [.parallel,parallel]
+
+
+lint:
+  stage: check
+  image: $IMAGE
+  script:
+    - hatch run style
+  parallel: !reference [.parallel,parallel]
+
+
+build:
+  stage: build
+  image: $IMAGE
+  script:
+    - hatch build
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - dist/
+  parallel: !reference [.parallel,parallel]
+
 
 pages:
-  <<: *runner_tags
-  stage: release
-  image: python:3.7
-  before_script:
-    - pip install .[docs]
+  stage: deploy
+  image: python:3.10
   script:
-    - sphinx-build -M html docs docs/_build
-    - mv docs/_build/html public
+    - hatch run docs
+    - mv docs/build/html public
   artifacts:
     paths:
       - public
   only:
     - tags
+
+
+release-pypi-package:
+  stage: release
+  image: $IMAGE
+  before_script:
+    - pip install twine
+  script:
+    - twine upload dist/*
+  only:
+    - tags
+  parallel: !reference [.parallel,parallel]
+
