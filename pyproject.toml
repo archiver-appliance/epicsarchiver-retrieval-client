@@ -1,8 +1,185 @@
-[tool.black]
-target_version = ['py36', 'py37']
-
 [build-system]
-requires = ["setuptools >= 42", "wheel", "setuptools_scm[toml]>=3.4"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
+[project]
+name = "epicsarchiver"
+description = "A python script for testing the result from multiple archivers"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = []
+authors = [
+  { name = "Sky Brewer", email = "sky.brewer@ess.eu" },
+  { name = "Benjamin Bertrand" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+dependencies = ["numpy", "pandas", "requests", "rich", "click>=7"]
+dynamic = ["version"]
+
+[project.scripts]
+epicsarchiver = "epicsarchiver.command:cli"
+
+[project.urls]
+Source = "https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver"
+
+[project.optional-dependencies]
+docs = [
+  "myst-parser",
+  "sphinx",
+  "sphinx-copybutton>=0.5.1",
+  "sphinx-click",
+  "sphinx-autobuild",
+  "sphinx-autoapi",
+  "sphinx_rtd_theme",
+]
+lint = [
+  "black",
+  "ruff",
+  "mypy",
+  "types-requests",
+  "types-python-dateutil",
+  "types-click",
+]
+test = [
+  "coverage[toml]>=6.5",
+  "pytest>=7.2.0",
+  "pytest-asyncio",
+  "sybil",
+  "typing-extensions",
+  "responses",
+  "pytest-mock",
+]
+dev = [ # Everything needed for development
+  "epicsarchiver[docs,lint,test]",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["/docs", "/epicsarchiver", "/tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["epicsarchiver"]
+
+
+[tool.hatch.envs.default]
+features = ["dev"]
+
+[tool.hatch.version]
+path = "epicsarchiver/__about__.py"
+
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = ["- coverage combine", "coverage report", "coverage xml"]
+cov = ["test-cov", "cov-report"]
+docs = ["make -C docs html"]
+docs-live = ["sphinx-autobuild docs/source docs/build/html"]
+docs-clean = ["make -C docs clean html"]
+style = [
+  "ruff {args:.}",
+  "black --check --diff {args:.}",
+  "mypy {args:./epicsarchiver}",
+]
+fmt = ["black  -t py310 {args:.}", "ruff --fix {args:.}", "style"]
+all = ["fmt", "style", "test"]
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.10", "3.11"]
+
+[tool.black]
+target-version = ["py310"]
+line-length = 88
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+select = [
+  "A",
+  "ARG",
+  "B",
+  "C",
+  "DTZ",
+  "E",
+  "EM",
+  "F",
+  "FBT",
+  "I",
+  "ICN",
+  "ISC",
+  "N",
+  "PLC",
+  "PLE",
+  "PLR",
+  "PLW",
+  "Q",
+  "RUF",
+  "S",
+  "T",
+  "TID",
+  "UP",
+  "W",
+  "YTT",
+]
+ignore = [
+  # Allow non-abstract empty methods in abstract base classes
+  "B027",
+  # Allow boolean positional values in function calls, like `dict.get(... True)`
+  "FBT003",
+  # Ignore checks for possible passwords
+  "S105",
+  "S106",
+  "S107",
+  # Ignore complexity
+  "C901",
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+]
+unfixable = [
+  # Don't touch unused imports
+  "F401",
+]
+
+[tool.ruff.isort]
+known-first-party = ["epicsarchiver"]
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.mypy]
+ignore_missing_imports = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = "*"
+
+disallow_untyped_defs = true
+
+
+[tool.coverage.run]
+source_pkgs = ["epicsarchiver", "tests"]
+branch = true
+parallel = true
+omit = ["epicsarchiver/__about__.py"]
+
+[tool.coverage.paths]
+epicsarchiver = ["epicsarchiver", "*/py-epicsarchiver/epicsarchiver"]
+tests = ["tests", "*/epicsarchiver/tests"]
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
+show_missing = true
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "DEBUG"
