@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+Changed
+ * Swap json interface for protobuf interface
+ * Add type hints
+
 ## 0.4.0 (2020-05-15)
 
 * Remove dataRetrievalURL transformation
