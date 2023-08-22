@@ -94,12 +94,10 @@ pages:
 
 release-pypi-package:
   stage: release
-  image: $IMAGE
+  image: python:3.10
   before_script:
     - pip install twine
   script:
     - twine upload dist/*
   only:
     - tags
-  parallel: !reference [.parallel,parallel]
-
