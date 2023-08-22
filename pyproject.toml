@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "epicsarchiver"
-description = "A python script for testing the result from multiple archivers"
+description = "A python script for managing and pulling data from the Archiver Appliance"
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = []
@@ -18,7 +18,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
 ]
-dependencies = ["numpy", "pandas", "requests", "rich", "click>=7"]
+dependencies = ["numpy", "pandas", "requests", "rich", "click>=7", "protobuf", "strictly_typed_pandas", "pytz"]
 dynamic = ["version"]
 
 [project.scripts]
@@ -44,6 +44,8 @@ lint = [
   "types-requests",
   "types-python-dateutil",
   "types-click",
+  "types-protobuf",
+  "mypy-protobuf",
 ]
 test = [
   "coverage[toml]>=6.5",
@@ -72,6 +74,7 @@ features = ["dev"]
 path = "epicsarchiver/__about__.py"
 
 [tool.hatch.envs.default.scripts]
+protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/EPICSEvent.proto"
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
 cov-report = ["- coverage combine", "coverage report", "coverage xml"]
@@ -82,9 +85,9 @@ docs-clean = ["make -C docs clean html"]
 style = [
   "ruff {args:.}",
   "black --check --diff {args:.}",
-  "mypy {args:./epicsarchiver}",
+  "mypy {args:./epicsarchiver ./tests}",
 ]
-fmt = ["black  -t py310 {args:.}", "ruff --fix {args:.}", "style"]
+fmt = ["black -t py310 {args:.}", "ruff --fix {args:.}", "style"]
 all = ["fmt", "style", "test"]
 
 [[tool.hatch.envs.all.matrix]]
@@ -93,16 +96,25 @@ python = ["3.10", "3.11"]
 [tool.black]
 target-version = ["py310"]
 line-length = 88
+force-exclude = '''
+epicsarchiver/EPICSEvent_pb2.py
+epicsarchiver/EPICSEvent_pb2.pyi
+'''
 
 [tool.ruff]
 target-version = "py310"
 line-length = 88
+exclude = [
+  "epicsarchiver/EPICSEvent_pb2.py",
+  "epicsarchiver/EPICSEvent_pb2.pyi",
+]
 
 select = [
   "A",
   "ARG",
   "B",
   "C",
+  "D",
   "DTZ",
   "E",
   "EM",
@@ -154,17 +166,24 @@ ban-relative-imports = "all"
 
 [tool.ruff.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
-"tests/**/*" = ["PLR2004", "S101", "TID252"]
+"tests/**/*" = ["PLR2004", "S101", "TID252", "D"]
+
+[tool.ruff.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
 
 [tool.mypy]
 ignore_missing_imports = true
 show_error_codes = true
+disallow_untyped_defs = true
+disallow_any_unimported = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+
 
 [[tool.mypy.overrides]]
 module = "*"
-
-disallow_untyped_defs = true
-
 
 [tool.coverage.run]
 source_pkgs = ["epicsarchiver", "tests"]

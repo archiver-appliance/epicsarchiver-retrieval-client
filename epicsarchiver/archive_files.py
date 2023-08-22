@@ -1,33 +1,30 @@
-"""Utility functions"""
-import datetime
+"""Handle parsing files of lists of PVs to submit for archiver operations."""
 import itertools
 import logging
 from collections.abc import Generator
 from typing import Any
 
-from dateutil import parser
+from click import Path
 
 LOG: logging.Logger = logging.getLogger(__name__)
-
-
-def format_date(date_or_str: datetime.datetime | str) -> str:
-    """Return a string representing the date and time in ISO 8601 format
-
-    :param date_or_str: can be a datetime object or string
-                        if a string is given, it will be parsed automatically.
-                        Timezone is ignored. UTC is always assumed.
-    :return: string in ISO 8601 format
-    """
-    if not isinstance(date_or_str, datetime.datetime):
-        dt = parser.parse(date_or_str, ignoretz=True)
-    else:
-        dt = date_or_str.replace(tzinfo=None)
-    return dt.isoformat(timespec="microseconds") + "Z"
 
 
 def parse_archive_file(
     filename: str, appliance: str | None = None
 ) -> Generator[dict[str, str], None, None]:
+    """Parses an archive file.
+
+    Archive file is a list of PVs with an archive policy
+    name as optional arguement.
+
+    Args:
+        filename (str): filename of archive file
+        appliance (str | None, optional): archiver to archive pv in. Defaults to None.
+
+    Yields:
+        Generator[dict[str, str], None, None]: produces
+        dictionary with keys {"pv", "policy", "appliance"}
+    """
     with open(filename) as f:
         for line in f:
             stripped_line = line.strip()
@@ -63,6 +60,14 @@ def _parse_rename_line(line: str) -> tuple[str, str] | None:
 
 
 def parse_rename_file(filename: str) -> Generator[tuple, None, None]:
+    """Parses a file with a list of pv as old_pv_name new_pv_name.
+
+    Args:
+        filename (str): filename of rename file
+
+    Yields:
+        Generator[tuple[str, str], None, None]: produces a pair old_pv_name, new_pv_name
+    """
     with open(filename) as f:
         for line in f:
             if parsed_line := _parse_rename_line(line):
@@ -72,7 +77,7 @@ def parse_rename_file(filename: str) -> Generator[tuple, None, None]:
 def get_pvs_from_files(
     files: list[str], appliance: str | None = None
 ) -> list[dict[str, str]]:
-    """Return a list of PV (as dict) from a list of files"""
+    """Return a list of PV (as dict) from a list of files."""
     return list(
         itertools.chain.from_iterable(
             [parse_archive_file(filename, appliance) for filename in files]
@@ -80,24 +85,10 @@ def get_pvs_from_files(
     )
 
 
-def get_rename_pvs_from_files(files: list[str]) -> list[tuple]:
-    """Return a list of (current, new) PV names from a list of files"""
+def get_rename_pvs_from_files(files: list[str] | list[Path]) -> list[tuple]:
+    """Return a list of (current, new) PV names from a list of files."""
     return list(
         itertools.chain.from_iterable(
-            [parse_rename_file(filename) for filename in files]
+            [parse_rename_file(str(filename)) for filename in files]
         )
     )
-
-
-def check_result(result: dict[str, str], default_message: str | None = None) -> bool:
-    """Check a result returned by the Archiver Appliance
-
-    Return True if the status is ok
-    Return False otherwise and print the default_message or validation value
-    """
-    status = result.get("status", "nok")
-    if status.lower() != "ok":
-        message = result.get("validation", default_message)
-        LOG.error(f"{message}\n")
-        return False
-    return True

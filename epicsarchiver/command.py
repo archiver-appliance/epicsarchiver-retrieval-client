@@ -14,7 +14,7 @@ def _handle_debug(
     _param: click.core.Option | click.core.Parameter | None,
     debug: bool | int | str,
 ) -> bool | int | str:
-    """Turn on DEBUG logs, if asked otherwise INFO default"""
+    """Turn on DEBUG logs, if asked otherwise INFO default."""
     format_msg = "%(message)s"
 
     if debug:
@@ -35,8 +35,9 @@ def _handle_debug(
 
 
 def common_options(fn):  # type: ignore[no-untyped-def]
-    """Adds multiple common options for all subcommands. Including debug flag
-    and an output folder.
+    """Adds multiple common options for all subcommands.
+
+    Including debug flag and an output folder.
 
     Args:
         fn: The function to add the common options to.
@@ -93,7 +94,6 @@ def archive(
         ISrc-010:PwrC-CoilPS-01:CurR slow
         # Comments are allowed
         LEBT-010:Vac-VCG-30000:PrsStatR
-
 
     The "slow" policy will be forced for the second PV.
     Check the help for more information.

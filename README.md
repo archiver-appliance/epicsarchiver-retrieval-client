@@ -70,10 +70,16 @@ Run local docs:
 hatch run docs-live
 ```
 
+Regenerate protobuf python api:
+
+```console
+hatch run protoc-gen
+```
+
 
 ## Documentation
 
-[py-epicsarchiver documentation](http://ics-infrastructure.pages.esss.lu.se/py-epicsarchiver/index.html)
+[py-epicsarchiver documentation](http://ics-software.pages.esss.lu.se/py-epicsarchiver/index.html)
 
 ## License
 
