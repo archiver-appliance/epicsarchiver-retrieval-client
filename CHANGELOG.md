@@ -1,7 +1,6 @@
 # Changelog
 
-## [Unreleased]
-Changed
+## 0.5.0 (2023-08-23)
  * Swap json interface for protobuf interface
  * Add type hints
 
