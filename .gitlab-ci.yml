@@ -98,6 +98,6 @@ release-pypi-package:
   before_script:
     - pip install twine
   script:
-    - twine upload dist/*
+    - twine upload dist/* --skip-existing --verbose
   only:
     - tags
