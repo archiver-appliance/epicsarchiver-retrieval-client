@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "epicsarchiver"
+name = "py-epicsarchiver"
 description = "A python script for managing and pulling data from the Archiver Appliance"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -25,7 +25,7 @@ dynamic = ["version"]
 epicsarchiver = "epicsarchiver.command:cli"
 
 [project.urls]
-Source = "https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver"
+Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
 
 [project.optional-dependencies]
 docs = [
@@ -57,7 +57,7 @@ test = [
   "pytest-mock",
 ]
 dev = [ # Everything needed for development
-  "epicsarchiver[docs,lint,test]",
+  "py-epicsarchiver[docs,lint,test]",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -69,6 +69,7 @@ packages = ["epicsarchiver"]
 
 [tool.hatch.envs.default]
 features = ["dev"]
+python="3.11"
 
 [tool.hatch.version]
 path = "epicsarchiver/__about__.py"
@@ -91,7 +92,7 @@ fmt = ["black -t py310 {args:.}", "ruff --fix {args:.}", "style"]
 all = ["fmt", "style", "test"]
 
 [[tool.hatch.envs.all.matrix]]
-python = ["3.10", "3.11"]
+python = ["3.11"]
 
 [tool.black]
 target-version = ["py310"]
