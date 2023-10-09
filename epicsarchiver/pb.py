@@ -369,7 +369,7 @@ def _break_up_chunks(
         collections.OrderedDict: keys are years; values are lists of chunks
     """
     chunks = [chunk.strip() for chunk in raw_data.split(b"\n\n")]
-    log.info(f"{len(chunks)} chunks in pb file")
+    log.debug(f"{len(chunks)} chunks in pb file")
     year_chunks: OrderedDict[
         int, tuple[ee.PayloadInfo, list[bytes]]
     ] = collections.OrderedDict()
@@ -378,7 +378,7 @@ def _break_up_chunks(
         chunk_info = ee.PayloadInfo()
         chunk_info.ParseFromString(unescape_bytes(lines[0]))
         chunk_year = chunk_info.year  # pylint: disable=no-member
-        log.info(f"Year {chunk_year}: {len(lines) - 1} events in chunk")
+        log.debug(f"Year {chunk_year}: {len(lines) - 1} events in chunk")
         try:
             _, ls = year_chunks[chunk_year]
             ls.extend(lines[1:])
