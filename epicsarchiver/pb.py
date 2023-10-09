@@ -85,6 +85,30 @@ PB_REPLACEMENTS_UNESCAPING = collections.OrderedDict(
 
 
 @dataclass
+class FieldValue:
+    """Basic representation of a changed field value from an archive event.
+
+    Returns:
+        FieldValue: Pair of name and value
+    """
+
+    name: str | None
+    value: str | None
+
+    @classmethod
+    def from_pb_field_value(cls, f: ee.FieldValue) -> FieldValue:
+        """From the protobuf variant.
+
+        Args:
+            f (ee.FieldValue): protobuf field value
+
+        Returns:
+            FieldValue: Basic Field Value
+        """
+        return FieldValue(f.name, f.val)
+
+
+@dataclass
 class ArchiveEvent:
     """One Event, retrieved from the AA, representing a change in value of a PV."""
 
@@ -95,7 +119,7 @@ class ArchiveEvent:
     nanos: int
     severity: int
     status: int
-    field_values: list[ee.FieldValue]
+    field_values: list[FieldValue] | None
 
     @property
     def timestamp(self) -> dt:
@@ -140,7 +164,11 @@ class ArchiveEvent:
                 val=self.val,
                 severity=self.severity,
                 status=self.status,
-                fieldvalues=self.field_values,
+                fieldvalues=None
+                if self.field_values is None
+                else [
+                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
+                ],
             )
         if isinstance(self.val, float):
             return ee.ScalarDouble(
@@ -149,7 +177,11 @@ class ArchiveEvent:
                 val=self.val,
                 severity=self.severity,
                 status=self.status,
-                fieldvalues=self.field_values,
+                fieldvalues=None
+                if self.field_values is None
+                else [
+                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
+                ],
             )
         if isinstance(self.val, str):
             return ee.ScalarString(
@@ -158,7 +190,11 @@ class ArchiveEvent:
                 val=self.val,
                 severity=self.severity,
                 status=self.status,
-                fieldvalues=self.field_values,
+                fieldvalues=None
+                if self.field_values is None
+                else [
+                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
+                ],
             )
         if isinstance(self.val, bytes):
             return ee.V4GenericBytes(
@@ -167,7 +203,11 @@ class ArchiveEvent:
                 val=self.val,
                 severity=self.severity,
                 status=self.status,
-                fieldvalues=self.field_values,
+                fieldvalues=None
+                if self.field_values is None
+                else [
+                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
+                ],
             )
         if all(isinstance(x, str) for x in self.val):
             return ee.VectorString(
@@ -176,7 +216,11 @@ class ArchiveEvent:
                 val=self.val,  # type: ignore
                 severity=self.severity,
                 status=self.status,
-                fieldvalues=self.field_values,
+                fieldvalues=None
+                if self.field_values is None
+                else [
+                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
+                ],
             )
         if all(isinstance(x, int) for x in self.val):
             return ee.VectorInt(
@@ -185,7 +229,11 @@ class ArchiveEvent:
                 val=self.val,  # type: ignore
                 severity=self.severity,
                 status=self.status,
-                fieldvalues=self.field_values,
+                fieldvalues=None
+                if self.field_values is None
+                else [
+                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
+                ],
             )
         if all(isinstance(x, float) for x in self.val):
             return ee.VectorFloat(
@@ -194,7 +242,11 @@ class ArchiveEvent:
                 val=self.val,  # type: ignore
                 severity=self.severity,
                 status=self.status,
-                fieldvalues=self.field_values,
+                fieldvalues=None
+                if self.field_values is None
+                else [
+                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
+                ],
             )
         return ee.VectorString(
             secondsintoyear=self.secondsintoyear,
@@ -202,7 +254,9 @@ class ArchiveEvent:
             val=None,
             severity=self.severity,
             status=self.status,
-            fieldvalues=self.field_values,
+            fieldvalues=None
+            if self.field_values is None
+            else [ee.FieldValue(name=f.name, val=f.value) for f in self.field_values],
         )
 
 
@@ -410,7 +464,7 @@ def _event_from_line(line: bytes, pv: str, year: int, event_type: int) -> Archiv
         event.nano,
         event.severity,
         event.status,
-        event.fieldvalues,
+        [FieldValue.from_pb_field_value(f) for f in event.fieldvalues],
     )
 
 

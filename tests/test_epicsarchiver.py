@@ -11,8 +11,9 @@ import responses
 from pytz import utc as UTC  # noqa: N812
 from rich.logging import RichHandler
 
-from epicsarchiver import ArchiveEvent, ArchiverAppliance, epicsarchiver
+from epicsarchiver import ArchiveEvent, ArchiverAppliance, FieldValue, epicsarchiver
 from epicsarchiver.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo, ScalarInt
+from epicsarchiver.EPICSEvent_pb2 import FieldValue as eeFieldValue
 from epicsarchiver.pb import (
     create_pb_bytes,
     year_timestamp,
@@ -570,6 +571,7 @@ TEST_EVENTS = [
         nano=931598267,
         severity=0,
         status=0,
+        fieldvalues=[eeFieldValue(name="hey", val="ho")],
     ),
     ScalarInt(
         secondsintoyear=22537584,
@@ -577,6 +579,7 @@ TEST_EVENTS = [
         nano=907631989,
         severity=0,
         status=0,
+        fieldvalues=[eeFieldValue(name="hey", val="ho")],
     ),
     ScalarInt(
         secondsintoyear=22537585,
@@ -584,6 +587,7 @@ TEST_EVENTS = [
         nano=931598267,
         severity=0,
         status=0,
+        fieldvalues=[eeFieldValue(name="hey", val="ho")],
     ),
     ScalarInt(
         secondsintoyear=22537586,
@@ -591,6 +595,7 @@ TEST_EVENTS = [
         nano=911606448,
         severity=0,
         status=0,
+        fieldvalues=[eeFieldValue(name="hey", val="ho")],
     ),
 ]
 
@@ -664,7 +669,7 @@ def test_get_events_pb() -> None:
             e.nano,
             e.severity,
             e.status,
-            list(e.fieldvalues),
+            [FieldValue.from_pb_field_value(f) for f in e.fieldvalues],
         )
         for e in events
     ]
