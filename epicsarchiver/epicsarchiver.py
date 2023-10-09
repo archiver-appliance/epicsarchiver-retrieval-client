@@ -174,6 +174,21 @@ class ArchiverAppliance:
         r = self._get("/getPVStatus", params={"pv": pv})
         return cast(list[dict[str, str]], r.json())
 
+    def get_pv_details(self, pv: str | list[str]) -> list[dict[str, str]]:
+        """Return the details of a PV.
+
+        Args:
+            pv: name(s) of the pv for which the details are to be
+                determined. Can be a GLOB wildcards or multiple PVs as a
+                comma separated list.
+
+        Returns:
+            list of dict with the details of the matching PVs
+        """
+        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVDetailsAction.html
+        r = self._get("/getPVDetails", params={"pv": pv})
+        return cast(list[dict[str, str]], r.json())
+
     def get_pv_status_from_files(
         self, files: list[str], appliance: str | None = None
     ) -> list[dict[str, str]]:
