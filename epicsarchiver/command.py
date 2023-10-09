@@ -34,23 +34,6 @@ def _handle_debug(
     return debug
 
 
-def common_options(fn):  # type: ignore[no-untyped-def]
-    """Adds multiple common options for all subcommands.
-
-    Including debug flag and an output folder.
-
-    Args:
-        fn: The function to add the common options to.
-    """
-    return click.option(
-        "--debug",
-        is_flag=True,
-        callback=_handle_debug,
-        show_default=True,
-        help="Turn on debug logging",
-    )(fn)
-
-
 @click.group()
 @click.version_option()
 @click.option(
@@ -65,7 +48,13 @@ def cli(ctx: click.core.Context, hostname: str) -> None:
     ctx.obj = {"archiver": ArchiverAppliance(hostname)}
 
 
-@common_options
+@click.option(
+    "--debug",
+    is_flag=True,
+    callback=_handle_debug,
+    show_default=True,
+    help="Turn on debug logging",
+)
 @cli.command()
 @click.option(
     "--appliance",
@@ -104,7 +93,13 @@ def archive(
     ctx.exit(0)
 
 
-@common_options
+@click.option(
+    "--debug",
+    is_flag=True,
+    callback=_handle_debug,
+    show_default=True,
+    help="Turn on debug logging",
+)
 @cli.command()
 @click.argument(
     "files",
