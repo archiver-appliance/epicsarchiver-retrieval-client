@@ -269,7 +269,6 @@ class ArchiverAppliance:
         Returns:
             list of submitted PVs
         """
-        LOG.info("archive_pvs_from_files ghd")
         pvs = archive_files.get_pvs_from_files(files, appliance)
         return self.archive_pvs(pvs)
 
