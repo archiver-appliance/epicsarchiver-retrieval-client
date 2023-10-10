@@ -59,7 +59,7 @@ def _parse_rename_line(line: str) -> tuple[str, str] | None:
         return None
 
 
-def parse_rename_file(filename: str) -> Generator[tuple, None, None]:
+def parse_rename_file(filename: str) -> Generator[tuple[str, str], None, None]:
     """Parses a file with a list of pv as old_pv_name new_pv_name.
 
     Args:
@@ -85,7 +85,7 @@ def get_pvs_from_files(
     )
 
 
-def get_rename_pvs_from_files(files: list[str] | list[Path]) -> list[tuple]:
+def get_rename_pvs_from_files(files: list[str] | list[Path]) -> list[tuple[str, str]]:
     """Return a list of (current, new) PV names from a list of files."""
     return list(
         itertools.chain.from_iterable(

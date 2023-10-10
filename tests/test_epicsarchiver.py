@@ -189,7 +189,7 @@ def test_data_url_with_no_specific_port() -> None:
 @responses.activate
 def test_get_all_expanded_pvs() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getAllExpandedPVNames",
@@ -204,7 +204,7 @@ def test_get_all_expanded_pvs() -> None:
 @responses.activate
 def test_get_all_pvs_no_argument() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=500",
@@ -220,7 +220,7 @@ def test_get_all_pvs_no_argument() -> None:
 @responses.activate
 def test_get_all_pvs_with_limit() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=1200",
@@ -236,7 +236,7 @@ def test_get_all_pvs_with_limit() -> None:
 @responses.activate
 def test_get_all_pvs_with_pv() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?pv=KLYS*&limit=500",
@@ -252,7 +252,7 @@ def test_get_all_pvs_with_pv() -> None:
 @responses.activate
 def test_get_all_pvs_with_regex() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?regex=foo&limit=500",
@@ -322,7 +322,7 @@ def test_archive_pv_with_extra_args() -> None:
 @responses.activate
 def test_archive_pvs() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.POST,
         "http://archiver.example.org:17665/mgmt/bpl/archivePV",
@@ -352,7 +352,7 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
     file2 = tmp.joinpath("file2")
     file2.open("w").write(pvs2[0]["pv"] + " " + pvs2[0]["policy"] + "\n")
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.POST,
         "http://archiver.example.org:17665/mgmt/bpl/archivePV",
@@ -378,7 +378,7 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
 @responses.activate
 def test_get_or_post_single_pv() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/endpoint?pv=mypv",
@@ -394,7 +394,7 @@ def test_get_or_post_single_pv() -> None:
 @responses.activate
 def test_get_or_post_comma_separated_list() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     responses.add(
         responses.POST,
         "http://archiver.example.org:17665/mgmt/bpl/endpoint",
@@ -412,7 +412,7 @@ def test_get_or_post_comma_separated_list() -> None:
 @responses.activate
 def test_pause_pv_single() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pv = "KLYS*"
     responses.add(
         responses.GET,
@@ -429,7 +429,7 @@ def test_pause_pv_single() -> None:
 @responses.activate
 def test_pause_pv_comma_separated_list() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pvs = "mypv1,mypv2"
     responses.add(
         responses.POST,
@@ -447,7 +447,7 @@ def test_pause_pv_comma_separated_list() -> None:
 @responses.activate
 def test_resume_pv_single() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pv = "KLYS*"
     responses.add(
         responses.GET,
@@ -464,7 +464,7 @@ def test_resume_pv_single() -> None:
 @responses.activate
 def test_resume_pv_comma_separated_list() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pvs = "mypv1,mypv2"
     responses.add(
         responses.POST,
@@ -482,7 +482,7 @@ def test_resume_pv_comma_separated_list() -> None:
 @responses.activate
 def test_abort_pv() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
         responses.GET,
@@ -499,7 +499,7 @@ def test_abort_pv() -> None:
 @responses.activate
 def test_delete_pv_data_false() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
         responses.GET,
@@ -516,7 +516,7 @@ def test_delete_pv_data_false() -> None:
 @responses.activate
 def test_delete_pv_data_true() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
         responses.GET,
@@ -533,7 +533,7 @@ def test_delete_pv_data_true() -> None:
 @responses.activate
 def test_update_pv() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pv = "mypv"
     responses.add(
         responses.GET,
@@ -550,7 +550,7 @@ def test_update_pv() -> None:
 @responses.activate
 def test_update_pv_samplingmethod() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = [1, 2, 3]
+    data = ["1", "2", "3"]
     pv = "mypv"
     responses.add(
         responses.GET,

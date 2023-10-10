@@ -17,7 +17,7 @@ def test_archive_file_does_not_exist() -> None:
 
 
 def test_archive_file_does_exist(
-    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture
+    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture[str]
 ) -> None:
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     file1 = tmp_path.joinpath("file1")
@@ -37,7 +37,7 @@ def test_archive_file_does_exist(
 
 
 def test_archive_hostname(
-    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture
+    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture[str]
 ) -> None:
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     hostname = "myarchiver.example.org"
@@ -53,7 +53,7 @@ def test_archive_hostname(
 
 
 def test_archive_with_appliance(
-    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture
+    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture[str]
 ) -> None:
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     appliance = "foo"

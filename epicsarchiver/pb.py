@@ -28,7 +28,6 @@ from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime as dt
-from typing import cast
 
 import pandas as pd
 from pytz import utc as UTC  # noqa: N812
@@ -270,7 +269,7 @@ def dataframe_from_events(events: list[ArchiveEvent]) -> pd.DataFrame:
         pd.DataFrame: Output dataframe with columns "date", "val"
           where "date" is index column.
     """
-    val = cast(pd.DataFrame, pd.DataFrame([event.__dict__ for event in events]))
+    val = pd.DataFrame([event.__dict__ for event in events])
     val["date"] = [
         pd.Timestamp(
             (year_timestamp(v.year) + v.secondsintoyear) * 1e9 + v.nanos, tz=UTC
