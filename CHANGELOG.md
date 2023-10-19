@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 (2023-10-10)
+ * Make typing strict
+
+## 0.6.0 (2023-10-09)
+ * Export types for mypy integration
+ * Expose the FieldValue class
+ * Add getPVDetails endpoint to ArchiverAppliance class
+
 ## 0.5.0 (2023-08-23)
  * Swap json interface for protobuf interface
  * Add type hints

@@ -2,15 +2,14 @@
 import itertools
 import logging
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any
-
-from click import Path
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def parse_archive_file(
-    filename: str, appliance: str | None = None
+    filename: Path, appliance: str | None = None
 ) -> Generator[dict[str, str], None, None]:
     """Parses an archive file.
 
@@ -25,8 +24,9 @@ def parse_archive_file(
         Generator[dict[str, str], None, None]: produces
         dictionary with keys {"pv", "policy", "appliance"}
     """
-    with open(filename) as f:
-        for line in f:
+    with open(filename) as file:
+        LOG.debug(f"PARSE archive file {filename}")
+        for line in file:
             stripped_line = line.strip()
             if stripped_line.startswith("#") or stripped_line == "":
                 # Remove empty lines and lines that start with "#"
@@ -59,7 +59,7 @@ def _parse_rename_line(line: str) -> tuple[str, str] | None:
         return None
 
 
-def parse_rename_file(filename: str) -> Generator[tuple[str, str], None, None]:
+def parse_rename_file(filename: Path) -> Generator[tuple[str, str], None, None]:
     """Parses a file with a list of pv as old_pv_name new_pv_name.
 
     Args:
@@ -75,7 +75,7 @@ def parse_rename_file(filename: str) -> Generator[tuple[str, str], None, None]:
 
 
 def get_pvs_from_files(
-    files: list[str], appliance: str | None = None
+    files: list[Path], appliance: str | None = None
 ) -> list[dict[str, str]]:
     """Return a list of PV (as dict) from a list of files."""
     return list(
@@ -89,6 +89,6 @@ def get_rename_pvs_from_files(files: list[str] | list[Path]) -> list[tuple[str, 
     """Return a list of (current, new) PV names from a list of files."""
     return list(
         itertools.chain.from_iterable(
-            [parse_rename_file(str(filename)) for filename in files]
+            [parse_rename_file(Path(filename)) for filename in files]
         )
     )

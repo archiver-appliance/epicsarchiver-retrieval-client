@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import pytest
 
@@ -30,19 +31,19 @@ FILE2_RENAME = [
 
 
 def test_parse_archive_file() -> None:
-    filename = os.path.join(SAMPLES_PATH, "file1.archive")
+    filename = Path(os.path.join(SAMPLES_PATH, "file1.archive"))
     pvs = archive_files.parse_archive_file(filename)
     assert list(pvs) == FILE1_PVS
 
 
 def test_parse_rename_file() -> None:
-    filename = os.path.join(SAMPLES_PATH, "file1.rename")
+    filename = Path(os.path.join(SAMPLES_PATH, "file1.rename"))
     pvs = archive_files.parse_rename_file(filename)
     assert list(pvs) == FILE1_RENAME
 
 
 def test_parse_rename_file_incomplete_line(caplog: pytest.LogCaptureFixture) -> None:
-    filename = os.path.join(SAMPLES_PATH, "file2.rename")
+    filename = Path(os.path.join(SAMPLES_PATH, "file2.rename"))
     with caplog.at_level(logging.ERROR):
         pvs = archive_files.parse_rename_file(filename)
     assert list(pvs) == FILE2_RENAME
@@ -55,15 +56,15 @@ def test_parse_rename_file_incomplete_line(caplog: pytest.LogCaptureFixture) -> 
 
 def test_get_pvs_from_files() -> None:
     files = [
-        os.path.join(SAMPLES_PATH, "file1.archive"),
-        os.path.join(SAMPLES_PATH, "file2.archive"),
+        Path(os.path.join(SAMPLES_PATH, "file1.archive")),
+        Path(os.path.join(SAMPLES_PATH, "file2.archive")),
     ]
     pvs = archive_files.get_pvs_from_files(files)
     assert pvs == FILE1_PVS + FILE2_PVS
 
 
 def test_get_pvs_from_files_with_appliance() -> None:
-    files = [os.path.join(SAMPLES_PATH, "file2.archive")]
+    files = [Path(os.path.join(SAMPLES_PATH, "file2.archive"))]
     pvs = archive_files.get_pvs_from_files(files, appliance="appliance0")
     assert pvs == FILE2_PVS_APPLIANCE
 

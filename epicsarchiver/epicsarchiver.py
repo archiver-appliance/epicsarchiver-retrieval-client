@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime
 import logging
 import urllib.parse
+from pathlib import Path
 from typing import Any, cast
 
 import pandas as pd
@@ -13,6 +14,14 @@ from requests import Response
 
 from epicsarchiver import archive_files, pb
 from epicsarchiver.pb import ArchiveEvent, parse_pb_data
+from epicsarchiver.statistics.stat_responses import (
+    DisconnectedPVsResponse,
+    DroppedPVResponse,
+    DroppedReason,
+    LostConnectionsResponse,
+    SilentPVsResponse,
+    StorageRatesResponse,
+)
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -48,6 +57,14 @@ class ArchiverAppliance:
         self._data_url: str | None = None
         self.session = requests.Session()
 
+    def __repr__(self) -> str:
+        """String representation of Archiver Appliance.
+
+        Returns:
+            str: details including hostname of Archiver appliance.
+        """
+        return f"ArchiverAppliance({self.hostname})"
+
     def _request(self, method: str, *args: Any, **kwargs: Any) -> Response:
         r"""Sends a request using the session.
 
@@ -74,6 +91,7 @@ class ArchiverAppliance:
             :class:`requests.Response <Response>` object
         """
         url = urllib.parse.urljoin(self.mgmt_url, endpoint.lstrip("/"))
+        LOG.debug("GET url: " + url)
         return self._request("GET", url, **kwargs)
 
     def _post(self, endpoint: str, **kwargs: Any) -> Response:
@@ -202,7 +220,7 @@ class ArchiverAppliance:
         Returns:
             list of dict with the status of the matching PVs
         """
-        pvs = archive_files.get_pvs_from_files(files, appliance)
+        pvs = archive_files.get_pvs_from_files([Path(f) for f in files], appliance)
         lpvs = ",".join(pv["pv"] for pv in pvs)
         return self.get_pv_status(lpvs)
 
@@ -235,11 +253,11 @@ class ArchiverAppliance:
         Returns:
             list of unarchived PV names
         """
-        pvs = archive_files.get_pvs_from_files(files, appliance)
+        pvs = archive_files.get_pvs_from_files([Path(f) for f in files], appliance)
         lpvs = ",".join(pv["pv"] for pv in pvs)
         return self.get_unarchived_pvs(lpvs)
 
-    def archive_pv(self, pv: str, **kwargs: Any) -> list[str]:
+    def archive_pv(self, pv: str, **kwargs: Any) -> list[dict[str, str]]:
         r"""Archive a PV.
 
         Args:
@@ -256,9 +274,9 @@ class ArchiverAppliance:
         params = {"pv": pv}
         params.update(kwargs)
         r = self._get("/archivePV", params=params)
-        return cast(list[str], r.json())
+        return cast(list[dict[str, str]], r.json())
 
-    def archive_pvs(self, pvs: list[dict[str, str]]) -> list[str]:
+    def archive_pvs(self, pvs: list[dict[str, str]]) -> list[dict[str, str]]:
         """Archive a list of PVs.
 
         Args:
@@ -269,11 +287,11 @@ class ArchiverAppliance:
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivePVAction.html
         r = self._post("/archivePV", json=pvs)
-        return cast(list[str], r.json())
+        return cast(list[dict[str, str]], r.json())
 
     def archive_pvs_from_files(
         self, files: list[str], appliance: str | None = None
-    ) -> list[str]:
+    ) -> list[dict[str, str]]:
         """Archive PVs from a list of files.
 
         Args:
@@ -284,10 +302,10 @@ class ArchiverAppliance:
         Returns:
             list of submitted PVs
         """
-        pvs = archive_files.get_pvs_from_files(files, appliance)
+        pvs = archive_files.get_pvs_from_files([Path(f) for f in files], appliance)
         return self.archive_pvs(pvs)
 
-    def _get_or_post(self, endpoint: str, pv: str) -> dict[str, str]:
+    def _get_or_post(self, endpoint: str, pv: str) -> Any:
         """Send a GET or POST if pv is a comma separated list.
 
         Args:
@@ -302,9 +320,9 @@ class ArchiverAppliance:
             r = self._post(endpoint, data=pv)
         else:
             r = self._get(endpoint, params={"pv": pv})
-        return cast(dict[str, str], r.json())
+        return r.json()
 
-    def pause_pv(self, pv: str) -> dict[str, str]:
+    def pause_pv(self, pv: str) -> list[dict[str, str]] | dict[str, str]:
         """Pause the archiving of a PV(s).
 
         Args:
@@ -315,9 +333,12 @@ class ArchiverAppliance:
             list of submitted PVs
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/PauseArchivingPV.html
-        return self._get_or_post("/pauseArchivingPV", pv)
+        response = self._get_or_post("/pauseArchivingPV", pv)
+        if "," not in pv:
+            return cast(dict[str, str], response)
+        return cast(list[dict[str, str]], response)
 
-    def resume_pv(self, pv: str) -> dict[str, str]:
+    def resume_pv(self, pv: str) -> list[dict[str, str]] | dict[str, str]:
         """Resume the archiving of a PV(s).
 
         Args:
@@ -328,7 +349,10 @@ class ArchiverAppliance:
             list of submitted PVs
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ResumeArchivingPV.html
-        return self._get_or_post("/resumeArchivingPV", pv)
+        response = self._get_or_post("/resumeArchivingPV", pv)
+        if "," not in pv:
+            return cast(dict[str, str], response)
+        return cast(list[dict[str, str]], response)
 
     def abort_pv(self, pv: str) -> list[str]:
         """Abort any pending requests for archiving this PV.
@@ -509,13 +533,62 @@ class ArchiverAppliance:
         for current, new in pvs:
             self.pause_rename_resume_pv(current, new)
 
+    # Statistics endpoints
+    def get_pvs_dropped(
+        self, reason: DroppedReason, limit: int | None = 1000
+    ) -> list[DroppedPVResponse]:
+        """Gets the pvs ordered by dropped events."""
+        params = None
+        if limit:
+            params = {"limit": str(limit)}
+        r = self._get(reason.value, params=params).json()
+        return [DroppedPVResponse.from_json(rs, reason) for rs in r]
 
-def check_result(result: dict[str, str], default_message: str | None = None) -> bool:
+    def get_disconnected_pvs(self) -> list[DisconnectedPVsResponse]:
+        """Gets the list of disconnected pvs."""
+        r = self._get("/getCurrentlyDisconnectedPVs").json()
+        return [DisconnectedPVsResponse.from_json(rs) for rs in r]
+
+    def get_silent_pvs(self, limit: int | None = 1000) -> list[SilentPVsResponse]:
+        """Gets the list of pvs with no events."""
+        params = None
+        if limit:
+            params = {"limit": str(limit)}
+        r = self._get("/getSilentPVsReport", params=params).json()
+        return [SilentPVsResponse.from_json(rs) for rs in r]
+
+    def get_lost_connections_pvs(
+        self, limit: int | None = 1000
+    ) -> list[LostConnectionsResponse]:
+        """Gets the list of pvs with no events."""
+        params = None
+        if limit:
+            params = {"limit": str(limit)}
+        r = self._get("/getLostConnectionsReport", params=params).json()
+        return [LostConnectionsResponse.from_json(rs) for rs in r]
+
+    def get_storage_rates(self, limit: int | None = 1000) -> list[StorageRatesResponse]:
+        """Gets the list of pvs with no events."""
+        params = None
+        if limit:
+            params = {"limit": str(limit)}
+        r = self._get("/getStorageRateReport", params=params).json()
+        return [StorageRatesResponse.from_json(rs) for rs in r]
+
+
+def check_result(
+    result: dict[str, str] | list[dict[str, str]], default_message: str | None = None
+) -> bool:
     """Check a result returned by the Archiver Appliance.
 
     Return True if the status is ok
     Return False otherwise and print the default_message or validation value
     """
+    if isinstance(result, list):
+        LOG.error(
+            f"Method check_result does not support multiple PVs from result {result}"
+        )
+        return False
     status = result.get("status", "nok")
     if status.lower() != "ok":
         message = result.get("validation", default_message)

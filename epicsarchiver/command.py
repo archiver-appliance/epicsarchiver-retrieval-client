@@ -1,10 +1,14 @@
 """Command module."""
 import logging
+from datetime import timedelta
+from pathlib import Path
 
 import click
+from rich.console import Console
 from rich.logging import RichHandler
 
 from epicsarchiver.epicsarchiver import ArchiverAppliance
+from epicsarchiver.statistics.report import ReportConfig, print_report
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -134,4 +138,129 @@ def rename(
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
     archiver.rename_pvs_from_files(files)
+    ctx.exit(0)
+
+
+@click.option(
+    "--debug",
+    is_flag=True,
+    callback=_handle_debug,
+    show_default=True,
+    help="Turn on debug logging",
+)
+@cli.command()
+@click.option(
+    "--limit",
+    "-l",
+    default=1000,
+    type=int,
+    help="Limit size of queries",
+)
+@click.option(
+    "--other_hostname",
+    "-o",
+    type=str,
+    help="Other Achiver Appliance hostname or IP [default: localhost]",
+)
+@click.option(
+    "--time_minimum",
+    "-t",
+    default=100,
+    type=int,
+    help="Minimum time since last disconnect in days.",
+)
+@click.option(
+    "--mb_per_day_minimum",
+    "-mb",
+    default=100,
+    type=float,
+    help="Minimum storage rate in MB/day",
+)
+@click.option(
+    "--connection_drops_minimum",
+    "-c",
+    default=30,
+    type=int,
+    help="Minimum connection drops to see.",
+)
+@click.option(
+    "--events_dropped_minimum",
+    "-edm",
+    default=10,
+    type=int,
+    help="Minimum event drops to see.",
+)
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    show_default=False,
+    default=False,
+    help="Verbose output",
+)
+@click.option(
+    "--config_files",
+    "-d",
+    type=click.Path(exists=True, dir_okay=True, path_type=Path, resolve_path=True),
+    help="Files with lists of PVs",
+)
+@click.argument(
+    "output",
+    type=click.Path(exists=False, path_type=Path, resolve_path=True),
+)
+@click.pass_context
+def stats(
+    ctx: click.core.Context,
+    limit: int,
+    other_hostname: str | None,
+    time_minimum: int,
+    connection_drops_minimum: int,
+    config_files: Path | None,
+    mb_per_day_minimum: float,
+    events_dropped_minimum: int,
+    verbose: bool,  # noqa: FBT001
+    output: Path,
+    debug: bool,  # noqa: FBT001, ARG001
+) -> None:
+    """Print out statistics from an archiver cluster.
+
+    ARGUEMENT output Where to print output detailed statistics.
+
+    Includes PVs that are often dropping events, long disconnected, producing no events
+    and not configured. Example usage:
+
+    .. code-block:: console
+
+        epicsarchiver --hostname archiver-01.example.com stats output.json
+
+    By default produces a json output in the form::
+
+    {"PV:NAME": {"BufferOverflow": "Dropped 33393 events by BufferOverflow"}}}
+
+    Verbose output is of the form::
+
+    ('MY:PV',[_StatDetails(
+        stat=<Stat.ZeroEvents: 'Never received a valid event.'>,
+        info=SilentPVsResponse(pv_name='MY:PV',instance='sw-vm-12',last_known_event=datetime)
+    ),])
+    """
+    archiver: ArchiverAppliance = ctx.obj["archiver"]
+    out_file = open(output, "w")
+    console = Console(file=out_file)
+    if other_hostname:
+        other_archiver = ArchiverAppliance(hostname=other_hostname)
+    else:
+        other_archiver = None
+    config = ReportConfig(
+        query_limit=limit,
+        time_minimum=timedelta(days=time_minimum),
+        connection_drops_minimum=connection_drops_minimum,
+        config_files=config_files,
+        other_archiver=other_archiver,
+        mb_per_day_minimum=mb_per_day_minimum,
+        events_dropped_minimum=events_dropped_minimum,
+    )
+    LOG.info(f"Collecting statistics with configuration {config}")
+
+    print_report(archiver, config, console, verbose=verbose)
     ctx.exit(0)

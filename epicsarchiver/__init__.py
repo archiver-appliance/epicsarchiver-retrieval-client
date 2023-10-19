@@ -1,5 +1,11 @@
 """Archiver appliance module."""
-__all__ = ["archive_files", "epicsarchiver", "EPICSEvent_pb2", "pb"]
+__all__ = [
+    "archive_files",
+    "epicsarchiver",
+    "EPICSEvent_pb2",
+    "pb",
+    "epicsarchiver.statistics",
+]
 
 from epicsarchiver.epicsarchiver import (
     ArchiverAppliance,  # noqa: F401

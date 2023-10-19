@@ -35,6 +35,7 @@ Options:
 Commands:
   archive  Archive all PVs included in the files passed as parameters.
   rename   Rename all PVs included in the files passed as parameters.
+  stats    Print out statistics from an archiver cluster.
 ```
 
 ## Installation
