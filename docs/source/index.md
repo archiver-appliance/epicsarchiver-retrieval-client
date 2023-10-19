@@ -2,6 +2,10 @@
 ```{include} ../../README.md
 ```
 
+[license]: license
+[command-line reference]: usage
+[reference]: autoapi
+
 ```{toctree}
 ---
 hidden:

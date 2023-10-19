@@ -322,7 +322,7 @@ def test_archive_pv_with_extra_args() -> None:
 @responses.activate
 def test_archive_pvs() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
+    data = [{"pvName": "MY:PV", "status": "Already submitted"}]
     responses.add(
         responses.POST,
         "http://archiver.example.org:17665/mgmt/bpl/archivePV",
@@ -352,7 +352,17 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
     file2 = tmp.joinpath("file2")
     file2.open("w").write(pvs2[0]["pv"] + " " + pvs2[0]["policy"] + "\n")
     archiver = ArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
+    data = [
+        {"pvName": "LEBT-010:PBI-NPM-001:HCAM-COM", "status": "Already submitted"},
+        {
+            "pvName": "LEBT-010:ID-Iris:OFFSET_Y_SET",
+            "status": "Archive request submitted",
+        },
+        {
+            "pvName": "LEBT-010:PwrC-SolPS-01:CurS",
+            "status": "Archive request submitted",
+        },
+    ]
     responses.add(
         responses.POST,
         "http://archiver.example.org:17665/mgmt/bpl/archivePV",
@@ -412,7 +422,19 @@ def test_get_or_post_comma_separated_list() -> None:
 @responses.activate
 def test_pause_pv_single() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
+    data = [
+        {
+            "pvName": "MY:PV",
+            "engine_desc": "Successfully paused the archiving of PV MY:PV",
+            "engine_pvName": "MY:PV",
+            "engine_status": "ok",
+            "etl_status": "ok",
+            "etl_desc": "Successfully removed PV MY:PV from the cluster",
+            "etl_pvName": "MY:PV",
+            "status": "ok",
+        }
+    ]
+
     pv = "KLYS*"
     responses.add(
         responses.GET,
@@ -429,7 +451,7 @@ def test_pause_pv_single() -> None:
 @responses.activate
 def test_pause_pv_comma_separated_list() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
+    data = [{"validation": "Unable to pause PV MY:PV"}]
     pvs = "mypv1,mypv2"
     responses.add(
         responses.POST,
@@ -447,7 +469,7 @@ def test_pause_pv_comma_separated_list() -> None:
 @responses.activate
 def test_resume_pv_single() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
+    data = [{"validation": "Unable to resume PV MY:PV"}]
     pv = "KLYS*"
     responses.add(
         responses.GET,
@@ -464,7 +486,10 @@ def test_resume_pv_single() -> None:
 @responses.activate
 def test_resume_pv_comma_separated_list() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
+    data = [
+        {"validation": "Unable to pause PV mypv1"},
+        {"validation": "Unable to pause PV mypv2"},
+    ]
     pvs = "mypv1,mypv2"
     responses.add(
         responses.POST,
