@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.8.0 (2023-10-19)
+ * Add stats report generation
+
 ## 0.7.0 (2023-10-10)
  * Make typing strict
 
