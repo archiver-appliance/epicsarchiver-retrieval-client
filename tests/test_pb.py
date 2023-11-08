@@ -94,7 +94,7 @@ def test_unescape_bytes_works_in_correct_order_and_is_reversible() -> None:
 def test_event_timestamp_gives_correct_answer_1970() -> None:
     event = mock.MagicMock()
     event.secondsintoyear = 10
-    event.nano = 1e7
+    event.nano = int(1e7)
     assert pb.event_timestamp(1970, event) == datetime.fromtimestamp(10.01, tz=UTC)
 
 
@@ -117,7 +117,7 @@ def test_read_pb_file() -> None:
 def test_get_iso_timestamp_for_event_has_expected_output() -> None:
     event = ee.ScalarInt()
     event.secondsintoyear = 15156538
-    event.nano = 381175701
+    event.nano = 381176001
     year = 2017
     expected = "2017-06-25T10:08:58.381176+00:00"
     assert pb.get_iso_timestamp_for_event(year, event) == expected

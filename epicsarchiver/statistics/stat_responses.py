@@ -10,9 +10,6 @@ class DroppedReason(str, enum.Enum):
     """List of reasons why a PV could be dropping events.
 
     Includes the endpoints in the archiver corresponding to the reason.
-
-    Args:
-        enum (DroppedReason): A reason
     """
 
     IncorrectTimestamp = "/getPVsByDroppedEventsTimestamp"

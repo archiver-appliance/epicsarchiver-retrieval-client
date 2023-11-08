@@ -51,7 +51,7 @@ def _parse_rename_line(line: str) -> tuple[str, str] | None:
         return None
     try:
         old_name, new_name = stripped_line.split()
-        return (old_name, new_name)
+        return old_name, new_name
     except ValueError:
         LOG.error(
             f"Skipping: {stripped_line}. Invalid format, must be OLDNAME NEWNAME."

@@ -27,9 +27,10 @@ import logging as log
 from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime as dt
+from datetime import datetime as pydt
 
 import pandas as pd
+from pandas import Timestamp
 from pytz import utc as UTC  # noqa: N812
 
 from epicsarchiver import EPICSEvent_pb2 as ee
@@ -121,8 +122,20 @@ class ArchiveEvent:
     field_values: list[FieldValue] | None
 
     @property
-    def timestamp(self) -> dt:
+    def timestamp(self) -> pydt:
         """Provides a datetime for the archive event.
+
+        This will lose information (the last few decimal places) since
+        datetime does not handle nano seconds.
+
+        Returns:
+            datetime: datetime for event
+        """
+        return self.pd_timestamp.to_pydatetime(warn=True)
+
+    @property
+    def pd_timestamp(self) -> Timestamp:
+        """Provides a pandas Timestamp for the archive event.
 
         Returns:
             datetime: datetime for event
@@ -270,12 +283,7 @@ def dataframe_from_events(events: list[ArchiveEvent]) -> pd.DataFrame:
           where "date" is index column.
     """
     val = pd.DataFrame([event.__dict__ for event in events])
-    val["date"] = [
-        pd.Timestamp(
-            (year_timestamp(v.year) + v.secondsintoyear) * 1e9 + v.nanos, tz=UTC
-        )
-        for v in events
-    ]
+    val["date"] = [v.pd_timestamp for v in events]
     val = val[["date", "val"]]
     val = val.set_index("date")
     return val
@@ -313,19 +321,21 @@ def escape_bytes(byte_seq: bytes) -> bytes:
     return byte_seq
 
 
-def year_timestamp(year: int) -> float:
-    """Generates float timestamp for number of seconds from unix epoch at start of year.
+def year_timestamp(year: int) -> int:
+    """Generates int timestamp for number of seconds from unix epoch at start of year.
 
     Args:
         year (int): year
 
     Returns:
-        float: seconds from epoch of start of year.
+        int: seconds from epoch of start of year.
     """
-    return (dt(year, 1, 1, tzinfo=UTC) - dt(1970, 1, 1, tzinfo=UTC)).total_seconds()
+    return int(
+        (pydt(year, 1, 1, tzinfo=UTC) - pydt(1970, 1, 1, tzinfo=UTC)).total_seconds()
+    )
 
 
-def event_timestamp(  # noqa: D417
+def event_pd_timestamp(  # noqa: D417
     year: int,
     event: ee.ScalarString
     | ee.ScalarShort
@@ -342,7 +352,7 @@ def event_timestamp(  # noqa: D417
     | ee.VectorInt
     | ee.VectorDouble
     | ee.V4GenericBytes,
-) -> dt:
+) -> Timestamp:
     """Converts from protobuf event time format to python datetime.
 
     Args:
@@ -364,12 +374,56 @@ def event_timestamp(  # noqa: D417
         | ee.V4GenericBytes): input event
 
     Returns:
-        dt: Output datetime
+        pydt: Output datetime
     """
     return ysn_timestamp(year, event.secondsintoyear, event.nano)
 
 
-def ysn_timestamp(year: int, seconds: int, nanos: int) -> dt:
+def event_timestamp(  # noqa: D417
+    year: int,
+    event: ee.ScalarString
+    | ee.ScalarShort
+    | ee.ScalarFloat
+    | ee.ScalarEnum
+    | ee.ScalarByte
+    | ee.ScalarInt
+    | ee.ScalarDouble
+    | ee.VectorString
+    | ee.VectorShort
+    | ee.VectorFloat
+    | ee.VectorEnum
+    | ee.VectorChar
+    | ee.VectorInt
+    | ee.VectorDouble
+    | ee.V4GenericBytes,
+) -> pydt:
+    """Converts from protobuf event time format to python datetime.
+
+    Args:
+        year (int): year of event
+        event (ee.ScalarString
+        | ee.ScalarShort
+        | ee.ScalarFloat
+        | ee.ScalarEnum
+        | ee.ScalarByte
+        | ee.ScalarInt
+        | ee.ScalarDouble
+        | ee.VectorString
+        | ee.VectorShort
+        | ee.VectorFloat
+        | ee.VectorEnum
+        | ee.VectorChar
+        | ee.VectorInt
+        | ee.VectorDouble
+        | ee.V4GenericBytes): input event
+
+    Returns:
+        pydt: Output datetime
+    """
+    return event_pd_timestamp(year, event).to_pydatetime()
+
+
+def ysn_timestamp(year: int, seconds: int, nanos: int) -> Timestamp:
     """Get datetime from year, seconds into year and nanoseconds.
 
     Args:
@@ -378,28 +432,26 @@ def ysn_timestamp(year: int, seconds: int, nanos: int) -> dt:
         nanos (int): nanoseconds
 
     Returns:
-        dt: datetime
+        Timestamp: datetime
     """
     year_start = year_timestamp(year)
 
-    # This will lose information (the last few decimal places) since
-    # a double cannot store 18 significant figures.
-    return dt.fromtimestamp(year_start + seconds + 1e-9 * nanos, tz=UTC)
+    return Timestamp((year_start + seconds) * int(1e9) + nanos, tz=UTC)
 
 
 def get_timestamp_from_line_function(
     chunk_info: ee.PayloadInfo,
-) -> Callable[[bytes], dt]:
+) -> Callable[[bytes], pydt]:
     """From a unescaped protobuf line create a function to get datetime.
 
     Args:
         chunk_info (ee.PayloadInfo): Payload info of protobuf file
 
     Returns:
-        Callable[[bytes], dt]: Function to provide event time
+        Callable[[bytes], pydt]: Function to provide event time
     """
 
-    def timestamp_from_line(line: bytes) -> dt:
+    def timestamp_from_line(line: bytes) -> pydt:
         event = TYPE_MAPPINGS[chunk_info.type]()
         event.ParseFromString(unescape_bytes(line))
         event_time = event_timestamp(
@@ -507,7 +559,7 @@ def get_iso_timestamp_for_event(
     | ee.V4GenericBytes,
 ) -> str:
     """Returns an ISO-formatted timestamp string for the given event."""
-    return event_timestamp(year, event).isoformat()
+    return pd.Timestamp(event_timestamp(year, event)).isoformat()
 
 
 def read_pb_file(filename: str) -> list[ArchiveEvent]:

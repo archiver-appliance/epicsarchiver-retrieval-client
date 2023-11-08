@@ -197,8 +197,6 @@ def print_report(
         archiver (ArchiverAppliance): Archiver to get statistics
         config (ReportConfig): Configuration of the report
         console (Console): console where to print the report
-        other_archiver (ArchiverAppliance | None, optional):
-            Optional other archiver to test for double archiving. Defaults to None.
         verbose (bool, optional): Verbose output or not. Defaults to False.
     """
     report = generate_all_stats(archiver, config)

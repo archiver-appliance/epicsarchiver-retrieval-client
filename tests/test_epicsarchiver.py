@@ -332,7 +332,8 @@ def test_archive_pvs() -> None:
     pvs = [{"pv": "first:pv"}, {"pv": "second:pv"}]
     r = archiver.archive_pvs(pvs)
     assert len(responses.calls) == 1
-    body = json.loads(responses.calls[0].request.body.decode("utf-8"))
+    # ignore for https://github.com/getsentry/responses/pull/690
+    body = json.loads(responses.calls[0].request.body.decode("utf-8"))  # type: ignore
     assert body == pvs
     assert r == data
 
@@ -371,14 +372,15 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
     )
     r = archiver.archive_pvs_from_files([str(file1), str(file2)])
     assert len(responses.calls) == 1
-    body = json.loads(responses.calls[0].request.body.decode("utf-8"))
+    body = json.loads(responses.calls[0].request.body.decode("utf-8"))  # type: ignore
     assert body == pvs1 + pvs2
     assert r == data
     # With appliance as parameter
     r = archiver.archive_pvs_from_files(
         [str(file1), str(file2)], appliance="appliance0"
-    )
-    body = json.loads(responses.calls[1].request.body.decode("utf-8"))
+    )  # ignore for https://github.com/getsentry/responses/pull/690
+
+    body = json.loads(responses.calls[1].request.body.decode("utf-8"))  # type: ignore
     pvs = pvs1 + pvs2
     for pv in pvs:
         pv["appliance"] = "appliance0"
@@ -414,8 +416,11 @@ def test_get_or_post_comma_separated_list() -> None:
     )
     pvs = "mypv1,mypv2"
     r = archiver._get_or_post("/endpoint", pvs)
-    assert len(responses.calls) == 1
-    assert responses.calls[0].request.body == pvs
+    assert (
+        len(responses.calls) == 1
+    )  # ignore for https://github.com/getsentry/responses/pull/690
+
+    assert responses.calls[0].request.body == pvs  # type: ignore
     assert r == data
 
 
@@ -461,8 +466,11 @@ def test_pause_pv_comma_separated_list() -> None:
         match_querystring=True,
     )
     r = archiver.pause_pv(pvs)
-    assert len(responses.calls) == 1
-    assert responses.calls[0].request.body == pvs
+    assert (
+        len(responses.calls) == 1
+    )  # ignore for https://github.com/getsentry/responses/pull/690
+
+    assert responses.calls[0].request.body == pvs  # type: ignore
     assert r == data
 
 
@@ -499,8 +507,11 @@ def test_resume_pv_comma_separated_list() -> None:
         match_querystring=True,
     )
     r = archiver.resume_pv(pvs)
-    assert len(responses.calls) == 1
-    assert responses.calls[0].request.body == pvs
+    assert (
+        len(responses.calls) == 1
+    )  # ignore for https://github.com/getsentry/responses/pull/690
+
+    assert responses.calls[0].request.body == pvs  # type: ignore
     assert r == data
 
 
@@ -632,7 +643,9 @@ def test_get_data() -> None:
     pv = "mypv"
     events = TEST_EVENTS
     dates = [
-        pd.Timestamp((year_timestamp(2018) + d.secondsintoyear) * 1e9 + d.nano, tz=UTC)
+        pd.Timestamp(
+            (year_timestamp(2018) + d.secondsintoyear) * int(1e9) + d.nano, tz=UTC
+        )
         for d in events
     ]
     pd_dates = pd.DatetimeIndex(
