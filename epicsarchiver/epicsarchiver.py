@@ -433,7 +433,6 @@ class ArchiverAppliance:
                 object.
             end: end time. Can be a string or `datetime.datetime`
                 object.
-            data_type: data type to retreive as can be json or protobuf
 
         Returns:
             `Response`
@@ -494,7 +493,6 @@ class ArchiverAppliance:
         Args:
             pv: name of the pv
             new: new name of the pv
-            debug (bool): enable debug logging
 
         Returns:
             None
