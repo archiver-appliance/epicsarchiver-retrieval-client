@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.8.1 (2023-11-08)
+ * Fix bug in handling nanos in timestamps
+
 ## 0.8.0 (2023-10-19)
  * Add stats report generation
 
