@@ -128,3 +128,4 @@ def test_read_sigma_file() -> None:
     assert "Sigma" in data[0].pv
     assert 0.11091079832009144 in np.array(data[0].val)
     assert 2023 == data[0].year
+    assert isinstance(data[0].val, list)
