@@ -507,9 +507,21 @@ def _event_from_line(line: bytes, pv: str, year: int, event_type: int) -> Archiv
     unescaped = unescape_bytes(line)
     event = TYPE_MAPPINGS[event_type]()
     event.ParseFromString(unescaped)
+    val = event.val
+    if isinstance(
+        event,
+        ee.VectorDouble
+        | ee.VectorEnum
+        | ee.VectorFloat
+        | ee.VectorInt
+        | ee.VectorShort
+        | ee.VectorString,
+    ):
+        vector_val = list(val)
+        val = vector_val
     return ArchiveEvent(
         pv,
-        event.val,
+        val,
         event.secondsintoyear,
         year,
         event.nano,
