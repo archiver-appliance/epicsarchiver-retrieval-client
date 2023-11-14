@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.8.2 (2023-11-14)
+ * Fix [#1](https://gitlab.esss.lu.se/ics-software/py-epicsarchiver/-/issues/1) by converting Vector types to lists
+
 ## 0.8.1 (2023-11-08)
  * Fix bug in handling nanos in timestamps
 
