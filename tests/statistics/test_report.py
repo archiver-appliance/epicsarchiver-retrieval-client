@@ -2,13 +2,16 @@ import datetime
 from datetime import timedelta
 from pathlib import Path
 
+import pytest
 import pytz
 from pytest_mock import MockFixture
 
+from epicsarchiver.channelfinder import Channel, ChannelFinder
 from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics.report import (
     ReportConfig,
     Stat,
+    _PVStats,
     generate_all_stats,
 )
 from epicsarchiver.statistics.stat_responses import (
@@ -17,8 +20,8 @@ from epicsarchiver.statistics.stat_responses import (
     DisconnectedPVsResponse,
     DroppedPVResponse,
     DroppedReason,
+    Ioc,
     LostConnectionsResponse,
-    NoConfigResponse,
     SilentPVsResponse,
     StorageRatesResponse,
 )
@@ -65,11 +68,11 @@ expected_all_stats: dict[Stat, BaseStatResponse] = {
         "archiver.example.org",
         2586,
     ),
-    Stat.NotConfigured: NoConfigResponse("MY:PV"),
 }
 
 
-def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
+@pytest.mark.asyncio
+async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
     mocker.patch(
         "epicsarchiver.ArchiverAppliance.get_pvs_dropped",
         return_value=[expected_all_stats[Stat.BufferOverflow]],
@@ -83,8 +86,9 @@ def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
         other_archiver=None,
         mb_per_day_minimum=10,
         events_dropped_minimum=1,
+        channelfinder=ChannelFinder("channelfinder.example.org"),
     )
-    actual = Stat.BufferOverflow.generate_stats(archiver, config)
+    actual = await Stat.BufferOverflow.generate_stats(archiver, config)
     assert actual == {
         expected_all_stats[Stat.BufferOverflow].pv_name: expected_all_stats[
             Stat.BufferOverflow
@@ -107,7 +111,9 @@ def mock_get_pvs_dropped(
     return []
 
 
-def test_generate_all_stats(mocker: MockFixture) -> None:
+@pytest.mark.asyncio
+async def test_generate_all_stats(mocker: MockFixture) -> None:
+    channel = Channel("MY:PV", {"iocName": "IOCNAME", "hostName": "IOCHOSTNAME"}, [])
     mocker.patch(
         "epicsarchiver.ArchiverAppliance.get_pvs_dropped",
         wraps=mock_get_pvs_dropped,
@@ -132,6 +138,18 @@ def test_generate_all_stats(mocker: MockFixture) -> None:
         "epicsarchiver.ArchiverAppliance.get_all_pvs",
         return_value=["MY:PV"],
     )
+    mocker.patch(
+        "epicsarchiver.ArchiverAppliance.get_paused_pvs",
+        return_value=[],
+    )
+    mocker.patch(
+        "epicsarchiver.channelfinder.ChannelFinder.get_all_channels",
+        return_value={"MY:PV": channel},
+    )
+    mocker.patch(
+        "epicsarchiver.channelfinder.ChannelFinder.get_all_alias_channels",
+        return_value={"MY:PV": []},
+    )
     archiver = ArchiverAppliance("archiver.example.org")
     other_archiver = ArchiverAppliance("other_archiver.example.org")
     config = ReportConfig(
@@ -142,7 +160,10 @@ def test_generate_all_stats(mocker: MockFixture) -> None:
         other_archiver=other_archiver,
         mb_per_day_minimum=0,
         events_dropped_minimum=1,
+        channelfinder=ChannelFinder("channelfinder.example.org"),
     )
-    actual = generate_all_stats(archiver, config)
-    assert "MY:PV" in actual.keys()
-    assert expected_all_stats == actual["MY:PV"]
+    ioc = Ioc(channel.properties["hostName"], channel.properties["iocName"])
+    actual = await generate_all_stats(archiver, config)
+    assert ioc in actual.keys()
+    assert "MY:PV" in actual[ioc].keys()
+    assert _PVStats("MY:PV", expected_all_stats) == actual[ioc]["MY:PV"]

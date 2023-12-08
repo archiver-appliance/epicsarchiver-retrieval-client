@@ -7,6 +7,7 @@ import click
 from rich.console import Console
 from rich.logging import RichHandler
 
+from epicsarchiver.channelfinder import ChannelFinder
 from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics.report import ReportConfig, print_report
 
@@ -163,6 +164,13 @@ def rename(
     help="Other Achiver Appliance hostname or IP [default: localhost]",
 )
 @click.option(
+    "--channelfinder_hostname",
+    "-cf",
+    default="channelfinder.tn.esss.lu.se",
+    type=str,
+    help="Channel Finder hostname or IP [default: localhost]",
+)
+@click.option(
     "--time_minimum",
     "-t",
     default=100,
@@ -218,6 +226,7 @@ def stats(
     config_files: Path | None,
     mb_per_day_minimum: float,
     events_dropped_minimum: int,
+    channelfinder_hostname: str | None,
     verbose: bool,  # noqa: FBT001
     output: Path,
     debug: bool,  # noqa: FBT001, ARG001
@@ -259,6 +268,9 @@ def stats(
         other_archiver=other_archiver,
         mb_per_day_minimum=mb_per_day_minimum,
         events_dropped_minimum=events_dropped_minimum,
+        channelfinder=ChannelFinder(channelfinder_hostname)
+        if channelfinder_hostname
+        else None,
     )
     LOG.info(f"Collecting statistics with configuration {config}")
 

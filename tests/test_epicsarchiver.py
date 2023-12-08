@@ -420,7 +420,7 @@ def test_get_or_post_comma_separated_list() -> None:
         len(responses.calls) == 1
     )  # ignore for https://github.com/getsentry/responses/pull/690
 
-    assert responses.calls[0].request.body == pvs  # type: ignore
+    assert responses.calls[0].request.body == pvs
     assert r == data
 
 
@@ -470,7 +470,7 @@ def test_pause_pv_comma_separated_list() -> None:
         len(responses.calls) == 1
     )  # ignore for https://github.com/getsentry/responses/pull/690
 
-    assert responses.calls[0].request.body == pvs  # type: ignore
+    assert responses.calls[0].request.body == pvs
     assert r == data
 
 
@@ -511,7 +511,7 @@ def test_resume_pv_comma_separated_list() -> None:
         len(responses.calls) == 1
     )  # ignore for https://github.com/getsentry/responses/pull/690
 
-    assert responses.calls[0].request.body == pvs  # type: ignore
+    assert responses.calls[0].request.body == pvs
     assert r == data
 
 

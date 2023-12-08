@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 import pytz
 
+from epicsarchiver.channelfinder import Channel
+
 
 class DroppedReason(str, enum.Enum):
     """List of reasons why a PV could be dropping events.
@@ -243,9 +245,43 @@ class BothArchiversResponse(BaseStatResponse):
         return f"In both {self.hostname} and {self.other_hostname}"
 
 
-@dataclass(unsafe_hash=True)
+@dataclass
+class PausedPVResponse(BaseStatResponse):
+    """Response of pvs paused."""
+
+    instance: str
+    modification_time: str
+
+    @classmethod
+    def from_json(cls, json: dict[str, str]) -> "PausedPVResponse":
+        """Response from the endpoint in getPausedPVsReport."""
+        return PausedPVResponse(
+            json["pvName"], json["instance"], json["modificationTime"]
+        )
+
+    def __str__(self) -> str:
+        """Generate a display string for the response.
+
+        Returns:
+            str: "{pv} is paused"
+        """
+        return f"{self.pv_name} is paused"
+
+
+class ConfiguredStatus(enum.Enum):
+    """Represents if a pv is configured or archived."""
+
+    Archived = 1
+    Configured = 2
+
+
+@dataclass
 class NoConfigResponse(BaseStatResponse):
     """Response of pvs archived but not in configuration files."""
+
+    configured_status: ConfiguredStatus
+    alias: list[str]
+    alias_archived: list[str]
 
     def __str__(self) -> str:
         """Generate a display string for the response.
@@ -253,4 +289,37 @@ class NoConfigResponse(BaseStatResponse):
         Returns:
             str: f"Archived but not in config."
         """
-        return "Archived but not in config."
+        display = (
+            "Archived but not in config."
+            if self.configured_status == ConfiguredStatus.Archived
+            else "Configured but not in archiver."
+        )
+        if self.alias:
+            display = f"{display} Has aliases {self.alias}."
+        if self.alias_archived:
+            display = f"{display} Has aliases {self.alias_archived} archived."
+        return display
+
+    def __hash__(self) -> int:
+        """Hash method for NoConfigResponse.
+
+        Returns:
+            int: returns the has of the string representation.
+        """
+        return hash(str(self))
+
+
+@dataclass(frozen=True)
+class Ioc:
+    """Minimal info on an Ioc."""
+
+    hostname: str
+    name: str
+
+    @classmethod
+    def from_channel(cls, channel: Channel) -> "Ioc":
+        """Gets IOC info from a channel."""
+        return Ioc(channel.properties["hostName"], channel.properties["iocName"])
+
+
+UNKNOWN_IOC: Ioc = Ioc("unknown.ioc", "UNKNOWN:IOC")
