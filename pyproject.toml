@@ -18,7 +18,18 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
 ]
-dependencies = ["numpy", "pandas", "requests", "rich", "click>=8", "protobuf", "strictly_typed_pandas", "pytz"]
+dependencies = [
+  "numpy",
+  "pandas",
+  "requests",
+  "rich",
+  "click>=8",
+  "protobuf",
+  "strictly_typed_pandas",
+  "pytz",
+  "asyncio",
+  "aiohttp",
+]
 dynamic = ["version"]
 
 [project.scripts]
@@ -53,7 +64,9 @@ test = [
   "sybil",
   "typing-extensions",
   "responses",
+  "aioresponses",
   "pytest-mock",
+  "pytest-aiohttp"
 ]
 dev = [ # Everything needed for development
   "py-epicsarchiver[docs,lint,test]",
@@ -68,7 +81,7 @@ packages = ["epicsarchiver"]
 
 [tool.hatch.envs.default]
 features = ["dev"]
-python="3.11"
+python = "3.11"
 
 [tool.hatch.version]
 path = "epicsarchiver/__about__.py"

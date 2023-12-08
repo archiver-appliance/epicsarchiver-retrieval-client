@@ -19,6 +19,7 @@ from epicsarchiver.statistics.stat_responses import (
     DroppedPVResponse,
     DroppedReason,
     LostConnectionsResponse,
+    PausedPVResponse,
     SilentPVsResponse,
     StorageRatesResponse,
 )
@@ -572,6 +573,11 @@ class ArchiverAppliance:
             params = {"limit": str(limit)}
         r = self._get("/getStorageRateReport", params=params).json()
         return [StorageRatesResponse.from_json(rs) for rs in r]
+
+    def get_paused_pvs(self) -> list[PausedPVResponse]:
+        """Gets the list of paused pvs."""
+        r = self._get("/getPausedPVsReport").json()
+        return [PausedPVResponse.from_json(rs) for rs in r]
 
 
 def check_result(

@@ -1,27 +1,34 @@
 """Tests for `epicsarchiver.statistics` package."""
 
 import datetime
+import os
 from pathlib import Path
 
+import pytest
 import pytz
 import responses
-from test_archive_files import SAMPLES_PATH
+from pytest_mock import MockFixture
 
 from epicsarchiver import ArchiverAppliance
+from epicsarchiver.channelfinder import Channel, ChannelFinder
 from epicsarchiver.statistics._external_stats import (
     get_double_archived,
     get_not_configured,
 )
 from epicsarchiver.statistics.stat_responses import (
     BothArchiversResponse,
+    ConfiguredStatus,
     DisconnectedPVsResponse,
     DroppedPVResponse,
     DroppedReason,
     LostConnectionsResponse,
     NoConfigResponse,
+    PausedPVResponse,
     SilentPVsResponse,
     StorageRatesResponse,
 )
+
+SAMPLES_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "samples")
 
 
 @responses.activate
@@ -138,6 +145,29 @@ def test_get_lost_connections_pvs() -> None:
 
 
 @responses.activate
+def test_get_paused_pvs() -> None:
+    archiver = ArchiverAppliance("archiver.example.org")
+    responses.add(
+        responses.GET,
+        "http://archiver.example.org:17665/mgmt/bpl/getPausedPVsReport",
+        json=[
+            {
+                "pvName": "MY:PV",
+                "instance": "archiver",
+                "modificationTime": "Sep/12/2023 16:38:56 +02:00",
+            }
+        ],
+        status=200,
+        match_querystring=True,
+    )
+    pvs_response = archiver.get_paused_pvs()
+    assert len(responses.calls) == 1
+    assert [
+        PausedPVResponse("MY:PV", "archiver", "Sep/12/2023 16:38:56 +02:00")
+    ] == pvs_response
+
+
+@responses.activate
 def test_get_storage_rates() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
     responses.add(
@@ -164,7 +194,8 @@ def test_get_storage_rates() -> None:
 
 
 @responses.activate
-def test_get_double_archived() -> None:
+@pytest.mark.asyncio
+async def test_get_double_archived() -> None:
     archiver = ArchiverAppliance("archiver.example.org")
     other_archiver = ArchiverAppliance("other_archiver.example.org")
     responses.add(
@@ -176,21 +207,37 @@ def test_get_double_archived() -> None:
     )
     responses.add(
         responses.GET,
+        "http://archiver.example.org:17665/mgmt/bpl/getPausedPVsReport",
+        json=[],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
         "http://other_archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=-1",
         json=["MY:PV", "MY:PV3"],
         status=200,
         match_querystring=True,
     )
-    pvs_response = get_double_archived(archiver, other_archiver)
-    assert len(responses.calls) == 2
+    responses.add(
+        responses.GET,
+        "http://other_archiver.example.org:17665/mgmt/bpl/getPausedPVsReport",
+        json=[],
+        status=200,
+        match_querystring=True,
+    )
+    pvs_response = await get_double_archived(archiver, other_archiver)
+    assert len(responses.calls) == 4
     assert [
         BothArchiversResponse("MY:PV", archiver.hostname, other_archiver.hostname)
     ] == pvs_response
 
 
 @responses.activate
-def test_get_not_configured() -> None:
+@pytest.mark.asyncio
+async def test_get_not_configured(mocker: MockFixture) -> None:
     archiver = ArchiverAppliance("archiver.example.org")
+    channelfinder = ChannelFinder("channelfinder.example.org")
     config_files = Path(SAMPLES_PATH)
     responses.add(
         responses.GET,
@@ -199,6 +246,21 @@ def test_get_not_configured() -> None:
         status=200,
         match_querystring=True,
     )
-    pvs_response = get_not_configured(archiver, config_files)
-    assert len(responses.calls) == 1
-    assert {NoConfigResponse("MY:PV"), NoConfigResponse("MY:PV2")} == set(pvs_response)
+    responses.add(
+        responses.GET,
+        "http://archiver.example.org:17665/mgmt/bpl/getPausedPVsReport",
+        json=[],
+        status=200,
+        match_querystring=True,
+    )
+    # covers both get_all_channels and get_all_alias_channels
+    mocker.patch(
+        "epicsarchiver.channelfinder.ChannelFinder._fetch",
+        return_value=[Channel("MY:PV", {"alias": "MY:PV3"}, [])],
+    )
+    pvs_response = await get_not_configured(archiver, channelfinder, config_files)
+    assert len(responses.calls) == 2
+    assert {
+        NoConfigResponse("MY:PV", ConfiguredStatus.Archived, [], []),
+        NoConfigResponse("MY:PV3", ConfiguredStatus.Configured, ["MY:PV"], ["MY:PV"]),
+    } == set(pvs_response)

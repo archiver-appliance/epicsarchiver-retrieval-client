@@ -16,6 +16,7 @@ Examples:
 
 
 """
+import asyncio
 import datetime
 import enum
 import logging
@@ -28,13 +29,17 @@ import pytz
 from rich.console import Console
 
 from epicsarchiver import ArchiverAppliance
+from epicsarchiver.channelfinder import ChannelFinder
 from epicsarchiver.statistics._external_stats import (
     get_double_archived,
+    get_iocs,
     get_not_configured,
 )
 from epicsarchiver.statistics.stat_responses import (
+    UNKNOWN_IOC,
     BaseStatResponse,
     DroppedReason,
+    Ioc,
 )
 
 LOG: logging.Logger = logging.getLogger(__name__)
@@ -51,6 +56,7 @@ class ReportConfig:
     other_archiver: ArchiverAppliance | None
     mb_per_day_minimum: float
     events_dropped_minimum: int
+    channelfinder: ChannelFinder | None
 
 
 class Stat(str, enum.Enum):
@@ -83,19 +89,18 @@ class Stat(str, enum.Enum):
         )
         return diff > time_minimum
 
-    def _response_report_dict(
+    async def _response_report_dict(
         self, responses: Sequence[BaseStatResponse]
     ) -> dict[str, BaseStatResponse]:
         LOG.info(f"Found {len(responses)} satisfying stat {self}")
         return {r.pv_name: r for r in responses}
 
-    def _get_responses(
+    async def _get_responses(
         self,
         archiver: ArchiverAppliance,
         config: ReportConfig,
     ) -> Sequence[BaseStatResponse]:
         """Produce a list of PVs and stats."""
-        LOG.debug("CALC Stat {self}")
         match self:
             case Stat.BufferOverflow:
                 return [
@@ -165,23 +170,27 @@ class Stat(str, enum.Enum):
 
             case Stat.DoubleArchived:
                 if config.other_archiver:
-                    return get_double_archived(archiver, config.other_archiver)
+                    return await get_double_archived(archiver, config.other_archiver)
                 else:
                     return []
 
             case Stat.NotConfigured:
                 if config.config_files:
-                    return get_not_configured(archiver, config.config_files)
+                    return await get_not_configured(
+                        archiver, config.channelfinder, config.config_files
+                    )
                 else:
                     return []
 
-    def generate_stats(
+    async def generate_stats(
         self,
         archiver: ArchiverAppliance,
         config: ReportConfig,
     ) -> dict[str, BaseStatResponse]:
         """Produce a list of PVs and stats."""
-        return self._response_report_dict(self._get_responses(archiver, config))
+        return await self._response_report_dict(
+            await self._get_responses(archiver, config)
+        )
 
 
 def print_report(
@@ -199,7 +208,7 @@ def print_report(
         console (Console): console where to print the report
         verbose (bool, optional): Verbose output or not. Defaults to False.
     """
-    report = generate_all_stats(archiver, config)
+    report = asyncio.run(generate_all_stats(archiver, config))
     if verbose:
         console.print(report)
         return
@@ -207,10 +216,19 @@ def print_report(
     console.print_json(data=sum_report)
 
 
-def generate_all_stats(
+@dataclass
+class _PVStats:
+    name: str
+    stats: dict[Stat, BaseStatResponse]
+
+    def json_str(self) -> dict[str, str]:
+        return {s.name: str(self.stats[s]) for s in self.stats.keys()}
+
+
+async def generate_all_stats(
     archiver: ArchiverAppliance,
     config: ReportConfig,
-) -> dict[str, dict[Stat, BaseStatResponse]]:
+) -> dict[Ioc, dict[str, _PVStats]]:
     """Generate all the statistics available from the Stat list and collate into a dict.
 
     Args:
@@ -218,19 +236,43 @@ def generate_all_stats(
         config (ReportConfig): Configuration of the report
 
     Returns:
-        dict[str, dict[Stat, _BaseResponse]]: Return a dictionary with pv names as keys,
+        dict[Ioc, dict[str, _PVStats]]: Return a dictionary with pv names as keys,
           and detailed statistics after.
     """
-    return _invert_data({stat: stat.generate_stats(archiver, config) for stat in Stat})
+    gather_all_stats = await asyncio.gather(
+        *[stat.generate_stats(archiver, config) for stat in Stat]
+    )
+    inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats, strict=True)))
+    if config.channelfinder:
+        return await _organise_by_ioc(
+            inverted_data,
+            config.channelfinder,
+        )
+    return {UNKNOWN_IOC: inverted_data}
+
+
+async def _organise_by_ioc(
+    inverted_report: dict[str, _PVStats],
+    channelfinder: ChannelFinder,
+) -> dict[Ioc, dict[str, _PVStats]]:
+    iocs = await get_iocs(channelfinder, list(inverted_report.keys()))
+    LOG.info("IOCS: " + str(await _iocs_summary(iocs)))
+    return {ioc: {pv: inverted_report[pv] for pv in iocs[ioc]} for ioc in iocs.keys()}
+
+
+async def _iocs_summary(iocs: dict[Ioc, list[str]]) -> list[str]:
+    sorted_iocs = [(ioc, len(pvs)) for ioc, pvs in iocs.items()]
+    sorted_iocs = sorted(sorted_iocs, key=lambda pair: pair[1])
+    return [f"{ioc_pair[0]} has {ioc_pair[1]} BAD PVs" for ioc_pair in sorted_iocs]
 
 
 def _summary_report(
-    report: dict[str, dict[Stat, BaseStatResponse]]
-) -> dict[str, dict[str, str]]:
+    report: dict[Ioc, dict[str, _PVStats]]
+) -> dict[str, dict[str, dict[str, str]]]:
     """Creates a pure string and dictionary data output summary of the generated data.
 
       Easily converted to json and creates a sample output of:
-      {
+      "IOCName iocHostName": {
         "PV:1": {
             "TypeChange": "Dropped 31 events by TypeChange"
         },
@@ -244,22 +286,24 @@ def _summary_report(
       }
 
     Args:
-          report (dict[str, dict[Stat, BaseStatResponse]]): Base input data in form of
+          report (dict[str, _PVStats]): Base input data in form of
             pv mapped to Stat and responses from the archiver.
 
     Returns:
           dict[str, dict[str, str]]: pv to dictionary of Stat name and problem summary
     """
-    summary_report = {}
-    for pv in report.keys():
-        stat_strs = {s.name: str(report[pv][s]) for s in report[pv]}
-        summary_report[pv] = stat_strs
-    return summary_report
+    summary_report: dict[str, dict[str, dict[str, str]]] = {}
+
+    for ioc, pvs in report.items():
+        pv_summary_report: dict[str, dict[str, str]] = {}
+
+        for pv, issue in pvs.items():
+            pv_summary_report[pv] = issue.json_str()
+        summary_report[f"IOC:{ioc.name}, host:{ioc.hostname}"] = pv_summary_report
+    return dict(sorted(summary_report.items()))
 
 
-def _invert_data(
-    data: dict[Stat, dict[str, BaseStatResponse]]
-) -> dict[str, dict[Stat, BaseStatResponse]]:
+def _invert_data(data: dict[Stat, dict[str, BaseStatResponse]]) -> dict[str, _PVStats]:
     """Inverts data from being by statistic, to be by PV.
 
     Args:
@@ -267,7 +311,7 @@ def _invert_data(
             dictionary with pv name keys
 
     Returns:
-        dict[str, dict[Stat, BaseStatResponse]]: Output with Pv name keys.
+        dict[str, _PVStats]: Output with Pv name keys.
     """
     dict_data: dict[str, dict[Stat, BaseStatResponse]] = {}
     for stat in data:
@@ -275,4 +319,5 @@ def _invert_data(
             if pv not in dict_data.keys():
                 dict_data[pv] = {}
             dict_data[pv][stat] = data[stat][pv]
-    return dict(sorted(dict_data.items()))
+    output = {pv: _PVStats(pv, dict_data[pv]) for pv in dict_data.keys()}
+    return dict(sorted(output.items()))
