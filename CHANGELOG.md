@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.8.3 (2023-12-08)
+ * Expands statistics commands to get more pv data from channelfinder and organize by ioc
+
 ## 0.8.2 (2023-11-14)
  * Fix [#1](https://gitlab.esss.lu.se/ics-software/py-epicsarchiver/-/issues/1) by converting Vector types to lists
 
