@@ -1,4 +1,5 @@
 """Minimal Channel Finder interface for calculating archiver statistics."""
+
 import asyncio
 import logging
 import urllib.parse
@@ -60,6 +61,19 @@ class ChannelFinderRequestError(BaseException):
     session_info: str
 
 
+async def _fetch(
+    session: aiohttp.ClientSession,
+    url: str,
+    params: dict[str, str],
+) -> list[Channel]:
+    async with session.get(
+        url=url, params=params, raise_for_status=True, ssl=False
+    ) as value:
+        value_json = await value.json()
+        LOG.debug("Result from channelfinder search: %s", str(value_json))
+        return [Channel.from_json(rs) for rs in value_json]
+
+
 class ChannelFinder:
     """Minimal Channel Finder client.
 
@@ -68,11 +82,14 @@ class ChannelFinder:
     Args:
         hostname: Channel Finder url [default: localhost]
 
-    Basic Usage::
+    Examples:
 
-        >>> from epicsarchiver.channelfinder import ChannelFinder
-        >>> channelfinder = ChannelFinder('channelfinder.tn.esss.lu.se')
-        >>> channel = channelfinder.get_channels(['AccPSS::FBIS-BP_A'])
+    .. code-block:: python
+
+        from epicsarchiver.channelfinder import ChannelFinder
+
+        channelfinder = ChannelFinder("channelfinder.tn.esss.lu.se")
+        channel = channelfinder.get_channels(["AccPSS::FBIS-BP_A"])
     """
 
     def __init__(self, hostname: str = "localhost"):
@@ -117,25 +134,12 @@ class ChannelFinder:
             params["~name"] = ",".join(pvs)
         if alias:
             params["alias"] = alias
-        LOG.debug("GET url: " + url + " params: " + str(params))
+        LOG.debug("GET url: %s params: %s", url, str(params))
         if not session:
-            async with aiohttp.ClientSession() as session:
-                return await self._fetch(session, url, params)
+            async with aiohttp.ClientSession() as asession:
+                return await _fetch(asession, url, params)
         else:
-            return await self._fetch(session, url, params)
-
-    async def _fetch(
-        self,
-        session: aiohttp.ClientSession,
-        url: str,
-        params: dict[str, str],
-    ) -> list[Channel]:
-        async with session.get(
-            url=url, params=params, raise_for_status=True, ssl=False
-        ) as value:
-            value_json = await value.json()
-            LOG.debug("Result from channelfinder search: " + str(value_json))
-            return [Channel.from_json(rs) for rs in value_json]
+            return await _fetch(session, url, params)
 
     async def get_all_channels(
         self, pvs: list[str], group_size: int = 10
@@ -152,16 +156,15 @@ class ChannelFinder:
         pv_groups = [pvs[i : i + group_size] for i in range(0, len(pvs), group_size)]
         LOG.debug(pv_groups)
         async with aiohttp.ClientSession() as session:
-            channel_request_res: list[list[Channel]] = await asyncio.gather(
-                *[self.get_channels(session, pv_group) for pv_group in pv_groups]
-            )
+            channel_request_res: list[list[Channel]] = await asyncio.gather(*[
+                self.get_channels(session, pv_group) for pv_group in pv_groups
+            ])
             channels: set[Channel] = set(chain(*channel_request_res))
 
             pvs_set = set(pvs)
-            channels_dict = {
+            return {
                 channel.name: channel for channel in channels if channel.name in pvs_set
             }
-            return channels_dict
 
     async def get_all_alias_channels(
         self,
@@ -176,16 +179,15 @@ class ChannelFinder:
             dict[str, list[Channel]]: dict of matching channels to pv names
         """
         async with aiohttp.ClientSession() as session:
-            alias_channel_requests = await asyncio.gather(
-                *[self.get_channels(session, [], alias=pv) for pv in pvs]
-            )
+            alias_channel_requests = await asyncio.gather(*[
+                self.get_channels(session, [], alias=pv) for pv in pvs
+            ])
             channels = set(chain(*alias_channel_requests))
 
             pvs_set = set(pvs)
-            channels_dict = {
+            return {
                 pv: [
                     channel for channel in channels if channel.properties["alias"] == pv
                 ]
                 for pv in pvs_set
             }
-            return channels_dict

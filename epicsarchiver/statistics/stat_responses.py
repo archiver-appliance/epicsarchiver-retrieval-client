@@ -1,4 +1,5 @@
 """Data structures for the statistics endpoints from the archiver."""
+
 import datetime
 import enum
 from dataclasses import dataclass
@@ -64,7 +65,7 @@ _DATE_FORMAT = "%b/%d/%Y %H:%M:%S %z"
 
 
 def _parse_archiver_datetime(datetime_str: str) -> datetime.datetime | None:
-    if datetime_str in ("Never", ""):
+    if datetime_str in {"Never", ""}:
         return None
     return datetime.datetime.strptime(datetime_str, _DATE_FORMAT).replace(
         tzinfo=pytz.utc
@@ -76,15 +77,18 @@ class DisconnectedPVsResponse(BaseStatResponse):
     """Response from getCurrentlyDisconnectedPVs.
 
     Example:
-    {
-        "hostName": "N/A",
-        "connectionLostAt": "Sep/14/2023 16:00:18 +02:00",
-        "pvName": "HCB-ACH:ODH-O2iM-1:O2Level",
-        "instance": "sw-vm-11",
-        "commandThreadID": "6",
-        "noConnectionAsOfEpochSecs": "1694700018",
-        "lastKnownEvent": "Aug/25/2023 15:38:17 +02:00"
-    }
+
+    .. code-block:: json
+
+        {
+            "hostName": "N/A",
+            "connectionLostAt": "Sep/14/2023 16:00:18 +02:00",
+            "pvName": "HCB-ACH:ODH-O2iM-1:O2Level",
+            "instance": "sw-vm-11",
+            "commandThreadID": "6",
+            "noConnectionAsOfEpochSecs": "1694700018",
+            "lastKnownEvent": "Aug/25/2023 15:38:17 +02:00"
+        }
     """
 
     host_name: str
@@ -129,7 +133,10 @@ class SilentPVsResponse(BaseStatResponse):
     """Return a list of PVs sorted by the timestamp of the last event received.
 
     Example:
-    {"pvName":"DTL-030:SC-IOC-002:CA_CLNT_CNT","instance":"archiver-linac-01","lastKnownEvent":"Never"}
+
+    .. code-block:: json
+
+        {"pvName":"DTL-030:SC-IOC-002:CA_CLNT_CNT","instance":"archiver-linac-01","lastKnownEvent":"Never"}
     """
 
     instance: str
@@ -160,12 +167,15 @@ class LostConnectionsResponse(BaseStatResponse):
     """Return a list of PVs sorted by the no. of connection drops.
 
     Example:
-    {
-        "currentlyConnected": "Yes",
-        "pvName": "MBL-010LWU:Vac-VPN-10000:IonCurR",
-        "instance": "archiver-linac-01",
-        "lostConnections": "2586"
-    }
+
+    .. code-block:: json
+
+        {
+            "currentlyConnected": "Yes",
+            "pvName": "MBL-010LWU:Vac-VPN-10000:IonCurR",
+            "instance": "archiver-linac-01",
+            "lostConnections": "2586"
+        }
     """
 
     currently_connected: bool
@@ -198,12 +208,15 @@ class StorageRatesResponse(BaseStatResponse):
     """Return a list of PVs sorted by the no. of connection drops.
 
     Example:
-    {
-        "pvName": "TS2-010CRM:EMR-XRS-001:mca1",
-        "storageRate_MBperDay": "1099.2894956029622",
-        "storageRate_KBperHour": "46903.01847905972",
-        "storageRate_GBperYear": "391.8365877881653"
-    }
+
+    .. code-block:: json
+
+        {
+            "pvName": "TS2-010CRM:EMR-XRS-001:mca1",
+            "storageRate_MBperDay": "1099.2894956029622",
+            "storageRate_KBperHour": "46903.01847905972",
+            "storageRate_GBperYear": "391.8365877881653"
+        }
     """
 
     mb_per_day: float

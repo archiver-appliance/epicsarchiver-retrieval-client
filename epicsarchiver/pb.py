@@ -20,20 +20,24 @@ Note: due to the way the protobuf objects are constructed, pylint can't
 correctly deduce some properties, so I have manually disabled some warnings.
 
 """
+
 from __future__ import annotations
 
 import collections
 import logging as log
 from collections import OrderedDict
-from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime as pydt
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from pandas import Timestamp
 from pytz import utc as UTC  # noqa: N812
 
 from epicsarchiver import EPICSEvent_pb2 as ee
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # It is not clear to me why I can't extract this information
 # from the compiled protobuf file.
@@ -59,29 +63,25 @@ TYPE_MAPPINGS: dict[int, type] = {
 INVERSE_TYPE_MAPPINGS = {cls: numeric for numeric, cls in TYPE_MAPPINGS.items()}
 
 
-ESC_BYTE = b"\x1B"
-NL_BYTE = b"\x0A"
-CR_BYTE = b"\x0D"
+ESC_BYTE = b"\x1b"
+NL_BYTE = b"\x0a"
+CR_BYTE = b"\x0d"
 
 # The character sequences required to unescape & escape AA pb file format.
 # Note that we need to be careful about the ordering here. We must apply them
 # in the opposite order when escaping and unescaping. In particular, the
 # escape byte needs to be escaped *first* and unescaped *last* in order to
 # prevent extra bytes appearing and causing problems. See #59.
-PB_REPLACEMENTS_ESCAPING = collections.OrderedDict(
-    [
-        (ESC_BYTE + b"\x01", ESC_BYTE),
-        (ESC_BYTE + b"\x02", NL_BYTE),
-        (ESC_BYTE + b"\x03", CR_BYTE),
-    ]
-)
-PB_REPLACEMENTS_UNESCAPING = collections.OrderedDict(
-    [
-        (ESC_BYTE + b"\x03", CR_BYTE),
-        (ESC_BYTE + b"\x02", NL_BYTE),
-        (ESC_BYTE + b"\x01", ESC_BYTE),
-    ]
-)
+PB_REPLACEMENTS_ESCAPING = collections.OrderedDict([
+    (ESC_BYTE + b"\x01", ESC_BYTE),
+    (ESC_BYTE + b"\x02", NL_BYTE),
+    (ESC_BYTE + b"\x03", CR_BYTE),
+])
+PB_REPLACEMENTS_UNESCAPING = collections.OrderedDict([
+    (ESC_BYTE + b"\x03", CR_BYTE),
+    (ESC_BYTE + b"\x02", NL_BYTE),
+    (ESC_BYTE + b"\x01", ESC_BYTE),
+])
 
 
 @dataclass
@@ -285,8 +285,7 @@ def dataframe_from_events(events: list[ArchiveEvent]) -> pd.DataFrame:
     val = pd.DataFrame([event.__dict__ for event in events])
     val["date"] = [v.pd_timestamp for v in events]
     val = val[["date", "val"]]
-    val = val.set_index("date")
-    return val
+    return val.set_index("date")
 
 
 def unescape_bytes(byte_seq: bytes) -> bytes:
@@ -335,7 +334,7 @@ def year_timestamp(year: int) -> int:
     )
 
 
-def event_pd_timestamp(  # noqa: D417
+def event_pd_timestamp(
     year: int,
     event: ee.ScalarString
     | ee.ScalarShort
@@ -379,7 +378,7 @@ def event_pd_timestamp(  # noqa: D417
     return ysn_timestamp(year, event.secondsintoyear, event.nano)
 
 
-def event_timestamp(  # noqa: D417
+def event_timestamp(
     year: int,
     event: ee.ScalarString
     | ee.ScalarShort
@@ -454,10 +453,10 @@ def get_timestamp_from_line_function(
     def timestamp_from_line(line: bytes) -> pydt:
         event = TYPE_MAPPINGS[chunk_info.type]()
         event.ParseFromString(unescape_bytes(line))
-        event_time = event_timestamp(
-            chunk_info.year, event  # pylint: disable=no-member
+        return event_timestamp(
+            chunk_info.year,
+            event,  # pylint: disable=no-member
         )
-        return event_time
 
     return timestamp_from_line
 
@@ -474,16 +473,16 @@ def _break_up_chunks(
         collections.OrderedDict: keys are years; values are lists of chunks
     """
     chunks = [chunk.strip() for chunk in raw_data.split(b"\n\n")]
-    log.debug(f"{len(chunks)} chunks in pb file")
-    year_chunks: OrderedDict[
-        int, tuple[ee.PayloadInfo, list[bytes]]
-    ] = collections.OrderedDict()
+    log.debug("%s chunks in pb file", len(chunks))
+    year_chunks: OrderedDict[int, tuple[ee.PayloadInfo, list[bytes]]] = (
+        collections.OrderedDict()
+    )
     for chunk in chunks:
         lines = chunk.split(b"\n")
         chunk_info = ee.PayloadInfo()
         chunk_info.ParseFromString(unescape_bytes(lines[0]))
         chunk_year = chunk_info.year  # pylint: disable=no-member
-        log.debug(f"Year {chunk_year}: {len(lines) - 1} events in chunk")
+        log.debug("Year %s: %s events in chunk", chunk_year, len(lines) - 1)
         try:
             _, ls = year_chunks[chunk_year]
             ls.extend(lines[1:])
@@ -544,10 +543,10 @@ def parse_pb_data(raw_data: bytes) -> list[ArchiveEvent]:
     events: list[ArchiveEvent] = []
     # Iterate over years
     for year, (chunk_info, lines) in year_chunks.items():
-        for line in lines:
-            events.append(
-                _event_from_line(line, chunk_info.pvname, year, chunk_info.type)
-            )
+        events += [
+            _event_from_line(line, chunk_info.pvname, year, chunk_info.type)
+            for line in lines
+        ]
 
     return events
 
@@ -590,7 +589,7 @@ def read_pb_file(filename: str) -> list[ArchiveEvent]:
         return parse_pb_data(raw_data)
 
 
-def create_pb_bytes(  # noqa: D417
+def create_pb_bytes(
     events: list[ee.ScalarString]
     | list[ee.ScalarShort]
     | list[ee.ScalarFloat]

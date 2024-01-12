@@ -255,7 +255,7 @@ async def test_get_not_configured(mocker: MockFixture) -> None:
     )
     # covers both get_all_channels and get_all_alias_channels
     mocker.patch(
-        "epicsarchiver.channelfinder.ChannelFinder._fetch",
+        "epicsarchiver.channelfinder._fetch",
         return_value=[Channel("MY:PV", {"alias": "MY:PV3"}, [])],
     )
     pvs_response = await get_not_configured(archiver, channelfinder, config_files)

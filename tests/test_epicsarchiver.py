@@ -1,4 +1,5 @@
 """Tests for `epicsarchiver` package."""
+
 import json
 import logging
 from datetime import datetime
@@ -858,18 +859,19 @@ def test_format_date() -> None:
 
 
 @pytest.mark.parametrize(
-    "test_input,expected",
+    ("test_input", "expected"),
     [({"status": "ok"}, True), ({"status": "foo"}, False), ({"hello": "world"}, False)],
 )
 def test_check_result(
-    test_input: dict[str, str], expected: bool  # noqa: FBT001
+    test_input: dict[str, str],
+    expected: bool,  # noqa: FBT001
 ) -> None:
     output = epicsarchiver.check_result(test_input)
     assert output is expected
 
 
 @pytest.mark.parametrize(
-    "test_input,default_message,output",
+    ("test_input", "default_message", "output"),
     [
         ({"status": "nok"}, "Not OK", "Not OK\n"),
         ({"validation": "Hello"}, None, "Hello\n"),

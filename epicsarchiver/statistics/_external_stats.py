@@ -36,9 +36,10 @@ async def get_double_archived(
     Returns:
         list[BothArchiversResponse]: Details of pv and archivers.
     """
-    non_paused_pvs, other_non_paused_pvs = await asyncio.gather(
-        *[get_all_non_paused_pvs(archiver), get_all_non_paused_pvs(other_archiver)]
-    )
+    non_paused_pvs, other_non_paused_pvs = await asyncio.gather(*[
+        get_all_non_paused_pvs(archiver),
+        get_all_non_paused_pvs(other_archiver),
+    ])
     return [
         BothArchiversResponse(pv, archiver.hostname, other_archiver.hostname)
         for pv in set(set(non_paused_pvs).intersection(set(other_non_paused_pvs)))
@@ -63,43 +64,41 @@ async def get_not_configured(
         for f in listdir(config_files)
         if isfile(join(config_files, f)) and f.endswith(".archive")
     ]
-    LOG.debug(f"CALC Not configured PVs from {archiver.hostname} and filed {onlyfiles}")
+    LOG.debug(
+        "CALC Not configured PVs from %s and filed %s", archiver.hostname, onlyfiles
+    )
     all_pvs = set(archiver.get_all_pvs(limit=-1))
     all_non_paused_pvs = await get_all_non_paused_pvs(archiver, all_pvs=all_pvs)
     file_pvs = {ar["pv"] for ar in get_pvs_from_files(onlyfiles)}
     if not file_pvs:
         return []
     archived_not_configured = set(all_non_paused_pvs - file_pvs)
-    LOG.info(f"{len(archived_not_configured)} Archived but not configured.")
+    LOG.info("%s Archived but not configured.", len(archived_not_configured))
     configured_not_archived = set(file_pvs - all_pvs)
-    LOG.info(f"{len(configured_not_archived)} Configured but not archived.")
+    LOG.info("%s Configured but not archived.", len(configured_not_archived))
     if channelfinder:
         (
             archived_not_configured_alias,
             configured_not_archived_alias,
-        ) = await asyncio.gather(
-            *[
-                get_aliases(channelfinder, list(archived_not_configured)),
-                get_aliases(channelfinder, list(configured_not_archived)),
-            ]
-        )
+        ) = await asyncio.gather(*[
+            get_aliases(channelfinder, list(archived_not_configured)),
+            get_aliases(channelfinder, list(configured_not_archived)),
+        ])
 
-    responses = await asyncio.gather(
-        *[
-            _gen_no_config_responses(
-                all_pvs,
-                archived_not_configured,
-                archived_not_configured_alias,
-                ConfiguredStatus.Archived,
-            ),
-            _gen_no_config_responses(
-                all_pvs,
-                configured_not_archived,
-                configured_not_archived_alias,
-                ConfiguredStatus.Configured,
-            ),
-        ]
-    )
+    responses = await asyncio.gather(*[
+        _gen_no_config_responses(
+            all_pvs,
+            archived_not_configured,
+            archived_not_configured_alias,
+            ConfiguredStatus.Archived,
+        ),
+        _gen_no_config_responses(
+            all_pvs,
+            configured_not_archived,
+            configured_not_archived_alias,
+            ConfiguredStatus.Configured,
+        ),
+    ])
     return list(responses[0] + responses[1])
 
 
@@ -138,7 +137,7 @@ async def get_iocs(
     iocs = {pv: Ioc.from_channel(channel) for pv, channel in channels.items()}
 
     for pv in pvs:
-        if pv not in iocs.keys():
+        if pv not in iocs:
             iocs[pv] = UNKNOWN_IOC
 
     output: dict[Ioc, list[str]] = {}
@@ -162,4 +161,4 @@ async def get_aliases(
         dict[str, list[str]]: dictionary mapping pv name to list of aliases
     """
     channels = await channelfinder.get_all_alias_channels(pvs)
-    return {pv: [channel.name for channel in channels[pv]] for pv in channels.keys()}
+    return {pv: [channel.name for channel in channels[pv]] for pv in channels}

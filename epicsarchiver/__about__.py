@@ -2,4 +2,5 @@
 #
 # SPDX-License-Identifier: MIT
 """Archiver appliance module."""
+
 __version__ = "0.8.3"

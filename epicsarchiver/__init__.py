@@ -1,4 +1,5 @@
 """Archiver appliance module."""
+
 __all__ = [
     "archive_files",
     "epicsarchiver",
@@ -8,13 +9,11 @@ __all__ = [
 ]
 
 from epicsarchiver.epicsarchiver import (
-    ArchiverAppliance,  # noqa: F401
+    ArchiverAppliance,
 )
 from epicsarchiver.pb import (
-    ArchiveEvent,  # noqa: F401
-    FieldValue,  # noqa: F401
+    ArchiveEvent,
+    FieldValue,
 )
 
-__all__.append("ArchiverAppliance")
-__all__.append("ArchiveEvent")
-__all__.append("FieldValue")
+__all__ += ["ArchiverAppliance", "ArchiveEvent", "FieldValue"]

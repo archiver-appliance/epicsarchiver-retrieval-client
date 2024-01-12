@@ -1,4 +1,5 @@
 """Main module."""
+
 from __future__ import annotations
 
 import datetime
@@ -36,14 +37,17 @@ class ArchiverAppliance:
         hostname: EPICS Archiver Appliance hostname [default: localhost]
         port: EPICS Archiver Appliance management port [default: 17665]
 
-    Basic Usage::
+    Examples:
 
-        >>> from epicsarchiver import ArchiverAppliance
-        >>> archappl = ArchiverAppliance('archiver-01.tn.esss.lu.se')
-        >>> print(archappl.version)
-        >>> archappl.get_pv_status(pv='BPM*')
-        >>> df = archappl.get_data('my:pv', start='2018-07-04 13:00', end=datetime.utcnow())
-    """  # noqa: E501
+    .. code-block:: python
+
+        from epicsarchiver import ArchiverAppliance
+
+        archappl = ArchiverAppliance("archiver-01.tn.esss.lu.se")
+        print(archappl.version)
+        archappl.get_pv_status(pv="BPM*")
+        df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
+    """
 
     def __init__(self, hostname: str = "localhost", port: int = 17665):
         """Create Archiver Appliance object.
@@ -92,7 +96,7 @@ class ArchiverAppliance:
             :class:`requests.Response <Response>` object
         """
         url = urllib.parse.urljoin(self.mgmt_url, endpoint.lstrip("/"))
-        LOG.debug("GET url: " + url)
+        LOG.debug("GET url: %s", url)
         return self._request("GET", url, **kwargs)
 
     def _post(self, endpoint: str, **kwargs: Any) -> Response:
@@ -317,10 +321,11 @@ class ArchiverAppliance:
         Returns:
             list of submitted PVs
         """
-        if "," in pv:
-            r = self._post(endpoint, data=pv)
-        else:
-            r = self._get(endpoint, params={"pv": pv})
+        r = (
+            self._post(endpoint, data=pv)
+            if "," in pv
+            else self._get(endpoint, params={"pv": pv})
+        )
         return r.json()
 
     def pause_pv(self, pv: str) -> list[dict[str, str]] | dict[str, str]:
@@ -369,7 +374,9 @@ class ArchiverAppliance:
         return cast(list[str], r.json())
 
     def delete_pv(
-        self, pv: str, delete_data: bool = False  # noqa: FBT002, FBT001
+        self,
+        pv: str,
+        delete_data: bool = False,  # noqa: FBT002, FBT001
     ) -> list[str]:
         """Stop archiving the specified PV.
 
@@ -500,11 +507,11 @@ class ArchiverAppliance:
         """
         result = self.get_pv_status(pv)
         if result[0]["status"] != "Being archived":
-            LOG.error(f"PV {pv} isn't being archived. Skipping.\n")
+            LOG.error("PV %s isn't being archived. Skipping.\n", pv)
             return
         result = self.get_pv_status(new)
         if result[0]["status"] != "Not being archived":
-            LOG.error(f"New PV {new} already exists. Skipping.\n")
+            LOG.error("New PV %s already exists. Skipping.\n", new)
             return
         cresult = self.pause_pv(pv)
         if not check_result(cresult, f"Error while pausing {pv}"):
@@ -515,7 +522,7 @@ class ArchiverAppliance:
         cresult = self.resume_pv(new)
         if not check_result(cresult, f"Error while resuming {new}"):
             return
-        LOG.debug(f"PV {pv} successfully renamed to {new}")
+        LOG.debug("PV %s successfully renamed to %s", pv, new)
 
     def rename_pvs_from_files(self, files: list[str]) -> None:
         """Rename PVs from a list of files.
@@ -590,13 +597,13 @@ def check_result(
     """
     if isinstance(result, list):
         LOG.error(
-            f"Method check_result does not support multiple PVs from result {result}"
+            "Method check_result does not support multiple PVs from result %s", result
         )
         return False
     status = result.get("status", "nok")
     if status.lower() != "ok":
         message = result.get("validation", default_message)
-        LOG.error(f"{message}\n")
+        LOG.error(message)
         return False
     return True
 

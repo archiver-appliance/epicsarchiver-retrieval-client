@@ -49,7 +49,7 @@ def test_parse_scalardouble() -> None:
     if isinstance(EVENT.val, float):
         assert abs(e.val - EVENT.val) < 1e-7
     else:
-        raise AssertionError()
+        raise TypeError
     assert EVENT.secondsintoyear == e.secondsintoyear
     assert EVENT.nanos == e.nano
     assert e.severity == EVENT.severity
@@ -77,14 +77,14 @@ def test_escape_bytes_does_not_change_regular_bytes() -> None:
 
 
 def test_escape_bytes_handles_example_unescaped_bytes() -> None:
-    test_bytes = b"hello\x0Abye\x1B"
+    test_bytes = b"hello\x0abye\x1b"
     expected = b"hello" + pb.ESC_BYTE + b"\x02" + b"bye" + pb.ESC_BYTE + b"\x01"
     assert pb.escape_bytes(test_bytes) == expected
 
 
 def test_unescape_bytes_works_in_correct_order_and_is_reversible() -> None:
-    test_bytes = b"hello \x1B\x01\x02 bye \x1B\x01\x03"
-    expected = b"hello \x1B\x02 bye \x1B\x03"
+    test_bytes = b"hello \x1b\x01\x02 bye \x1b\x01\x03"
+    expected = b"hello \x1b\x02 bye \x1b\x03"
     unescaped = pb.unescape_bytes(test_bytes)
     assert unescaped == expected
     escaped = pb.escape_bytes(unescaped)
@@ -127,5 +127,5 @@ def test_read_sigma_file() -> None:
     data = pb.read_pb_file("tests/samples/sigma_test_pb.pb")
     assert "Sigma" in data[0].pv
     assert 0.11091079832009144 in np.array(data[0].val)
-    assert 2023 == data[0].year
+    assert data[0].year == 2023
     assert isinstance(data[0].val, list)

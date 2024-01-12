@@ -17,6 +17,7 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
   "numpy",
@@ -38,148 +39,20 @@ epicsarchiver = "epicsarchiver.command:cli"
 [project.urls]
 Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
 
-[project.optional-dependencies]
-docs = [
-  "myst-parser",
-  "sphinx",
-  "sphinx-copybutton>=0.5.1",
-  "sphinx-click",
-  "sphinx-autobuild",
-  "sphinx-autoapi",
-  "sphinx_rtd_theme",
-]
-lint = [
-  "black",
-  "ruff",
-  "mypy",
-  "types-requests",
-  "types-python-dateutil",
-  "types-protobuf",
-  "mypy-protobuf",
-]
-test = [
-  "coverage[toml]>=6.5",
-  "pytest>=7.2.0",
-  "pytest-asyncio",
-  "sybil",
-  "typing-extensions",
-  "responses",
-  "aioresponses",
-  "pytest-mock",
-  "pytest-aiohttp"
-]
-dev = [ # Everything needed for development
-  "py-epicsarchiver[docs,lint,test]",
-]
-
-[tool.hatch.build.targets.sdist]
-include = ["/docs", "/epicsarchiver", "/tests"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["epicsarchiver"]
-
-
-[tool.hatch.envs.default]
-features = ["dev"]
-python = "3.11"
-
-[tool.hatch.version]
-path = "epicsarchiver/__about__.py"
-
-[tool.hatch.envs.default.scripts]
-protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/EPICSEvent.proto"
-test = "pytest {args:tests}"
-test-cov = "coverage run -m pytest {args:tests}"
-cov-report = ["- coverage combine", "coverage report", "coverage xml"]
-cov = ["test-cov", "cov-report"]
-docs = ["make -C docs html"]
-docs-live = ["sphinx-autobuild docs/source docs/build/html"]
-docs-clean = ["make -C docs clean html"]
-style = [
-  "ruff {args:.}",
-  "black --check --diff {args:.}",
-  "mypy {args:./epicsarchiver ./tests}",
-]
-fmt = ["black -t py310 {args:.}", "ruff --fix {args:.}", "style"]
-all = ["fmt", "style", "test"]
-
-[[tool.hatch.envs.all.matrix]]
-python = ["3.11"]
-
-[tool.black]
-target-version = ["py310"]
-line-length = 88
-force-exclude = '''
-epicsarchiver/EPICSEvent_pb2.py
-epicsarchiver/EPICSEvent_pb2.pyi
-'''
-
 [tool.ruff]
+extend = "ruff_defaults.toml"
 target-version = "py310"
 line-length = 88
 exclude = [
   "epicsarchiver/EPICSEvent_pb2.py",
   "epicsarchiver/EPICSEvent_pb2.pyi",
+  "docs/source/conf.py",
 ]
-
-select = [
-  "A",
-  "ARG",
-  "B",
-  "C",
-  "D",
-  "DTZ",
-  "E",
-  "EM",
-  "F",
-  "FBT",
-  "I",
-  "ICN",
-  "ISC",
-  "N",
-  "PLC",
-  "PLE",
-  "PLR",
-  "PLW",
-  "Q",
-  "RUF",
-  "S",
-  "T",
-  "TID",
-  "UP",
-  "W",
-  "YTT",
-]
-ignore = [
-  # Allow non-abstract empty methods in abstract base classes
-  "B027",
-  # Allow boolean positional values in function calls, like `dict.get(... True)`
-  "FBT003",
-  # Ignore checks for possible passwords
-  "S105",
-  "S106",
-  "S107",
-  # Ignore complexity
-  "C901",
-  "PLR0911",
-  "PLR0912",
-  "PLR0913",
-  "PLR0915",
-]
-unfixable = [
-  # Don't touch unused imports
-  "F401",
-]
-
-[tool.ruff.isort]
-known-first-party = ["epicsarchiver"]
-
-[tool.ruff.flake8-tidy-imports]
-ban-relative-imports = "all"
+preview = true
 
 [tool.ruff.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
-"tests/**/*" = ["PLR2004", "S101", "TID252", "D"]
+"tests/**/*" = ["PLR2004", "S101", "TID252", "D", "SLF001", "INP001"]
 
 [tool.ruff.pydocstyle]
 # Use Google-style docstrings.
@@ -187,7 +60,6 @@ convention = "google"
 
 [tool.mypy]
 strict = true
-
 
 [[tool.mypy.overrides]]
 module = "*"

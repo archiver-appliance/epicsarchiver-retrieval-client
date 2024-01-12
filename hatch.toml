@@ -1,0 +1,67 @@
+[version]
+path = "epicsarchiver/__about__.py"
+
+[build.targets.sdist]
+include = ["/epicsarchiver", "/tests"]
+
+[build.targets.wheel]
+packages = ["epicsarchiver"]
+
+[envs.default]
+dependencies = [
+  "coverage[toml]>=6.5",
+  "pytest>=7.2.0",
+  "pytest-asyncio",
+  "sybil",
+  "typing-extensions",
+  "responses",
+  "aioresponses",
+  "pytest-mock",
+  "pytest-aiohttp",
+  "types-requests", # Types in test dependancies for IDE integration of mypy
+  "types-python-dateutil",
+  "types-protobuf",
+]
+
+[envs.default.scripts]
+protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/EPICSEvent.proto"
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = ["- coverage combine", "coverage report", "coverage xml"]
+cov = ["test-cov", "cov-report"]
+docs-check = "hatch run docs:check"
+type-check = "hatch run types:check"
+all = ["hatch fmt --check", "type-check", "cov", "docs-check"]
+
+[[envs.test.matrix]]
+python = ["3.10", "3.11", "3.12"]
+
+[envs.types]
+extra-dependencies = [
+  "mypy",
+  "mypy-protobuf",
+]
+
+[envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:./epicsarchiver ./tests}"
+
+[envs.docs]
+extra-dependencies = [
+  "myst-parser",
+  "sphinx",
+  "sphinx-copybutton>=0.5.1",
+  "sphinx-click",
+  "sphinx-autobuild",
+  "sphinx-autoapi",
+  "sphinx_rtd_theme",
+]
+
+[envs.docs.scripts]
+build = ["make -C docs html"]
+check = ['make -C docs html SPHINXOPTS="-W --keep-going"']
+live = ["sphinx-autobuild docs/source docs/build/html"]
+clean = ["make -C docs clean html"]
+
+[envs.hatch-static-analysis]
+dependencies = ["ruff==0.1.11"]
+config-path = "ruff_defaults.toml"
