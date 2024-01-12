@@ -1,8 +1,9 @@
 """Tests for epicsarchiver.command module."""
+
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
-from pytest import CaptureFixture
 from pytest_mock import MockerFixture
 
 from epicsarchiver import command
@@ -17,7 +18,7 @@ def test_archive_file_does_not_exist() -> None:
 
 
 def test_archive_file_does_exist(
-    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture[str]
+    tmp_path: Path, mocker: MockerFixture, capsys: pytest.CaptureFixture[str]
 ) -> None:
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     file1 = tmp_path.joinpath("file1")
@@ -29,7 +30,7 @@ def test_archive_file_does_exist(
     with capsys.disabled():
         result = runner.invoke(command.cli, ["archive", *list(files)])
         assert result.exit_code == 0
-        assert result.output == ""
+        assert not result.output
         mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
             files, None
         )
@@ -37,7 +38,7 @@ def test_archive_file_does_exist(
 
 
 def test_archive_hostname(
-    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture[str]
+    tmp_path: Path, mocker: MockerFixture, capsys: pytest.CaptureFixture[str]
 ) -> None:
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     hostname = "myarchiver.example.org"
@@ -53,7 +54,7 @@ def test_archive_hostname(
 
 
 def test_archive_with_appliance(
-    tmp_path: Path, mocker: MockerFixture, capsys: CaptureFixture[str]
+    tmp_path: Path, mocker: MockerFixture, capsys: pytest.CaptureFixture[str]
 ) -> None:
     mock_archiver = mocker.patch("epicsarchiver.command.ArchiverAppliance")
     appliance = "foo"
@@ -65,7 +66,7 @@ def test_archive_with_appliance(
             command.cli, ["archive", "--appliance", appliance, str(file1)]
         )
         assert result.exit_code == 0
-        assert result.output == ""
+        assert not result.output
         mock_archiver.return_value.archive_pvs_from_files.assert_called_once_with(
             (str(file1),), appliance
         )
@@ -83,6 +84,7 @@ def test_rename(tmp_path: Path, mocker: MockerFixture) -> None:
         command.cli, ["--hostname", hostname, "rename", str(file1), str(file2)]
     )
     assert result.exit_code == 0
-    mock_archiver.return_value.rename_pvs_from_files.assert_called_once_with(
-        (str(file1), str(file2))
-    )
+    mock_archiver.return_value.rename_pvs_from_files.assert_called_once_with((
+        str(file1),
+        str(file2),
+    ))

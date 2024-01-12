@@ -16,6 +16,7 @@ Examples:
 
 
 """
+
 import asyncio
 import datetime
 import enum
@@ -92,7 +93,7 @@ class Stat(str, enum.Enum):
     async def _response_report_dict(
         self, responses: Sequence[BaseStatResponse]
     ) -> dict[str, BaseStatResponse]:
-        LOG.info(f"Found {len(responses)} satisfying stat {self}")
+        LOG.info("Found %s satisfying stat %s", len(responses), self)
         return {r.pv_name: r for r in responses}
 
     async def _get_responses(
@@ -171,16 +172,14 @@ class Stat(str, enum.Enum):
             case Stat.DoubleArchived:
                 if config.other_archiver:
                     return await get_double_archived(archiver, config.other_archiver)
-                else:
-                    return []
+                return []
 
             case Stat.NotConfigured:
                 if config.config_files:
                     return await get_not_configured(
                         archiver, config.channelfinder, config.config_files
                     )
-                else:
-                    return []
+                return []
 
     async def generate_stats(
         self,
@@ -222,7 +221,7 @@ class _PVStats:
     stats: dict[Stat, BaseStatResponse]
 
     def json_str(self) -> dict[str, str]:
-        return {s.name: str(self.stats[s]) for s in self.stats.keys()}
+        return {s.name: str(self.stats[s]) for s in self.stats}
 
 
 async def generate_all_stats(
@@ -239,9 +238,9 @@ async def generate_all_stats(
         dict[Ioc, dict[str, _PVStats]]: Return a dictionary with pv names as keys,
           and detailed statistics after.
     """
-    gather_all_stats = await asyncio.gather(
-        *[stat.generate_stats(archiver, config) for stat in Stat]
-    )
+    gather_all_stats = await asyncio.gather(*[
+        stat.generate_stats(archiver, config) for stat in Stat
+    ])
     inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats, strict=True)))
     if config.channelfinder:
         return await _organise_by_ioc(
@@ -256,8 +255,8 @@ async def _organise_by_ioc(
     channelfinder: ChannelFinder,
 ) -> dict[Ioc, dict[str, _PVStats]]:
     iocs = await get_iocs(channelfinder, list(inverted_report.keys()))
-    LOG.info("IOCS: " + str(await _iocs_summary(iocs)))
-    return {ioc: {pv: inverted_report[pv] for pv in iocs[ioc]} for ioc in iocs.keys()}
+    LOG.info("IOCS: %s", str(await _iocs_summary(iocs)))
+    return {ioc: {pv: inverted_report[pv] for pv in iocs[ioc]} for ioc in iocs}
 
 
 async def _iocs_summary(iocs: dict[Ioc, list[str]]) -> list[str]:
@@ -267,23 +266,26 @@ async def _iocs_summary(iocs: dict[Ioc, list[str]]) -> list[str]:
 
 
 def _summary_report(
-    report: dict[Ioc, dict[str, _PVStats]]
+    report: dict[Ioc, dict[str, _PVStats]],
 ) -> dict[str, dict[str, dict[str, str]]]:
     """Creates a pure string and dictionary data output summary of the generated data.
 
-      Easily converted to json and creates a sample output of:
-      "IOCName iocHostName": {
-        "PV:1": {
-            "TypeChange": "Dropped 31 events by TypeChange"
-        },
-        "PV:2": {
-            "NotConfigured": "Archived but not in config."
-        },
-        "PV:3": {
-            "DisconnectedPVs": "Disconnected 136 days ago, last event at None",
-            "SilentPVs": "No events stored, last invalid event recieved at None"
-        },
-      }
+      Easily converted to json and creates a sample output of
+
+     .. code-block:: json
+
+        "IOCName iocHostName": {
+            "PV:1": {
+                "TypeChange": "Dropped 31 events by TypeChange"
+            },
+            "PV:2": {
+                "NotConfigured": "Archived but not in config."
+            },
+            "PV:3": {
+                "DisconnectedPVs": "Disconnected 136 days ago, last event at None",
+                "SilentPVs": "No events stored, last invalid event recieved at None"
+            },
+        }
 
     Args:
           report (dict[str, _PVStats]): Base input data in form of
@@ -316,8 +318,8 @@ def _invert_data(data: dict[Stat, dict[str, BaseStatResponse]]) -> dict[str, _PV
     dict_data: dict[str, dict[Stat, BaseStatResponse]] = {}
     for stat in data:
         for pv in data[stat]:
-            if pv not in dict_data.keys():
+            if pv not in dict_data:
                 dict_data[pv] = {}
             dict_data[pv][stat] = data[stat][pv]
-    output = {pv: _PVStats(pv, dict_data[pv]) for pv in dict_data.keys()}
+    output = {pv: _PVStats(pv, dict_data[pv]) for pv in dict_data}
     return dict(sorted(output.items()))

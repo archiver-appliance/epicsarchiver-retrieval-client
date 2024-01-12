@@ -5,13 +5,13 @@
 
 py-epicsarchiver can be installed using artifactory PyPI repository
 
-```bash
+```console
 pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 ```
 
 To avoid having to pass the PyPI repository url in the command line, you can create the following `~/.pip/pip.conf` file
 
-```toml
+```
 [global]
 index-url = https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 ```

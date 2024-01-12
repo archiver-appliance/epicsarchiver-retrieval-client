@@ -1,4 +1,5 @@
 """Command module."""
+
 import logging
 from datetime import timedelta
 from pathlib import Path
@@ -17,7 +18,7 @@ LOG: logging.Logger = logging.getLogger(__name__)
 def _handle_debug(
     _ctx: click.core.Context | None,
     _param: click.core.Option | click.core.Parameter | None,
-    debug: bool | int | str,
+    debug: bool | int | str,  # noqa: FBT001
 ) -> bool | int | str:
     """Turn on DEBUG logs, if asked otherwise INFO default."""
     format_msg = "%(message)s"
@@ -242,37 +243,37 @@ def stats(
 
         epicsarchiver --hostname archiver-01.example.com stats output.json
 
-    By default produces a json output in the form::
+    By default produces a json output in the form
 
-    {"PV:NAME": {"BufferOverflow": "Dropped 33393 events by BufferOverflow"}}}
 
-    Verbose output is of the form::
+    .. code-block:: json
 
-    ('MY:PV',[_StatDetails(
-        stat=<Stat.ZeroEvents: 'Never received a valid event.'>,
-        info=SilentPVsResponse(pv_name='MY:PV',instance='sw-vm-12',last_known_event=datetime)
-    ),])
+        {"PV:NAME": {"BufferOverflow": "Dropped 33393 events by BufferOverflow"}}}
+
+    Verbose output provides more details but is not in json.
+
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
-    out_file = open(output, "w")
-    console = Console(file=out_file)
-    if other_hostname:
-        other_archiver = ArchiverAppliance(hostname=other_hostname)
-    else:
-        other_archiver = None
-    config = ReportConfig(
-        query_limit=limit,
-        time_minimum=timedelta(days=time_minimum),
-        connection_drops_minimum=connection_drops_minimum,
-        config_files=config_files,
-        other_archiver=other_archiver,
-        mb_per_day_minimum=mb_per_day_minimum,
-        events_dropped_minimum=events_dropped_minimum,
-        channelfinder=ChannelFinder(channelfinder_hostname)
-        if channelfinder_hostname
-        else None,
+    other_archiver = (
+        ArchiverAppliance(hostname=other_hostname) if other_hostname else None
     )
-    LOG.info(f"Collecting statistics with configuration {config}")
+    channelfinder = (
+        ChannelFinder(channelfinder_hostname) if channelfinder_hostname else None
+    )
 
-    print_report(archiver, config, console, verbose=verbose)
+    with open(output, "w", encoding="locale") as out_file:
+        console = Console(file=out_file)
+        config = ReportConfig(
+            query_limit=limit,
+            time_minimum=timedelta(days=time_minimum),
+            connection_drops_minimum=connection_drops_minimum,
+            config_files=config_files,
+            other_archiver=other_archiver,
+            mb_per_day_minimum=mb_per_day_minimum,
+            events_dropped_minimum=events_dropped_minimum,
+            channelfinder=channelfinder,
+        )
+        LOG.info("Collecting statistics with configuration %s", config)
+
+        print_report(archiver, config, console, verbose=verbose)
     ctx.exit(0)

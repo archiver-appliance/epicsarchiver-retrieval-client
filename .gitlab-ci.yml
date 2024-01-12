@@ -32,7 +32,7 @@ before_script:
 .parallel:
   parallel:
     matrix:
-      - IMAGE: [python:3.10, python:3.11]
+      - IMAGE: [python:3.10, python:3.11, python:3.12]
 
 test:
   stage: test
@@ -64,7 +64,9 @@ lint:
   stage: check
   image: $IMAGE
   script:
-    - hatch run style
+    - hatch fmt --check
+    - hatch run types:check
+    - hatch run docs:check
   parallel: !reference [.parallel,parallel]
 
 
@@ -84,7 +86,7 @@ pages:
   stage: deploy
   image: python:3.10
   script:
-    - hatch run docs
+    - hatch run docs:build
     - mv docs/build/html public
   artifacts:
     paths:
@@ -95,10 +97,11 @@ pages:
 
 release-pypi-package:
   stage: release
-  image: python:3.10
+  image: $IMAGE
   before_script:
     - pip install twine
   script:
     - twine upload dist/* --skip-existing --verbose
   only:
     - tags
+  parallel: !reference [.parallel,parallel]

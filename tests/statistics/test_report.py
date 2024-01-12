@@ -97,7 +97,8 @@ async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
 
 
 def mock_get_pvs_dropped(
-    reason: DroppedReason, limit: int  # noqa: ARG001
+    reason: DroppedReason,
+    limit: int,  # noqa: ARG001
 ) -> list[BaseStatResponse]:
     match reason:
         case DroppedReason.BufferOverflow:
@@ -164,6 +165,6 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
     )
     ioc = Ioc(channel.properties["hostName"], channel.properties["iocName"])
     actual = await generate_all_stats(archiver, config)
-    assert ioc in actual.keys()
-    assert "MY:PV" in actual[ioc].keys()
+    assert ioc in actual
+    assert "MY:PV" in actual[ioc]
     assert _PVStats("MY:PV", expected_all_stats) == actual[ioc]["MY:PV"]
