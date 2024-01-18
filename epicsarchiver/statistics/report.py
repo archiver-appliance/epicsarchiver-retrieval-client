@@ -1,4 +1,4 @@
-"""Generate a report detailing a list of "bad" pvs and what is wrong with them.
+"""Generate a report detailing a list of statistics of Archiver pvs.
 
 Examples:
     .. highlight:: python
@@ -262,7 +262,7 @@ async def _organise_by_ioc(
 async def _iocs_summary(iocs: dict[Ioc, list[str]]) -> list[str]:
     sorted_iocs = [(ioc, len(pvs)) for ioc, pvs in iocs.items()]
     sorted_iocs = sorted(sorted_iocs, key=lambda pair: pair[1])
-    return [f"{ioc_pair[0]} has {ioc_pair[1]} BAD PVs" for ioc_pair in sorted_iocs]
+    return [f"{ioc_pair[0]}:{ioc_pair[1]} PVs" for ioc_pair in sorted_iocs]
 
 
 def _summary_report(
