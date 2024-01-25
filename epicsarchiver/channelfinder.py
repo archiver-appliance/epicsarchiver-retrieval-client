@@ -111,8 +111,9 @@ class ChannelFinder:
     async def get_channels(
         self,
         session: aiohttp.ClientSession | None,
-        pvs: list[str],
+        pvs: list[str] | None,
         alias: str | None = None,
+        ioc_name: str | None = None,
     ) -> list[Channel]:
         """Get the list of channels matching the pv name from channelfinder.
 
@@ -120,7 +121,7 @@ class ChannelFinder:
             session (aiohttp.ClientSession | None): aiohttp shared session
             pvs (list[str]): pv names
             alias (str): alias for a pv
-            max_size (int): max number of returned channels, default 50 000
+            ioc_name (str): ioc name to filter by
 
         Returns:
             list[Channel]: list of matching channels
@@ -130,10 +131,12 @@ class ChannelFinder:
         )
         urllib3.disable_warnings()  # ignoring warnings that certificate is self signed
         params = {}
-        if len(pvs) > 0:
+        if pvs and len(pvs) > 0:
             params["~name"] = ",".join(pvs)
         if alias:
             params["alias"] = alias
+        if ioc_name:
+            params["iocName"] = ioc_name
         LOG.debug("GET url: %s params: %s", url, str(params))
         if not session:
             async with aiohttp.ClientSession() as asession:
@@ -166,21 +169,34 @@ class ChannelFinder:
                 channel.name: channel for channel in channels if channel.name in pvs_set
             }
 
+    async def get_ioc_channels(self, ioc_name: str) -> list[Channel]:
+        """Get the list of channels with the specified ioc_name.
+
+        Args:
+            ioc_name: name of the ioc
+
+        Returns:
+            dict[str, Channel]: dict of matching channels
+        """
+        async with aiohttp.ClientSession() as session:
+            return await self.get_channels(session, None, ioc_name=ioc_name)
+
     async def get_all_alias_channels(
-        self,
-        pvs: list[str],
+        self, pvs: list[str], ioc_name: str | None = None
     ) -> dict[str, list[Channel]]:
         """Get the list of channels aliases of pvs from channelfinder.
 
         Args:
             pvs (list[str]): list of pv names
+            ioc_name (str): ioc to filter by
 
         Returns:
             dict[str, list[Channel]]: dict of matching channels to pv names
         """
         async with aiohttp.ClientSession() as session:
             alias_channel_requests = await asyncio.gather(*[
-                self.get_channels(session, [], alias=pv) for pv in pvs
+                self.get_channels(session, [], alias=pv, ioc_name=ioc_name)
+                for pv in pvs
             ])
             channels = set(chain(*alias_channel_requests))
 

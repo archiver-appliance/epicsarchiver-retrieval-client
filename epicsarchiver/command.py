@@ -199,6 +199,12 @@ def rename(
     help="Minimum event drops to see.",
 )
 @click.option(
+    "--ioc",
+    "-i",
+    type=str,
+    help="IOC to filter by.",
+)
+@click.option(
     "--verbose",
     "-v",
     is_flag=True,
@@ -227,6 +233,7 @@ def stats(
     mb_per_day_minimum: float,
     events_dropped_minimum: int,
     channelfinder_hostname: str | None,
+    ioc: str | None,
     verbose: bool,  # noqa: FBT001
     output: Path,
     debug: bool,  # noqa: FBT001, ARG001
@@ -266,6 +273,7 @@ def stats(
             mb_per_day_minimum=mb_per_day_minimum,
             events_dropped_minimum=events_dropped_minimum,
             channelfinder=channelfinder,
+            ioc_name=ioc,
         )
         LOG.info("Collecting statistics with configuration %s", config)
 
