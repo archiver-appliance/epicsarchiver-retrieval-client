@@ -5,7 +5,6 @@ from datetime import timedelta
 from pathlib import Path
 
 import click
-from rich.console import Console
 from rich.logging import RichHandler
 
 from epicsarchiver.channelfinder import ChannelFinder
@@ -241,16 +240,12 @@ def stats(
 
     .. code-block:: console
 
-        epicsarchiver --hostname archiver-01.example.com stats output.json
+        epicsarchiver --hostname archiver-01.example.com stats output.csv
 
-    By default produces a json output in the form
+    By default produces a csv output in the form
 
-
-    .. code-block:: json
-
-        {"PV:NAME": {"BufferOverflow": "Dropped 33393 events by BufferOverflow"}}}
-
-    Verbose output provides more details but is not in json.
+    IOC Name, IOC hostname, PV name, Statistic, Statistic Note
+    IOC_NAME, PV:NAME, BufferOverflow, Dropped 33393 events by BufferOverflow
 
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
@@ -262,7 +257,6 @@ def stats(
     )
 
     with open(output, "w", encoding="locale") as out_file:
-        console = Console(file=out_file)
         config = ReportConfig(
             query_limit=limit,
             time_minimum=timedelta(days=time_minimum),
@@ -275,5 +269,5 @@ def stats(
         )
         LOG.info("Collecting statistics with configuration %s", config)
 
-        print_report(archiver, config, console, verbose=verbose)
+        print_report(archiver, config, out_file, verbose=verbose)
     ctx.exit(0)
