@@ -115,7 +115,7 @@ class DisconnectedPVsResponse(BaseStatResponse):
         """Generate a display string for the response.
 
         Returns:
-            str: "Disconnected {time_difference} ago, last event at {last_known_event}"
+            str: "Disconnected {time_difference} ago. Last event at {last_known_event}"
         """
         if self.connection_lost_at:
             time_difference = str(
@@ -124,7 +124,7 @@ class DisconnectedPVsResponse(BaseStatResponse):
         else:
             time_difference = "Never"
         return (
-            f"Disconnected {time_difference} ago, last event at {self.last_known_event}"
+            f"Disconnected {time_difference} ago. Last event at {self.last_known_event}"
         )
 
 
@@ -155,10 +155,10 @@ class SilentPVsResponse(BaseStatResponse):
         """Generate a display string for the response.
 
         Returns:
-            str: "No events stored, last invalid event recieved at {last_known_event}"
+            str: "No events stored. Last invalid event recieved at {last_known_event}"
         """
         return (
-            f"No events stored, last invalid event recieved at {self.last_known_event}"
+            f"No events stored. Last invalid event recieved at {self.last_known_event}"
         )
 
 
@@ -196,11 +196,11 @@ class LostConnectionsResponse(BaseStatResponse):
         """Generate a display string for the response.
 
         Returns:
-            str: "Lost connections: {lost_connections}, connected: {connected}"
+            str: "Lost connections: {lost_connections}. Connected: {connected}"
         """
         l_con = self.lost_connections
         cur_con = self.currently_connected
-        return f"Lost connections: {l_con}, connected: {cur_con}"
+        return f"Lost connections: {l_con}. Connected: {cur_con}"
 
 
 @dataclass

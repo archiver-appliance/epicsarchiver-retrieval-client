@@ -18,6 +18,7 @@ Examples:
 """
 
 import asyncio
+import csv
 import datetime
 import enum
 import logging
@@ -25,6 +26,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
+from typing import IO
 
 import pytz
 from rich.console import Console
@@ -195,7 +197,7 @@ class Stat(str, enum.Enum):
 def print_report(
     archiver: ArchiverAppliance,
     config: ReportConfig,
-    console: Console,
+    file: IO[str],
     *,
     verbose: bool = False,
 ) -> None:
@@ -204,24 +206,31 @@ def print_report(
     Args:
         archiver (ArchiverAppliance): Archiver to get statistics
         config (ReportConfig): Configuration of the report
-        console (Console): console where to print the report
+        file (IO[str]): file to print the report to
         verbose (bool, optional): Verbose output or not. Defaults to False.
     """
     report = asyncio.run(generate_all_stats(archiver, config))
     if verbose:
+        console = Console(file=file)
         console.print(report)
         return
-    sum_report = _summary_report(report)
-    console.print_json(data=sum_report)
+    sum_report = csv_output(report)
+    csvwriter = csv.writer(file)
+    csvwriter.writerow([
+        "IOC Name",
+        "IOC hostname",
+        "PV name",
+        "Statistic",
+        "Statistic Note",
+    ])
+    for row in sum_report:
+        csvwriter.writerow(row)
 
 
 @dataclass
 class _PVStats:
     name: str
     stats: dict[Stat, BaseStatResponse]
-
-    def json_str(self) -> dict[str, str]:
-        return {s.name: str(self.stats[s]) for s in self.stats}
 
 
 async def generate_all_stats(
@@ -265,44 +274,26 @@ async def _iocs_summary(iocs: dict[Ioc, list[str]]) -> list[str]:
     return [f"{ioc_pair[0]}:{ioc_pair[1]} PVs" for ioc_pair in sorted_iocs]
 
 
-def _summary_report(
+def csv_output(
     report: dict[Ioc, dict[str, _PVStats]],
-) -> dict[str, dict[str, dict[str, str]]]:
-    """Creates a pure string and dictionary data output summary of the generated data.
+) -> list[list[str]]:
+    """Creates a list[str] output of the generated data for printing as csv.
 
-      Easily converted to json and creates a sample output of
-
-     .. code-block:: json
-
-        "IOCName iocHostName": {
-            "PV:1": {
-                "TypeChange": "Dropped 31 events by TypeChange"
-            },
-            "PV:2": {
-                "NotConfigured": "Archived but not in config."
-            },
-            "PV:3": {
-                "DisconnectedPVs": "Disconnected 136 days ago, last event at None",
-                "SilentPVs": "No events stored, last invalid event recieved at None"
-            },
-        }
+    Outs with headings: IOC Name, IOC hostname, PV name, Statistic, Statistic Note
 
     Args:
           report (dict[str, _PVStats]): Base input data in form of
             pv mapped to Stat and responses from the archiver.
 
     Returns:
-          dict[str, dict[str, str]]: pv to dictionary of Stat name and problem summary
+          list[list[str]]: List of list of strings
     """
-    summary_report: dict[str, dict[str, dict[str, str]]] = {}
-
-    for ioc, pvs in report.items():
-        pv_summary_report: dict[str, dict[str, str]] = {}
-
-        for pv, issue in pvs.items():
-            pv_summary_report[pv] = issue.json_str()
-        summary_report[f"IOC:{ioc.name}, host:{ioc.hostname}"] = pv_summary_report
-    return dict(sorted(summary_report.items()))
+    return [
+        [ioc.name, ioc.hostname, pv, stat.name, str(stat_note)]
+        for ioc, pvs in report.items()
+        for pv, issue in pvs.items()
+        for stat, stat_note in issue.stats.items()
+    ]
 
 
 def _invert_data(data: dict[Stat, dict[str, BaseStatResponse]]) -> dict[str, _PVStats]:
