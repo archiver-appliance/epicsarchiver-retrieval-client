@@ -61,6 +61,49 @@ async def test_get_channels() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_ioc_channels() -> None:
+    with aioresponses() as mocked:
+        channelfinder = ChannelFinder()
+        url = "https://localhost/ChannelFinder/resources/channels?iocName=iocName"
+        data = [
+            {
+                "name": "fred",
+                "owner": "recceiver",
+                "properties": [
+                    {
+                        "name": "hostName",
+                        "owner": "recceiver",
+                        "value": "host.blah",
+                        "channels": [],
+                    },
+                    {
+                        "name": "iocName",
+                        "owner": "recceiver",
+                        "value": "FredsIOC",
+                        "channels": [],
+                    },
+                    {
+                        "name": "pvStatus",
+                        "owner": "recceiver",
+                        "value": "Inactive",
+                        "channels": [],
+                    },
+                ],
+                "tags": [],
+            }
+        ]
+        mocked.get(url, body=json.dumps(data))
+        r = await channelfinder.get_ioc_channels("iocName")
+        assert len(r) == 1
+        expected_channel = Channel(
+            "fred",
+            {"hostName": "host.blah", "iocName": "FredsIOC", "pvStatus": "Inactive"},
+            [],
+        )
+        assert r[0] == expected_channel
+
+
+@pytest.mark.asyncio
 async def test_get_all_channels() -> None:
     with aioresponses() as mocked:
         channelfinder = ChannelFinder()

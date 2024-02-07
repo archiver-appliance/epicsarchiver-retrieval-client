@@ -34,6 +34,7 @@ from rich.console import Console
 from epicsarchiver import ArchiverAppliance
 from epicsarchiver.channelfinder import ChannelFinder
 from epicsarchiver.statistics._external_stats import (
+    filter_by_ioc,
     get_double_archived,
     get_iocs,
     get_not_configured,
@@ -50,7 +51,7 @@ LOG: logging.Logger = logging.getLogger(__name__)
 
 @dataclass
 class ReportConfig:
-    """Configurration for generating the report."""
+    """Configuration for generating the report."""
 
     query_limit: int | None
     time_minimum: timedelta
@@ -60,6 +61,7 @@ class ReportConfig:
     mb_per_day_minimum: float
     events_dropped_minimum: int
     channelfinder: ChannelFinder | None
+    ioc_name: str | None
 
 
 class Stat(str, enum.Enum):
@@ -179,7 +181,10 @@ class Stat(str, enum.Enum):
             case Stat.NotConfigured:
                 if config.config_files:
                     return await get_not_configured(
-                        archiver, config.channelfinder, config.config_files
+                        archiver,
+                        config.channelfinder,
+                        config.config_files,
+                        config.ioc_name,
                     )
                 return []
 
@@ -253,8 +258,7 @@ async def generate_all_stats(
     inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats, strict=True)))
     if config.channelfinder:
         return await _organise_by_ioc(
-            inverted_data,
-            config.channelfinder,
+            inverted_data, config.channelfinder, ioc_name=config.ioc_name
         )
     return {UNKNOWN_IOC: inverted_data}
 
@@ -262,8 +266,14 @@ async def generate_all_stats(
 async def _organise_by_ioc(
     inverted_report: dict[str, _PVStats],
     channelfinder: ChannelFinder,
+    ioc_name: str | None = None,
 ) -> dict[Ioc, dict[str, _PVStats]]:
-    iocs = await get_iocs(channelfinder, list(inverted_report.keys()))
+    if ioc_name:
+        iocs = await filter_by_ioc(
+            channelfinder, ioc_name, list(inverted_report.keys())
+        )
+    else:
+        iocs = await get_iocs(channelfinder, list(inverted_report.keys()))
     LOG.info("IOCS: %s", str(await _iocs_summary(iocs)))
     return {ioc: {pv: inverted_report[pv] for pv in iocs[ioc]} for ioc in iocs}
 

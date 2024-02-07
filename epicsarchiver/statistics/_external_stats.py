@@ -47,7 +47,10 @@ async def get_double_archived(
 
 
 async def get_not_configured(
-    archiver: ArchiverAppliance, channelfinder: ChannelFinder | None, config_files: Path
+    archiver: ArchiverAppliance,
+    channelfinder: ChannelFinder | None,
+    config_files: Path,
+    ioc_name: str | None = None,
 ) -> list[NoConfigResponse]:
     """Return list of pvs archived but not in config or configured but not archived.
 
@@ -55,6 +58,7 @@ async def get_not_configured(
         archiver (ArchiverAppliance): archiver
         channelfinder (ChannelFinder): channelfinder
         config_files (Path): files with lists of pvs
+        ioc_name (str): Name of an ioc to filter by
 
     Returns:
         list[NoConfigResponse]: Details of pvs.
@@ -81,8 +85,12 @@ async def get_not_configured(
             archived_not_configured_alias,
             configured_not_archived_alias,
         ) = await asyncio.gather(*[
-            get_aliases(channelfinder, list(archived_not_configured)),
-            get_aliases(channelfinder, list(configured_not_archived)),
+            get_aliases(
+                channelfinder, list(archived_not_configured), ioc_name=ioc_name
+            ),
+            get_aliases(
+                channelfinder, list(configured_not_archived), ioc_name=ioc_name
+            ),
         ])
 
     responses = await asyncio.gather(*[
@@ -148,17 +156,41 @@ async def get_iocs(
     return output
 
 
+async def filter_by_ioc(
+    channelfinder: ChannelFinder, ioc_name: str, pvs: list[str]
+) -> dict[Ioc, list[str]]:
+    """Filter a list of pvs by an ioc name
+
+    Args:
+        channelfinder (ChannelFinder): channelfinder
+        ioc_name (str): ioc name
+        pvs (list[str]): list of pv names
+
+    Returns:
+        dict[Ioc, list[str]]: dictionary mapping ioc name to pv
+    """
+    channels = await channelfinder.get_ioc_channels(ioc_name)
+    if channels:
+        return {
+            Ioc.from_channel(channels[0]): [
+                channel.name for channel in channels if channel.name in pvs
+            ]
+        }
+    return {}
+
+
 async def get_aliases(
-    channelfinder: ChannelFinder, pvs: list[str]
+    channelfinder: ChannelFinder, pvs: list[str], ioc_name: str | None
 ) -> dict[str, list[str]]:
     """Get the aliases for a list of pvs.
 
     Args:
         channelfinder (ChannelFinder): channelfinder
         pvs (list[str]): list of pv names
+        ioc_name (str): ioc to filter by
 
     Returns:
         dict[str, list[str]]: dictionary mapping pv name to list of aliases
     """
-    channels = await channelfinder.get_all_alias_channels(pvs)
+    channels = await channelfinder.get_all_alias_channels(pvs, ioc_name=ioc_name)
     return {pv: [channel.name for channel in channels[pv]] for pv in channels}

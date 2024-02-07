@@ -87,6 +87,7 @@ async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
         mb_per_day_minimum=10,
         events_dropped_minimum=1,
         channelfinder=ChannelFinder("channelfinder.example.org"),
+        ioc_name=None,
     )
     actual = await Stat.BufferOverflow.generate_stats(archiver, config)
     assert actual == {
@@ -162,6 +163,7 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
         mb_per_day_minimum=0,
         events_dropped_minimum=1,
         channelfinder=ChannelFinder("channelfinder.example.org"),
+        ioc_name=None,
     )
     ioc = Ioc(channel.properties["hostName"], channel.properties["iocName"])
     actual = await generate_all_stats(archiver, config)
