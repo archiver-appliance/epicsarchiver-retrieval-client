@@ -30,31 +30,35 @@ expected_all_stats: dict[Stat, BaseStatResponse] = {
     Stat.BufferOverflow: DroppedPVResponse("MY:PV", 11, DroppedReason.BufferOverflow),
     Stat.TypeChange: DroppedPVResponse("MY:PV", 11, DroppedReason.TypeChange),
     Stat.IncorrectTimestamp: DroppedPVResponse(
-        "MY:PV", 11, DroppedReason.IncorrectTimestamp
+        "MY:PV",
+        11,
+        DroppedReason.IncorrectTimestamp,
     ),
     Stat.SlowChanging: DroppedPVResponse("MY:PV", 11, DroppedReason.SlowChanging),
     Stat.DisconnectedPVs: DisconnectedPVsResponse(
         "MY:PV",
         "N/A",
         datetime.datetime.fromisoformat("2023-09-14T16:00:18+02:00").replace(
-            tzinfo=pytz.utc
+            tzinfo=pytz.utc,
         ),
         "archiver.example.org",
         6,
         1694700018,
         datetime.datetime.fromisoformat("2023-08-25T15:38:17+02:00").replace(
-            tzinfo=pytz.utc
+            tzinfo=pytz.utc,
         ),
     ),
     Stat.SilentPVs: SilentPVsResponse(
         "MY:PV",
         "archiver.example.org",
         datetime.datetime.fromisoformat("2023-08-25T15:38:17+02:00").replace(
-            tzinfo=pytz.utc
+            tzinfo=pytz.utc,
         ),
     ),
     Stat.DoubleArchived: BothArchiversResponse(
-        "MY:PV", "archiver.example.org", "other_archiver.example.org"
+        "MY:PV",
+        "archiver.example.org",
+        "other_archiver.example.org",
     ),
     Stat.StorageRates: StorageRatesResponse(
         "MY:PV",
@@ -93,7 +97,7 @@ async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
     assert actual == {
         expected_all_stats[Stat.BufferOverflow].pv_name: expected_all_stats[
             Stat.BufferOverflow
-        ]
+        ],
     }
 
 

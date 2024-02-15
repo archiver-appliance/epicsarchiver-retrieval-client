@@ -220,7 +220,10 @@ class ArchiverMgmt(BaseArchiverAppliance):
         return cast(list[str], r.json())
 
     def get_all_pvs(
-        self, pv: str | None = None, regex: str | None = None, limit: int = 500
+        self,
+        pv: str | None = None,
+        regex: str | None = None,
+        limit: int = 500,
     ) -> list[str]:
         """Return all the PVs in the cluster.
 
@@ -277,7 +280,9 @@ class ArchiverMgmt(BaseArchiverAppliance):
         return cast(list[dict[str, str]], r.json())
 
     def get_pv_status_from_files(
-        self, files: list[str], appliance: str | None = None
+        self,
+        files: list[str],
+        appliance: str | None = None,
     ) -> list[dict[str, str]]:
         """Return the status of PVs from a list of files.
 
@@ -310,7 +315,9 @@ class ArchiverMgmt(BaseArchiverAppliance):
         return cast(list[str], r.json())
 
     def get_unarchived_pvs_from_files(
-        self, files: list[str], appliance: str | None = None
+        self,
+        files: list[str],
+        appliance: str | None = None,
     ) -> list[str]:
         """Return the list of unarchived PVs from a list of files.
 
@@ -359,7 +366,9 @@ class ArchiverMgmt(BaseArchiverAppliance):
         return cast(list[dict[str, str]], r.json())
 
     def archive_pvs_from_files(
-        self, files: list[str], appliance: str | None = None
+        self,
+        files: list[str],
+        appliance: str | None = None,
     ) -> list[dict[str, str]]:
         """Archive PVs from a list of files.
 
@@ -457,7 +466,10 @@ class ArchiverMgmt(BaseArchiverAppliance):
         return cast(dict[str, str], r.json())
 
     def update_pv(
-        self, pv: str, samplingperiod: float, samplingmethod: str | None = None
+        self,
+        pv: str,
+        samplingperiod: float,
+        samplingmethod: str | None = None,
     ) -> list[str]:
         """Change the archival parameters for a PV.
 
@@ -651,7 +663,9 @@ class ArchiverStatistics(BaseArchiverAppliance):
     """Responses from the reports of the archiver appliance."""
 
     def get_pvs_dropped(
-        self, reason: DroppedReason, limit: int | None = 1000
+        self,
+        reason: DroppedReason,
+        limit: int | None = 1000,
     ) -> list[DroppedPVResponse]:
         """Gets the pvs ordered by dropped events."""
         params = None
@@ -674,7 +688,8 @@ class ArchiverStatistics(BaseArchiverAppliance):
         return [SilentPVsResponse.from_json(rs) for rs in r]
 
     def get_lost_connections_pvs(
-        self, limit: int | None = 1000
+        self,
+        limit: int | None = 1000,
     ) -> list[LostConnectionsResponse]:
         """Gets the list of pvs with no events."""
         params = None

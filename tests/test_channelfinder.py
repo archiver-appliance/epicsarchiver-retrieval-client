@@ -47,7 +47,7 @@ async def test_get_channels() -> None:
                     },
                 ],
                 "tags": [],
-            }
+            },
         ]
         mocked.get(url, body=json.dumps(data))
         r = await channelfinder.get_channels(None, ["fred"])
@@ -90,7 +90,7 @@ async def test_get_ioc_channels() -> None:
                     },
                 ],
                 "tags": [],
-            }
+            },
         ]
         mocked.get(url, body=json.dumps(data))
         r = await channelfinder.get_ioc_channels("iocName")

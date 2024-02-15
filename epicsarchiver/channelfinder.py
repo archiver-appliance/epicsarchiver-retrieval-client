@@ -48,7 +48,7 @@ class Channel:
             int: hash of channel
         """
         return hash(
-            self.name + str(tuple(sorted(self.properties.items()))) + str(self.tags)
+            self.name + str(tuple(sorted(self.properties.items()))) + str(self.tags),
         )
 
 
@@ -67,7 +67,10 @@ async def _fetch(
     params: dict[str, str],
 ) -> list[Channel]:
     async with session.get(
-        url=url, params=params, raise_for_status=True, ssl=False
+        url=url,
+        params=params,
+        raise_for_status=True,
+        ssl=False,
     ) as value:
         value_json = await value.json()
         LOG.debug("Result from channelfinder search: %s", str(value_json))
@@ -83,7 +86,6 @@ class ChannelFinder:
         hostname: Channel Finder url [default: localhost]
 
     Examples:
-
     .. code-block:: python
 
         from epicsarchiver.channelfinder import ChannelFinder
@@ -127,7 +129,8 @@ class ChannelFinder:
             list[Channel]: list of matching channels
         """
         url = urllib.parse.urljoin(
-            f"https://{self.hostname}", "/ChannelFinder/resources/channels"
+            f"https://{self.hostname}",
+            "/ChannelFinder/resources/channels",
         )
         urllib3.disable_warnings()  # ignoring warnings that certificate is self signed
         params = {}
@@ -145,7 +148,9 @@ class ChannelFinder:
             return await _fetch(session, url, params)
 
     async def get_all_channels(
-        self, pvs: list[str], group_size: int = 10
+        self,
+        pvs: list[str],
+        group_size: int = 10,
     ) -> dict[str, Channel]:
         """Get the list of channels matching the pv names from channelfinder.
 
@@ -182,7 +187,9 @@ class ChannelFinder:
             return await self.get_channels(session, None, ioc_name=ioc_name)
 
     async def get_all_alias_channels(
-        self, pvs: list[str], ioc_name: str | None = None
+        self,
+        pvs: list[str],
+        ioc_name: str | None = None,
     ) -> dict[str, list[Channel]]:
         """Get the list of channels aliases of pvs from channelfinder.
 

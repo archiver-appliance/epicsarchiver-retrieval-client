@@ -66,7 +66,7 @@ def test_get_disconnected_pvs() -> None:
                 "commandThreadID": "6",
                 "noConnectionAsOfEpochSecs": "1694700018",
                 "lastKnownEvent": "Aug/25/2023 15:38:17 +02:00",
-            }
+            },
         ],
         status=200,
         match_querystring=True,
@@ -78,15 +78,15 @@ def test_get_disconnected_pvs() -> None:
             "MY:PV",
             "N/A",
             datetime.datetime.fromisoformat("2023-09-14T16:00:18+02:00").replace(
-                tzinfo=pytz.utc
+                tzinfo=pytz.utc,
             ),
             "archiver.example.org",
             6,
             1694700018,
             datetime.datetime.fromisoformat("2023-08-25T15:38:17+02:00").replace(
-                tzinfo=pytz.utc
+                tzinfo=pytz.utc,
             ),
-        )
+        ),
     ] == pvs_disconnected
 
 
@@ -101,7 +101,7 @@ def test_get_silent_pvs() -> None:
                 "pvName": "MY:PV",
                 "instance": "archiver.example.org",
                 "lastKnownEvent": "Aug/25/2023 15:38:17 +02:00",
-            }
+            },
         ],
         status=200,
         match_querystring=True,
@@ -113,9 +113,9 @@ def test_get_silent_pvs() -> None:
             "MY:PV",
             "archiver.example.org",
             datetime.datetime.fromisoformat("2023-08-25T15:38:17+02:00").replace(
-                tzinfo=pytz.utc
+                tzinfo=pytz.utc,
             ),
-        )
+        ),
     ] == pvs_response
 
 
@@ -131,7 +131,7 @@ def test_get_lost_connections_pvs() -> None:
                 "pvName": "MY:PV",
                 "instance": "archiver.example.org",
                 "lostConnections": "2586",
-            }
+            },
         ],
         status=200,
         match_querystring=True,
@@ -144,7 +144,7 @@ def test_get_lost_connections_pvs() -> None:
             ConnectionStatus.CurrentlyConnected,
             "archiver.example.org",
             2586,
-        )
+        ),
     ] == pvs_response
 
 
@@ -159,7 +159,7 @@ def test_get_paused_pvs() -> None:
                 "pvName": "MY:PV",
                 "instance": "archiver",
                 "modificationTime": "Sep/12/2023 16:38:56 +02:00",
-            }
+            },
         ],
         status=200,
         match_querystring=True,
@@ -167,7 +167,7 @@ def test_get_paused_pvs() -> None:
     pvs_response = archiver.get_paused_pvs()
     assert len(responses.calls) == 1
     assert [
-        PausedPVResponse("MY:PV", "archiver", "Sep/12/2023 16:38:56 +02:00")
+        PausedPVResponse("MY:PV", "archiver", "Sep/12/2023 16:38:56 +02:00"),
     ] == pvs_response
 
 
@@ -183,7 +183,7 @@ def test_get_storage_rates() -> None:
                 "storageRate_MBperDay": "1099.2894956029622",
                 "storageRate_KBperHour": "46903.01847905972",
                 "storageRate_GBperYear": "391.8365877881653",
-            }
+            },
         ],
         status=200,
         match_querystring=True,
@@ -192,8 +192,11 @@ def test_get_storage_rates() -> None:
     assert len(responses.calls) == 1
     assert [
         StorageRatesResponse(
-            "MY:PV", 1099.2894956029622, 46903.01847905972, 391.8365877881653
-        )
+            "MY:PV",
+            1099.2894956029622,
+            46903.01847905972,
+            391.8365877881653,
+        ),
     ] == pvs_response
 
 
@@ -233,7 +236,7 @@ async def test_get_double_archived() -> None:
     pvs_response = await get_double_archived(archiver, other_archiver)
     assert len(responses.calls) == 4
     assert [
-        BothArchiversResponse("MY:PV", archiver.hostname, other_archiver.hostname)
+        BothArchiversResponse("MY:PV", archiver.hostname, other_archiver.hostname),
     ] == pvs_response
 
 
