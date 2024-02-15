@@ -26,18 +26,17 @@ from __future__ import annotations
 import collections
 import logging as log
 from collections import OrderedDict
-from dataclasses import dataclass
-from datetime import datetime as pydt
 from typing import TYPE_CHECKING
 
 import pandas as pd
 from pandas import Timestamp
-from pytz import utc as UTC  # noqa: N812
 
 from epicsarchiver import EPICSEvent_pb2 as ee
+from epicsarchiver.archive_event import ArchiveEvent, FieldValue, ysn_timestamp
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from datetime import datetime as pydt
 
 # It is not clear to me why I can't extract this information
 # from the compiled protobuf file.
@@ -84,210 +83,6 @@ PB_REPLACEMENTS_UNESCAPING = collections.OrderedDict([
 ])
 
 
-@dataclass
-class FieldValue:
-    """Basic representation of a changed field value from an archive event.
-
-    Returns:
-        FieldValue: Pair of name and value
-    """
-
-    name: str | None
-    value: str | None
-
-    @classmethod
-    def from_pb_field_value(cls, f: ee.FieldValue) -> FieldValue:
-        """From the protobuf variant.
-
-        Args:
-            f (ee.FieldValue): protobuf field value
-
-        Returns:
-            FieldValue: Basic Field Value
-        """
-        return FieldValue(f.name, f.val)
-
-
-@dataclass
-class ArchiveEvent:
-    """One Event, retrieved from the AA, representing a change in value of a PV."""
-
-    pv: str
-    val: int | float | str | list[str] | list[int] | list[float] | bytes
-    secondsintoyear: int
-    year: int
-    nanos: int
-    severity: int
-    status: int
-    field_values: list[FieldValue] | None
-
-    @property
-    def timestamp(self) -> pydt:
-        """Provides a datetime for the archive event.
-
-        This will lose information (the last few decimal places) since
-        datetime does not handle nano seconds.
-
-        Returns:
-            datetime: datetime for event
-        """
-        return self.pd_timestamp.to_pydatetime(warn=True)
-
-    @property
-    def pd_timestamp(self) -> Timestamp:
-        """Provides a pandas Timestamp for the archive event.
-
-        Returns:
-            datetime: datetime for event
-        """
-        return ysn_timestamp(self.year, self.secondsintoyear, self.nanos)
-
-    def _pb_event(
-        self,
-    ) -> (
-        ee.ScalarString
-        | ee.ScalarDouble
-        | ee.ScalarInt
-        | ee.ScalarByte
-        | ee.VectorString
-        | ee.VectorFloat
-        | ee.VectorInt
-        | ee.V4GenericBytes
-    ):
-        """Create a ProtoBuf event, mostly used for testing.
-
-        Args:
-                self (ArchiveEvent): An Archive Event to convert
-
-        Returns:
-            ee.ScalarString
-        | ee.ScalarDouble
-        | ee.ScalarInt
-        | ee.ScalarByte
-        | ee.VectorString
-        | ee.VectorFloat
-        | ee.VectorInt
-        | ee.V4GenericBytes: An Archive Event in proto buf format
-        """
-        if isinstance(self.val, int):
-            return ee.ScalarInt(
-                secondsintoyear=self.secondsintoyear,
-                nano=self.nanos,
-                val=self.val,
-                severity=self.severity,
-                status=self.status,
-                fieldvalues=None
-                if self.field_values is None
-                else [
-                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
-                ],
-            )
-        if isinstance(self.val, float):
-            return ee.ScalarDouble(
-                secondsintoyear=self.secondsintoyear,
-                nano=self.nanos,
-                val=self.val,
-                severity=self.severity,
-                status=self.status,
-                fieldvalues=None
-                if self.field_values is None
-                else [
-                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
-                ],
-            )
-        if isinstance(self.val, str):
-            return ee.ScalarString(
-                secondsintoyear=self.secondsintoyear,
-                nano=self.nanos,
-                val=self.val,
-                severity=self.severity,
-                status=self.status,
-                fieldvalues=None
-                if self.field_values is None
-                else [
-                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
-                ],
-            )
-        if isinstance(self.val, bytes):
-            return ee.V4GenericBytes(
-                secondsintoyear=self.secondsintoyear,
-                nano=self.nanos,
-                val=self.val,
-                severity=self.severity,
-                status=self.status,
-                fieldvalues=None
-                if self.field_values is None
-                else [
-                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
-                ],
-            )
-        if all(isinstance(x, str) for x in self.val):
-            return ee.VectorString(
-                secondsintoyear=self.secondsintoyear,
-                nano=self.nanos,
-                val=self.val,  # type: ignore
-                severity=self.severity,
-                status=self.status,
-                fieldvalues=None
-                if self.field_values is None
-                else [
-                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
-                ],
-            )
-        if all(isinstance(x, int) for x in self.val):
-            return ee.VectorInt(
-                secondsintoyear=self.secondsintoyear,
-                nano=self.nanos,
-                val=self.val,  # type: ignore
-                severity=self.severity,
-                status=self.status,
-                fieldvalues=None
-                if self.field_values is None
-                else [
-                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
-                ],
-            )
-        if all(isinstance(x, float) for x in self.val):
-            return ee.VectorFloat(
-                secondsintoyear=self.secondsintoyear,
-                nano=self.nanos,
-                val=self.val,  # type: ignore
-                severity=self.severity,
-                status=self.status,
-                fieldvalues=None
-                if self.field_values is None
-                else [
-                    ee.FieldValue(name=f.name, val=f.value) for f in self.field_values
-                ],
-            )
-        return ee.VectorString(
-            secondsintoyear=self.secondsintoyear,
-            nano=self.nanos,
-            val=None,
-            severity=self.severity,
-            status=self.status,
-            fieldvalues=None
-            if self.field_values is None
-            else [ee.FieldValue(name=f.name, val=f.value) for f in self.field_values],
-        )
-
-
-def dataframe_from_events(events: list[ArchiveEvent]) -> pd.DataFrame:
-    """Converts a list of ArchiveEvent to pd.DataFrame.
-
-    Args:
-        events (list[ArchiveEvent]): input events
-
-    Returns:
-        pd.DataFrame: Output dataframe with columns "date", "val"
-          where "date" is index column.
-    """
-    val = pd.DataFrame([event.__dict__ for event in events])
-    val["date"] = [v.pd_timestamp for v in events]
-    val = val[["date", "val"]]
-    return val.set_index("date")
-
-
 def unescape_bytes(byte_seq: bytes) -> bytes:
     """Replace specific sub-sequences in a bytes sequence.
 
@@ -318,20 +113,6 @@ def escape_bytes(byte_seq: bytes) -> bytes:
     for key, value in PB_REPLACEMENTS_ESCAPING.items():
         byte_seq = byte_seq.replace(value, key)
     return byte_seq
-
-
-def year_timestamp(year: int) -> int:
-    """Generates int timestamp for number of seconds from unix epoch at start of year.
-
-    Args:
-        year (int): year
-
-    Returns:
-        int: seconds from epoch of start of year.
-    """
-    return int(
-        (pydt(year, 1, 1, tzinfo=UTC) - pydt(1970, 1, 1, tzinfo=UTC)).total_seconds()
-    )
 
 
 def event_pd_timestamp(
@@ -422,22 +203,6 @@ def event_timestamp(
     return event_pd_timestamp(year, event).to_pydatetime()
 
 
-def ysn_timestamp(year: int, seconds: int, nanos: int) -> Timestamp:
-    """Get datetime from year, seconds into year and nanoseconds.
-
-    Args:
-        year (int): year
-        seconds (int): seconds into year
-        nanos (int): nanoseconds
-
-    Returns:
-        Timestamp: datetime
-    """
-    year_start = year_timestamp(year)
-
-    return Timestamp((year_start + seconds) * int(1e9) + nanos, tz=UTC)
-
-
 def get_timestamp_from_line_function(
     chunk_info: ee.PayloadInfo,
 ) -> Callable[[bytes], pydt]:
@@ -526,7 +291,7 @@ def _event_from_line(line: bytes, pv: str, year: int, event_type: int) -> Archiv
         event.nano,
         event.severity,
         event.status,
-        [FieldValue.from_pb_field_value(f) for f in event.fieldvalues],
+        [to_field_value(f) for f in event.fieldvalues],
     )
 
 
@@ -633,3 +398,15 @@ def create_pb_bytes(
     info_bytes = escape_bytes(info.SerializeToString())
     events_bytes = b"\n".join(escape_bytes(e.SerializeToString()) for e in events)
     return info_bytes + b"\n" + events_bytes
+
+
+def to_field_value(f: ee.FieldValue) -> FieldValue:
+    """From the protobuf variant.
+
+    Args:
+        f (ee.FieldValue): protobuf field value
+
+    Returns:
+        FieldValue: Basic Field Value
+    """
+    return FieldValue(f.name, f.val)
