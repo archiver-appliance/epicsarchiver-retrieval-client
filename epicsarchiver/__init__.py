@@ -8,12 +8,12 @@ __all__ = [
     "epicsarchiver.statistics",
 ]
 
-from epicsarchiver.epicsarchiver import (
-    ArchiverAppliance,
-)
-from epicsarchiver.pb import (
+from epicsarchiver.archive_event import (
     ArchiveEvent,
     FieldValue,
+)
+from epicsarchiver.epicsarchiver import (
+    ArchiverAppliance,
 )
 
 __all__ += ["ArchiverAppliance", "ArchiveEvent", "FieldValue"]

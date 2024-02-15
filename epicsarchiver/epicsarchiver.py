@@ -6,15 +6,15 @@ import datetime
 import logging
 import urllib.parse
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 import requests
 from dateutil import parser
 from requests import Response
 
-from epicsarchiver import archive_files, pb
-from epicsarchiver.pb import ArchiveEvent, parse_pb_data
+from epicsarchiver import archive_event, archive_files
+from epicsarchiver.pb import parse_pb_data
 from epicsarchiver.statistics.stat_responses import (
     DisconnectedPVsResponse,
     DroppedPVResponse,
@@ -24,6 +24,9 @@ from epicsarchiver.statistics.stat_responses import (
     SilentPVsResponse,
     StorageRatesResponse,
 )
+
+if TYPE_CHECKING:
+    from epicsarchiver.archive_event import ArchiveEvent
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -493,7 +496,7 @@ class ArchiverAppliance:
             `pandas.DataFrame`
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
-        return pb.dataframe_from_events(self.get_events(pv, start, end))
+        return archive_event.dataframe_from_events(self.get_events(pv, start, end))
 
     def pause_rename_resume_pv(self, pv: str, new: str) -> None:
         """Pause, rename and resume a PV.

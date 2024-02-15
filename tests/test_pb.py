@@ -35,6 +35,122 @@ EVENT = ArchiveEvent(
 )
 
 
+def _pb_event(
+    event: ArchiveEvent,
+) -> (
+    ee.ScalarString
+    | ee.ScalarDouble
+    | ee.ScalarInt
+    | ee.ScalarByte
+    | ee.VectorString
+    | ee.VectorFloat
+    | ee.VectorInt
+    | ee.V4GenericBytes
+):
+    """Create a ProtoBuf event, mostly used for testing.
+
+    Args:
+            event (ArchiveEvent): An Archive Event to convert
+
+    Returns:
+        ee.ScalarString
+    | ee.ScalarDouble
+    | ee.ScalarInt
+    | ee.ScalarByte
+    | ee.VectorString
+    | ee.VectorFloat
+    | ee.VectorInt
+    | ee.V4GenericBytes: An Archive Event in proto buf format
+    """
+    if isinstance(event.val, int):
+        return ee.ScalarInt(
+            secondsintoyear=event.secondsintoyear,
+            nano=event.nanos,
+            val=event.val,
+            severity=event.severity,
+            status=event.status,
+            fieldvalues=None
+            if event.field_values is None
+            else [ee.FieldValue(name=f.name, val=f.value) for f in event.field_values],
+        )
+    if isinstance(event.val, float):
+        return ee.ScalarDouble(
+            secondsintoyear=event.secondsintoyear,
+            nano=event.nanos,
+            val=event.val,
+            severity=event.severity,
+            status=event.status,
+            fieldvalues=None
+            if event.field_values is None
+            else [ee.FieldValue(name=f.name, val=f.value) for f in event.field_values],
+        )
+    if isinstance(event.val, str):
+        return ee.ScalarString(
+            secondsintoyear=event.secondsintoyear,
+            nano=event.nanos,
+            val=event.val,
+            severity=event.severity,
+            status=event.status,
+            fieldvalues=None
+            if event.field_values is None
+            else [ee.FieldValue(name=f.name, val=f.value) for f in event.field_values],
+        )
+    if isinstance(event.val, bytes):
+        return ee.V4GenericBytes(
+            secondsintoyear=event.secondsintoyear,
+            nano=event.nanos,
+            val=event.val,
+            severity=event.severity,
+            status=event.status,
+            fieldvalues=None
+            if event.field_values is None
+            else [ee.FieldValue(name=f.name, val=f.value) for f in event.field_values],
+        )
+    if all(isinstance(x, str) for x in event.val):
+        return ee.VectorString(
+            secondsintoyear=event.secondsintoyear,
+            nano=event.nanos,
+            val=event.val,  # type: ignore
+            severity=event.severity,
+            status=event.status,
+            fieldvalues=None
+            if event.field_values is None
+            else [ee.FieldValue(name=f.name, val=f.value) for f in event.field_values],
+        )
+    if all(isinstance(x, int) for x in event.val):
+        return ee.VectorInt(
+            secondsintoyear=event.secondsintoyear,
+            nano=event.nanos,
+            val=event.val,  # type: ignore
+            severity=event.severity,
+            status=event.status,
+            fieldvalues=None
+            if event.field_values is None
+            else [ee.FieldValue(name=f.name, val=f.value) for f in event.field_values],
+        )
+    if all(isinstance(x, float) for x in event.val):
+        return ee.VectorFloat(
+            secondsintoyear=event.secondsintoyear,
+            nano=event.nanos,
+            val=event.val,  # type: ignore
+            severity=event.severity,
+            status=event.status,
+            fieldvalues=None
+            if event.field_values is None
+            else [ee.FieldValue(name=f.name, val=f.value) for f in event.field_values],
+        )
+    return ee.VectorString(
+        secondsintoyear=event.secondsintoyear,
+        nano=event.nanos,
+        val=None,
+        severity=event.severity,
+        status=event.status,
+        fieldvalues=None
+        if event.field_values is None
+        else [ee.FieldValue(name=f.name, val=f.value) for f in event.field_values],
+    )
+
+
 def test_parse_payloadinfo() -> None:
     pi = ee.PayloadInfo()
     pi.ParseFromString(RAW_PAYLOAD_INFO)

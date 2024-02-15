@@ -10,7 +10,38 @@ Python package to interact with the [EPICS Archiver Appliance](https://slacmshan
 - [Documentation](http://ics-software.pages.esss.lu.se/py-epicsarchiver/index.html)
 - [Repository](https://gitlab.esss.lu.se/ics-software/py-epicsarchiver)
 
+## Installation
+
+py-epicsarchiver can be installed using artifactory PyPI repository::
+
+```console
+pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+```
+
 ## Quick start
+
+The package also installs a command line tool. Used to fetch data from the archiver and display in the terminal.
+
+```console
+$ epicsarchiver --help
+
+Usage: epicsarchiver [OPTIONS] COMMAND [ARGS]...
+
+  Command line tool for interacting with the archiver.
+
+Options:
+  --version            Show the version and exit.
+  -h, --hostname TEXT  Achiver Appliance hostname or IP [default: localhost]
+  --help               Show this message and exit.
+
+Commands:
+  archive  Archive all PVs included in the files passed as parameters.
+  get      Print out data from an archiver cluster.
+  rename   Rename all PVs included in the files passed as parameters.
+  stats    Print out statistics from an archiver cluster.
+```
+
+To fetch events using the python library:
 
 ```python
 from epicsarchiver import ArchiverAppliance
@@ -21,34 +52,6 @@ archiver.get_pv_status(pv='BPM*')
 archiver_events = archiver.get_events('my:pv', start='2018-07-04 13:00', end=datetime.utcnow())
 ```
 
-The package also installs a command line tool. It can be used to send a list of PVs to archive (from CSV files).
-See <https://gitlab.esss.lu.se/ics-infrastructure/epicsarchiver-config> for the file format.
-
-```console
-$ epicsarchiver --help
-
-Usage: epicsarchiver [OPTIONS] COMMAND [ARGS]...
-
-  Command line tool for interacting with the archiver.
-
-Options:
-  --version        Show the version and exit.
-  --hostname TEXT  Achiver Appliance hostname or IP [default: localhost]
-  --help           Show this message and exit.
-
-Commands:
-  archive  Archive all PVs included in the files passed as parameters.
-  rename   Rename all PVs included in the files passed as parameters.
-  stats    Print out statistics from an archiver cluster.
-```
-
-## Installation
-
-py-epicsarchiver can be installed using artifactory PyPI repository::
-
-```console
-pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
-```
 ## Development
 
 The package is built and packaged with [Hatch](https://hatch.pypa.io/latest/).
