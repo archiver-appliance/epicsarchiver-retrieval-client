@@ -61,15 +61,24 @@ class DroppedPVResponse(BaseStatResponse):
         return f"Dropped {self.events_dropped} events by {self.dropped_reason.name}"
 
 
-_DATE_FORMAT = "%b/%d/%Y %H:%M:%S %z"
+_DATE_FORMAT_OFFSET = "%b/%d/%Y %H:%M:%S %z"
+_DATE_FORMAT_TIMEZONE = "%b/%d/%Y %H:%M:%S %Z"
 
 
 def _parse_archiver_datetime(datetime_str: str) -> datetime.datetime | None:
     if datetime_str in {"Never", ""}:
         return None
-    return datetime.datetime.strptime(datetime_str, _DATE_FORMAT).replace(
-        tzinfo=pytz.utc
-    )
+    try:
+        return datetime.datetime.strptime(datetime_str, _DATE_FORMAT_OFFSET).replace(
+            tzinfo=pytz.utc
+        )
+    except ValueError:
+        try:
+            return datetime.datetime.strptime(
+                datetime_str, _DATE_FORMAT_TIMEZONE
+            ).replace(tzinfo=pytz.utc)
+        except ValueError:
+            return None
 
 
 @dataclass
