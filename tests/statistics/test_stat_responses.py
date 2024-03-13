@@ -2,7 +2,6 @@
 
 import datetime
 import os
-from pathlib import Path
 
 import pytest
 import pytz
@@ -26,6 +25,7 @@ from epicsarchiver.statistics.stat_responses import (
     PausedPVResponse,
     SilentPVsResponse,
     StorageRatesResponse,
+    _parse_archiver_datetime,
 )
 
 SAMPLES_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "samples")
@@ -238,7 +238,7 @@ async def test_get_double_archived() -> None:
 async def test_get_not_configured(mocker: MockFixture) -> None:
     archiver = ArchiverAppliance("archiver.example.org")
     channelfinder = ChannelFinder("channelfinder.example.org")
-    config_files = Path(SAMPLES_PATH)
+    config_files = ""
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=-1",
@@ -258,9 +258,48 @@ async def test_get_not_configured(mocker: MockFixture) -> None:
         "epicsarchiver.channelfinder._fetch",
         return_value=[Channel("MY:PV", {"alias": "MY:PV3"}, [])],
     )
+    mocker.patch(
+        "epicsarchiver.gitlab.Gitlab.get_tar_ball",
+        return_value=SAMPLES_PATH,
+    )
     pvs_response = await get_not_configured(archiver, channelfinder, config_files)
     assert len(responses.calls) == 2
     assert {
         NoConfigResponse("MY:PV", ConfiguredStatus.Archived, [], []),
         NoConfigResponse("MY:PV3", ConfiguredStatus.Configured, ["MY:PV"], ["MY:PV"]),
     } == set(pvs_response)
+
+
+@pytest.mark.parametrize(
+    ("test_input", "expected"),
+    [
+        (
+            "Feb/07/2024 20:55:42 UTC",
+            datetime.datetime(
+                year=2024,
+                month=2,
+                day=7,
+                hour=20,
+                minute=55,
+                second=42,
+                tzinfo=pytz.utc,
+            ),
+        ),
+        (
+            "Feb/07/2024 20:55:42 Z",
+            datetime.datetime(
+                year=2024,
+                month=2,
+                day=7,
+                hour=20,
+                minute=55,
+                second=42,
+                tzinfo=pytz.utc,
+            ),
+        ),
+        ("Never", None),
+        ("", None),
+    ],
+)
+def test_parse_archiver_datetime(test_input: str, expected: datetime.datetime) -> None:
+    assert _parse_archiver_datetime(test_input) == expected

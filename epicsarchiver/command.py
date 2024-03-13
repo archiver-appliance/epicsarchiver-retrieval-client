@@ -57,6 +57,7 @@ def cli(ctx: click.core.Context, hostname: str) -> None:
     ctx.obj = {"archiver": ArchiverAppliance(hostname)}
 
 
+@cli.command()
 @click.option(
     "--debug",
     is_flag=True,
@@ -64,7 +65,6 @@ def cli(ctx: click.core.Context, hostname: str) -> None:
     show_default=True,
     help="Turn on debug logging",
 )
-@cli.command()
 @click.option(
     "--appliance",
     default=None,
@@ -102,6 +102,7 @@ def archive(
     ctx.exit(0)
 
 
+@cli.command()
 @click.option(
     "--debug",
     is_flag=True,
@@ -109,7 +110,6 @@ def archive(
     show_default=True,
     help="Turn on debug logging",
 )
-@cli.command()
 @click.argument(
     "files",
     nargs=-1,
@@ -146,6 +146,7 @@ def rename(
     ctx.exit(0)
 
 
+@cli.command()
 @click.option(
     "--debug",
     is_flag=True,
@@ -153,7 +154,6 @@ def rename(
     show_default=True,
     help="Turn on debug logging",
 )
-@cli.command()
 @click.option(
     "--limit",
     "-l",
@@ -217,10 +217,11 @@ def rename(
     help="Verbose output",
 )
 @click.option(
-    "--config_files",
+    "--config_files_url",
     "-d",
-    type=click.Path(exists=True, dir_okay=True, path_type=Path, resolve_path=True),
-    help="Files with lists of PVs",
+    type=str,
+    default="archiver-appliance/archiver-appliance-config-aa-linac-prod",
+    help="Gitlab repo for files with lists of PVs",
 )
 @click.argument(
     "output",
@@ -233,7 +234,7 @@ def stats(
     other_hostname: str | None,
     time_minimum: int,
     connection_drops_minimum: int,
-    config_files: Path | None,
+    config_files_url: str | None,
     mb_per_day_minimum: float,
     events_dropped_minimum: int,
     channelfinder_hostname: str | None,
@@ -272,7 +273,7 @@ def stats(
             query_limit=limit,
             time_minimum=timedelta(days=time_minimum),
             connection_drops_minimum=connection_drops_minimum,
-            config_files=config_files,
+            config_files_url=config_files_url,
             other_archiver=other_archiver,
             mb_per_day_minimum=mb_per_day_minimum,
             events_dropped_minimum=events_dropped_minimum,
@@ -288,6 +289,7 @@ def stats(
 DATE_FORMATS = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]
 
 
+@cli.command()
 @click.option(
     "--debug",
     is_flag=True,
@@ -295,7 +297,6 @@ DATE_FORMATS = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]
     show_default=True,
     help="Turn on debug logging",
 )
-@cli.command()
 @click.option(
     "--start",
     "-s",
