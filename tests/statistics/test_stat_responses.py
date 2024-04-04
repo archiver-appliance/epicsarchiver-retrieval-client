@@ -2,6 +2,7 @@
 
 import datetime
 import os
+from pathlib import Path
 
 import pytest
 import pytz
@@ -238,7 +239,7 @@ async def test_get_double_archived() -> None:
 async def test_get_not_configured(mocker: MockFixture) -> None:
     archiver = ArchiverAppliance("archiver.example.org")
     channelfinder = ChannelFinder("channelfinder.example.org")
-    config_files = ""
+    config_gitlab_repo = Path("")
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=-1",
@@ -262,7 +263,7 @@ async def test_get_not_configured(mocker: MockFixture) -> None:
         "epicsarchiver.gitlab.Gitlab.get_tar_ball",
         return_value=SAMPLES_PATH,
     )
-    pvs_response = await get_not_configured(archiver, channelfinder, config_files)
+    pvs_response = await get_not_configured(archiver, channelfinder, config_gitlab_repo)
     assert len(responses.calls) == 2
     assert {
         NoConfigResponse("MY:PV", ConfiguredStatus.Archived, [], []),

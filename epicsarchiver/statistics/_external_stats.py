@@ -47,15 +47,15 @@ async def get_double_archived(
     ]
 
 
-async def fetch_config_files(config_files_url: str) -> Path:
+async def fetch_config_files(config_gitlab_repo: Path) -> Path:
     gitlab = Gitlab()
-    return await gitlab.get_tar_ball(config_files_url)
+    return await gitlab.get_tar_ball(config_gitlab_repo)
 
 
 async def get_not_configured(
     archiver: ArchiverAppliance,
     channelfinder: ChannelFinder | None,
-    config_files_url: str,
+    config_gitlab_repo: Path,
     ioc_name: str | None = None,
 ) -> list[NoConfigResponse]:
     """Return list of pvs archived but not in config or configured but not archived.
@@ -63,13 +63,13 @@ async def get_not_configured(
     Args:
         archiver (ArchiverAppliance): archiver
         channelfinder (ChannelFinder): channelfinder
-        config_files_url (str): files with lists of pvs
+        config_gitlab_repo (Path): Gitlab repo with files with lists of pvs
         ioc_name (str): Name of an ioc to filter by
 
     Returns:
         list[NoConfigResponse]: Details of pvs.
     """
-    config_files = await fetch_config_files(config_files_url)
+    config_files = await fetch_config_files(config_gitlab_repo)
     onlyfiles = [
         Path(join(config_files, f))
         for f in listdir(config_files)

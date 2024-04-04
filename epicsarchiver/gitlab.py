@@ -11,14 +11,14 @@ LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class Gitlab:
-    def __init__(self, hostname: str = "gitlab.esss.lu.se") -> None:
-        self.hostname = hostname
+    def __init__(self, fqdn: str = "gitlab.esss.lu.se") -> None:
+        self.fqdn = fqdn
 
-    async def get_tar_ball(self, repo: str) -> Path:
-        repo_name = repo.split("/")[1] + "-master"
+    async def get_tar_ball(self, repo: Path) -> Path:
+        repo_name = repo.name + "-master"
         async with aiohttp.ClientSession() as asession:
             full_url = urllib.parse.urljoin(
-                f"https://{self.hostname}",
+                f"https://{self.fqdn}",
                 f"{repo}/-/archive/master/{repo_name}.tar.gz",
             )
             LOG.debug("GET tar from %s", full_url)
@@ -30,4 +30,4 @@ class Gitlab:
                 temp_dir = tempfile.gettempdir()
                 LOG.debug("Extracting files to %s", temp_dir)
                 tar.extractall(path=temp_dir, filter=tarfile.data_filter)
-                return Path(temp_dir).joinpath(repo_name).joinpath("files")
+                return Path(temp_dir) / repo_name / "files"

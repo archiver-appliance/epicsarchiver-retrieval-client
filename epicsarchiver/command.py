@@ -217,9 +217,9 @@ def rename(
     help="Verbose output",
 )
 @click.option(
-    "--config_files_url",
+    "--config_gitlab_repo",
     "-d",
-    type=str,
+    type=click.Path(path_type=Path),
     default="archiver-appliance/archiver-appliance-config-aa-linac-prod",
     help="Gitlab repo for files with lists of PVs",
 )
@@ -234,7 +234,7 @@ def stats(
     other_hostname: str | None,
     time_minimum: int,
     connection_drops_minimum: int,
-    config_files_url: str | None,
+    config_gitlab_repo: Path | None,
     mb_per_day_minimum: float,
     events_dropped_minimum: int,
     channelfinder_hostname: str | None,
@@ -273,7 +273,7 @@ def stats(
             query_limit=limit,
             time_minimum=timedelta(days=time_minimum),
             connection_drops_minimum=connection_drops_minimum,
-            config_files_url=config_files_url,
+            config_gitlab_repo=config_gitlab_repo,
             other_archiver=other_archiver,
             mb_per_day_minimum=mb_per_day_minimum,
             events_dropped_minimum=events_dropped_minimum,
