@@ -56,7 +56,7 @@ class ReportConfig:
     query_limit: int | None
     time_minimum: timedelta
     connection_drops_minimum: int
-    config_files: Path | None
+    config_gitlab_repo: Path | None
     other_archiver: ArchiverAppliance | None
     mb_per_day_minimum: float
     events_dropped_minimum: int
@@ -179,11 +179,11 @@ class Stat(str, enum.Enum):
                 return []
 
             case Stat.NotConfigured:
-                if config.config_files:
+                if config.config_gitlab_repo:
                     return await get_not_configured(
                         archiver,
                         config.channelfinder,
-                        config.config_files,
+                        config.config_gitlab_repo,
                         config.ioc_name,
                     )
                 return []
