@@ -61,6 +61,7 @@ class DroppedPVResponse(BaseStatResponse):
         return f"Dropped {self.events_dropped} events by {self.dropped_reason.name}"
 
 
+# Different date formats depending on which api and version of the archiver
 _DATE_FORMAT_OFFSET = "%b/%d/%Y %H:%M:%S %z"
 _DATE_FORMAT_TIMEZONE = "%b/%d/%Y %H:%M:%S %Z"
 
