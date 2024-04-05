@@ -305,52 +305,6 @@ def read_pb_file(filename: str) -> list[ArchiveEvent]:
     return parse_pb_data(raw_data)
 
 
-def create_pb_bytes(
-    events: list[ee.ScalarString]
-    | list[ee.ScalarShort]
-    | list[ee.ScalarFloat]
-    | list[ee.ScalarEnum]
-    | list[ee.ScalarByte]
-    | list[ee.ScalarInt]
-    | list[ee.ScalarDouble]
-    | list[ee.VectorString]
-    | list[ee.VectorShort]
-    | list[ee.VectorFloat]
-    | list[ee.VectorEnum]
-    | list[ee.VectorChar]
-    | list[ee.VectorInt]
-    | list[ee.VectorDouble]
-    | list[ee.V4GenericBytes],
-    info: ee.PayloadInfo,
-) -> bytes:
-    """Mostly used for testing, converts list of events to escaped protobuf bytes.
-
-    Args:
-        events (list[ee.ScalarString]
-        | list[ee.ScalarShort]
-        | list[ee.ScalarFloat]
-        | list[ee.ScalarEnum]
-        | list[ee.ScalarByte]
-        | list[ee.ScalarInt]
-        | list[ee.ScalarDouble]
-        | list[ee.VectorString]
-        | list[ee.VectorShort]
-        | list[ee.VectorFloat]
-        | list[ee.VectorEnum]
-        | list[ee.VectorChar]
-        | list[ee.VectorInt]
-        | list[ee.VectorDouble]
-        | list[ee.V4GenericBytes]): list of events
-        info (ee.PayloadInfo): payload data
-
-    Returns:
-        bytes: escaped bytes
-    """
-    info_bytes = escape_bytes(info.SerializeToString())
-    events_bytes = b"\n".join(escape_bytes(e.SerializeToString()) for e in events)
-    return info_bytes + b"\n" + events_bytes
-
-
 def to_field_value(f: ee.FieldValue) -> FieldValue:
     """From the protobuf variant.
 
