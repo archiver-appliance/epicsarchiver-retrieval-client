@@ -50,5 +50,5 @@ class Gitlab:
                 tar = tarfile.open(fileobj=io.BytesIO(content_bytes), mode="r|gz")
                 temp_dir = tempfile.gettempdir()
                 LOG.debug("Extracting files to %s", temp_dir)
-                tar.extractall(path=temp_dir, filter=tarfile.data_filter)
+                tar.extractall(path=temp_dir, filter="data")
                 return Path(temp_dir) / repo_name / "files"
