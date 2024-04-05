@@ -83,6 +83,27 @@ PB_REPLACEMENTS_UNESCAPING = collections.OrderedDict([
     (ESC_BYTE + b"\x01", ESC_BYTE),
 ])
 
+EeScalarEvent = (
+    ee.ScalarString
+    | ee.ScalarShort
+    | ee.ScalarFloat
+    | ee.ScalarEnum
+    | ee.ScalarByte
+    | ee.ScalarInt
+    | ee.ScalarDouble
+)
+EeVectorEvent = (
+    ee.VectorString
+    | ee.VectorShort
+    | ee.VectorFloat
+    | ee.VectorEnum
+    | ee.VectorChar
+    | ee.VectorInt
+    | ee.VectorDouble
+    | ee.V4GenericBytes
+)
+EeEvent = EeScalarEvent | EeVectorEvent
+
 
 def unescape_bytes(byte_seq: bytes) -> bytes:
     """Replace specific sub-sequences in a bytes sequence.
@@ -118,41 +139,13 @@ def escape_bytes(byte_seq: bytes) -> bytes:
 
 def event_pd_timestamp(
     year: int,
-    event: ee.ScalarString
-    | ee.ScalarShort
-    | ee.ScalarFloat
-    | ee.ScalarEnum
-    | ee.ScalarByte
-    | ee.ScalarInt
-    | ee.ScalarDouble
-    | ee.VectorString
-    | ee.VectorShort
-    | ee.VectorFloat
-    | ee.VectorEnum
-    | ee.VectorChar
-    | ee.VectorInt
-    | ee.VectorDouble
-    | ee.V4GenericBytes,
+    event: EeEvent,
 ) -> Timestamp:
     """Converts from protobuf event time format to python datetime.
 
     Args:
         year (int): year of event
-        event (ee.ScalarString
-        | ee.ScalarShort
-        | ee.ScalarFloat
-        | ee.ScalarEnum
-        | ee.ScalarByte
-        | ee.ScalarInt
-        | ee.ScalarDouble
-        | ee.VectorString
-        | ee.VectorShort
-        | ee.VectorFloat
-        | ee.VectorEnum
-        | ee.VectorChar
-        | ee.VectorInt
-        | ee.VectorDouble
-        | ee.V4GenericBytes): input event
+        event (EeEvent): input event
 
     Returns:
         pydt: Output datetime
@@ -162,41 +155,13 @@ def event_pd_timestamp(
 
 def event_timestamp(
     year: int,
-    event: ee.ScalarString
-    | ee.ScalarShort
-    | ee.ScalarFloat
-    | ee.ScalarEnum
-    | ee.ScalarByte
-    | ee.ScalarInt
-    | ee.ScalarDouble
-    | ee.VectorString
-    | ee.VectorShort
-    | ee.VectorFloat
-    | ee.VectorEnum
-    | ee.VectorChar
-    | ee.VectorInt
-    | ee.VectorDouble
-    | ee.V4GenericBytes,
+    event: EeEvent,
 ) -> pydt:
     """Converts from protobuf event time format to python datetime.
 
     Args:
         year (int): year of event
-        event (ee.ScalarString
-        | ee.ScalarShort
-        | ee.ScalarFloat
-        | ee.ScalarEnum
-        | ee.ScalarByte
-        | ee.ScalarInt
-        | ee.ScalarDouble
-        | ee.VectorString
-        | ee.VectorShort
-        | ee.VectorFloat
-        | ee.VectorEnum
-        | ee.VectorChar
-        | ee.VectorInt
-        | ee.VectorDouble
-        | ee.V4GenericBytes): input event
+        event (EeEvent): input event
 
     Returns:
         pydt: Output datetime
@@ -319,21 +284,7 @@ def parse_pb_data(raw_data: bytes) -> list[ArchiveEvent]:
 
 def get_iso_timestamp_for_event(
     year: int,
-    event: ee.ScalarString
-    | ee.ScalarShort
-    | ee.ScalarFloat
-    | ee.ScalarEnum
-    | ee.ScalarByte
-    | ee.ScalarInt
-    | ee.ScalarDouble
-    | ee.VectorString
-    | ee.VectorShort
-    | ee.VectorFloat
-    | ee.VectorEnum
-    | ee.VectorChar
-    | ee.VectorInt
-    | ee.VectorDouble
-    | ee.V4GenericBytes,
+    event: EeEvent,
 ) -> str:
     """Returns an ISO-formatted timestamp string for the given event."""
     return pd.Timestamp(event_timestamp(year, event)).isoformat()
