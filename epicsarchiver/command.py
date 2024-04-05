@@ -268,7 +268,7 @@ def stats(
         ChannelFinder(channelfinder_hostname) if channelfinder_hostname else None
     )
 
-    with open(output, "w", encoding="locale") as out_file:
+    with output.open("w", encoding="locale") as out_file:
         config = ReportConfig(
             query_limit=limit,
             time_minimum=timedelta(days=time_minimum),

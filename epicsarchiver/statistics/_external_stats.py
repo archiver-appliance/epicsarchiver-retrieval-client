@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from os import listdir
-from os.path import isfile, join
 from pathlib import Path
 
 from numpy import mean
@@ -71,9 +70,9 @@ async def get_not_configured(
     """
     config_files = await fetch_config_files(config_gitlab_repo)
     onlyfiles = [
-        Path(join(config_files, f))
+        config_files / f
         for f in listdir(config_files)
-        if isfile(join(config_files, f)) and f.endswith(".archive")
+        if (config_files / f).is_file() and f.endswith(".archive")
     ]
     LOG.debug(
         "CALC Not configured PVs from %s and filed %s", archiver.hostname, onlyfiles

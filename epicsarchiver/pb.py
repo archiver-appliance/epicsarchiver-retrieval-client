@@ -26,6 +26,7 @@ from __future__ import annotations
 import collections
 import logging as log
 from collections import OrderedDict
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -347,11 +348,10 @@ def read_pb_file(filename: str) -> list[ArchiveEvent]:
     Returns:
         list[ArchiveEvent]: list of events in file
     """
-    with open(filename, "rb") as f:
-        raw_data = bytearray()
-        raw_data.extend(f.read())
+    raw_data = bytearray()
+    raw_data.extend(Path(filename).read_bytes())
 
-        return parse_pb_data(raw_data)
+    return parse_pb_data(raw_data)
 
 
 def create_pb_bytes(

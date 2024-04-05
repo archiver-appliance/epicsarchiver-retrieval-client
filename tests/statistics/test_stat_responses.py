@@ -1,7 +1,6 @@
 """Tests for `epicsarchiver.statistics` package."""
 
 import datetime
-import os
 from pathlib import Path
 
 import pytest
@@ -29,7 +28,10 @@ from epicsarchiver.statistics.stat_responses import (
     _parse_archiver_datetime,
 )
 
-SAMPLES_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), "samples")
+SAMPLES_PATH = Path(__file__).parent.resolve() / "samples"
+
+
+# Test ArchiverStatistics
 
 
 @responses.activate
@@ -239,7 +241,7 @@ async def test_get_double_archived() -> None:
 async def test_get_not_configured(mocker: MockFixture) -> None:
     archiver = ArchiverAppliance("archiver.example.org")
     channelfinder = ChannelFinder("channelfinder.example.org")
-    config_gitlab_repo = Path("")
+    config_gitlab_repo = Path()
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=-1",

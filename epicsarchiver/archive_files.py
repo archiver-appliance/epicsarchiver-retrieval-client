@@ -25,7 +25,7 @@ def parse_archive_file(
         Generator[dict[str, str], None, None]: produces
         dictionary with keys {"pv", "policy", "appliance"}
     """
-    with open(filename, encoding="locale") as file:
+    with filename.open(encoding="locale") as file:
         LOG.debug("PARSE archive file %s", filename)
         for line in file:
             stripped_line = line.strip()
@@ -70,7 +70,7 @@ def parse_rename_file(filename: Path) -> Generator[tuple[str, str], None, None]:
     Yields:
         Generator[tuple[str, str], None, None]: produces a pair old_pv_name, new_pv_name
     """
-    with open(filename, encoding="locale") as f:
+    with filename.open(encoding="locale") as f:
         for line in f:
             if parsed_line := _parse_rename_line(line):
                 yield parsed_line
