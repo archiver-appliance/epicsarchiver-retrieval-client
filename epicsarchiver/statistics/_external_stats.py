@@ -165,7 +165,7 @@ async def get_iocs(
 async def filter_by_ioc(
     channelfinder: ChannelFinder, ioc_name: str, pvs: list[str]
 ) -> dict[Ioc, list[str]]:
-    """Filter a list of pvs by an ioc name
+    """Filter a list of pvs by an ioc name.
 
     Args:
         channelfinder (ChannelFinder): channelfinder
