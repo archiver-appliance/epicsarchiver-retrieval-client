@@ -1,2 +1,1 @@
-"""Archiver Appliance Statistics module
-"""
+"""Archiver Appliance Statistics module."""

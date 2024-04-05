@@ -1,3 +1,5 @@
+"""Mini module for interacting with Gitlab."""
+
 import io
 import logging
 import tarfile
@@ -11,10 +13,29 @@ LOG: logging.Logger = logging.getLogger(__name__)
 
 
 class Gitlab:
+    """Gitlab class for downloading from gitlab."""
+
     def __init__(self, fqdn: str = "gitlab.esss.lu.se") -> None:
+        """Init the Gitlab class.
+
+        Args:
+            fqdn (str, optional): fqdn of the gitlab instance.
+                Defaults to "gitlab.esss.lu.se".
+        """
         self.fqdn = fqdn
 
     async def get_tar_ball(self, repo: Path) -> Path:
+        """Fetch the tar ball from the input repository and store in a temp directory.
+
+        Expects the repository to have a "files" subdirectory.
+
+        Args:
+            repo (Path): Path of the repo,
+                for example archiver-appliance/archiver-appliance-config-aa-linac-prod.
+
+        Returns:
+            Path: Returns the path of the "files" directory after download.
+        """
         repo_name = repo.name + "-master"
         async with aiohttp.ClientSession() as asession:
             full_url = urllib.parse.urljoin(
