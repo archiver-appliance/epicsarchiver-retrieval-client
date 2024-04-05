@@ -172,6 +172,17 @@ class SilentPVsResponse(BaseStatResponse):
         )
 
 
+class ConnectionStatus(enum.Enum):
+    """Connection status enum.
+
+    Args:
+        enum (int): Placement of enum.
+    """
+
+    CurrentlyConnected = 1
+    NotCurrentlyConnected = 2
+
+
 @dataclass
 class LostConnectionsResponse(BaseStatResponse):
     """Return a list of PVs sorted by the no. of connection drops.
@@ -188,7 +199,7 @@ class LostConnectionsResponse(BaseStatResponse):
         }
     """
 
-    currently_connected: bool
+    currently_connected: ConnectionStatus
     instance: str
     lost_connections: int
 
@@ -197,7 +208,9 @@ class LostConnectionsResponse(BaseStatResponse):
         """Response from the endpoint in getLostConnectionsReport."""
         return LostConnectionsResponse(
             json["pvName"],
-            json["currentlyConnected"] == "Yes",
+            ConnectionStatus.CurrentlyConnected
+            if json["currentlyConnected"] == "Yes"
+            else ConnectionStatus.NotCurrentlyConnected,
             json["instance"],
             int(json["lostConnections"]),
         )

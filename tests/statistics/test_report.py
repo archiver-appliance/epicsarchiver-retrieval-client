@@ -16,6 +16,7 @@ from epicsarchiver.statistics.report import (
 from epicsarchiver.statistics.stat_responses import (
     BaseStatResponse,
     BothArchiversResponse,
+    ConnectionStatus,
     DisconnectedPVsResponse,
     DroppedPVResponse,
     DroppedReason,
@@ -63,7 +64,7 @@ expected_all_stats: dict[Stat, BaseStatResponse] = {
     ),
     Stat.LostConnection: LostConnectionsResponse(
         "MY:PV",
-        True,
+        ConnectionStatus.CurrentlyConnected,
         "archiver.example.org",
         2586,
     ),

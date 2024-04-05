@@ -8,8 +8,8 @@ import pytz
 import responses
 from pytest_mock import MockFixture
 
-from epicsarchiver import ArchiverAppliance
 from epicsarchiver.channelfinder import Channel, ChannelFinder
+from epicsarchiver.epicsarchiver import ArchiverAppliance, ArchiverStatistics
 from epicsarchiver.statistics._external_stats import (
     get_double_archived,
     get_not_configured,
@@ -17,6 +17,7 @@ from epicsarchiver.statistics._external_stats import (
 from epicsarchiver.statistics.stat_responses import (
     BothArchiversResponse,
     ConfiguredStatus,
+    ConnectionStatus,
     DisconnectedPVsResponse,
     DroppedPVResponse,
     DroppedReason,
@@ -36,7 +37,7 @@ SAMPLES_PATH = Path(__file__).parent.resolve() / "samples"
 
 @responses.activate
 def test_get_pvs_dropped() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverStatistics("archiver.example.org")
     reason = DroppedReason.BufferOverflow
     responses.add(
         responses.GET,
@@ -52,7 +53,7 @@ def test_get_pvs_dropped() -> None:
 
 @responses.activate
 def test_get_disconnected_pvs() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverStatistics("archiver.example.org")
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getCurrentlyDisconnectedPVs",
@@ -91,7 +92,7 @@ def test_get_disconnected_pvs() -> None:
 
 @responses.activate
 def test_get_silent_pvs() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverStatistics("archiver.example.org")
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getSilentPVsReport?limit=1000",
@@ -120,7 +121,7 @@ def test_get_silent_pvs() -> None:
 
 @responses.activate
 def test_get_lost_connections_pvs() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverStatistics("archiver.example.org")
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getLostConnectionsReport?limit=1000",
@@ -140,7 +141,7 @@ def test_get_lost_connections_pvs() -> None:
     assert [
         LostConnectionsResponse(
             "MY:PV",
-            True,
+            ConnectionStatus.CurrentlyConnected,
             "archiver.example.org",
             2586,
         )
@@ -149,7 +150,7 @@ def test_get_lost_connections_pvs() -> None:
 
 @responses.activate
 def test_get_paused_pvs() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverStatistics("archiver.example.org")
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getPausedPVsReport",
@@ -172,7 +173,7 @@ def test_get_paused_pvs() -> None:
 
 @responses.activate
 def test_get_storage_rates() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverStatistics("archiver.example.org")
     responses.add(
         responses.GET,
         "http://archiver.example.org:17665/mgmt/bpl/getStorageRateReport?limit=1000",
