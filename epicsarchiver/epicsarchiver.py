@@ -6,14 +6,15 @@ import datetime
 import logging
 import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 import pandas as pd
 import requests
 from dateutil import parser
 from requests import Response
 
-from epicsarchiver import archive_event, archive_files
+from epicsarchiver import archive_files
+from epicsarchiver.archive_event import ArchiveEvent, dataframe_from_events
 from epicsarchiver.pb import parse_pb_data
 from epicsarchiver.statistics.stat_responses import (
     DisconnectedPVsResponse,
@@ -25,31 +26,17 @@ from epicsarchiver.statistics.stat_responses import (
     StorageRatesResponse,
 )
 
-if TYPE_CHECKING:
-    from epicsarchiver.archive_event import ArchiveEvent
-
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
-class ArchiverAppliance:
-    """EPICS Archiver Appliance client.
+class BaseArchiverAppliance:
+    """Base EPICS Archiver Appliance client.
 
     Hold a session to the Archiver Appliance web application.
 
     Args:
         hostname: EPICS Archiver Appliance hostname [default: localhost]
         port: EPICS Archiver Appliance management port [default: 17665]
-
-    Examples:
-
-    .. code-block:: python
-
-        from epicsarchiver import ArchiverAppliance
-
-        archappl = ArchiverAppliance("archiver-01.tn.esss.lu.se")
-        print(archappl.version)
-        archappl.get_pv_status(pv="BPM*")
-        df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
     """
 
     def __init__(self, hostname: str = "localhost", port: int = 17665):
@@ -134,14 +121,88 @@ class ArchiverAppliance:
         """EPICS Archiver Appliance version."""
         return self.info.get("version")
 
-    def data_url(self) -> str:
-        """EPICS Archiver Appliance data retrieval url."""
-        if self._data_url is None:
-            data_url_base = self.info.get("dataRetrievalURL")
-            if data_url_base is None:
-                raise ConnectionError
-            self._data_url = data_url_base + "/data/getData.raw"
-        return self._data_url
+    def _get_or_post(self, endpoint: str, pv: str) -> Any:
+        """Send a GET or POST if pv is a comma separated list.
+
+        Args:
+            endpoint: API endpoint
+            pv: name of the pv. Can be a GLOB wildcards or a list of
+                comma separated names.
+
+        Returns:
+            list of submitted PVs
+        """
+        r = (
+            self._post(endpoint, data=pv)
+            if "," in pv
+            else self._get(endpoint, params={"pv": pv})
+        )
+        return r.json()
+
+
+def format_date(date_or_str: datetime.datetime | str) -> str:
+    """Return a string representing the date and time in ISO 8601 format.
+
+    Args:
+        date_or_str: can be a datetime object or string if a string is
+            given, it will be parsed automatically. Timezone is ignored.
+            UTC is always assumed.
+
+    Returns:
+        string in ISO 8601 format
+    """
+    if not isinstance(date_or_str, datetime.datetime):
+        dt = parser.parse(date_or_str, ignoretz=True)
+    else:
+        dt = date_or_str.replace(tzinfo=None)
+    return dt.isoformat(timespec="microseconds") + "Z"
+
+
+def json_to_dataframe(data: Any) -> pd.DataFrame:
+    """Converts json from the archiver.
+
+    Converts to a dataframe with two
+    columns "date" and "val" and the index is "date".
+
+    Args:
+        data: json from a json archiver request
+
+    Returns:
+        pd.DataFrame
+    """
+    events_dataframe = pd.DataFrame(data[0]["data"])
+    try:
+        total_nanos = (
+            events_dataframe["secs"].multiply(1e9).add(events_dataframe["nanos"])
+        )
+        events_dataframe["date"] = pd.to_datetime(total_nanos, unit="ns", utc=True)
+    except KeyError:
+        # Empty data
+        pass
+    else:
+        events_dataframe = events_dataframe[["date", "val"]]
+        events_dataframe = events_dataframe.set_index("date")
+    return events_dataframe
+
+
+class ArchiverMgmt(BaseArchiverAppliance):
+    """Mgmt EPICS Archiver Appliance client.
+
+    Hold a session to the Archiver Appliance web application and use the mgmt interface.
+
+    Args:
+        hostname: EPICS Archiver Appliance hostname [default: localhost]
+        port: EPICS Archiver Appliance management port [default: 17665]
+
+    Examples:
+    .. code-block:: python
+
+        from epicsarchiver.archiver.mgmt import ArchiverMgmt
+
+        archappl = ArchiverMgmt("archiver-01.tn.esss.lu.se")
+        print(archappl.version)
+        archappl.get_pv_status(pv="BPM*")
+    """
 
     def get_all_expanded_pvs(self) -> list[str]:
         """Return all expanded PV names in the cluster.
@@ -159,7 +220,10 @@ class ArchiverAppliance:
         return cast(list[str], r.json())
 
     def get_all_pvs(
-        self, pv: str | None = None, regex: str | None = None, limit: int = 500
+        self,
+        pv: str | None = None,
+        regex: str | None = None,
+        limit: int = 500,
     ) -> list[str]:
         """Return all the PVs in the cluster.
 
@@ -216,7 +280,9 @@ class ArchiverAppliance:
         return cast(list[dict[str, str]], r.json())
 
     def get_pv_status_from_files(
-        self, files: list[str], appliance: str | None = None
+        self,
+        files: list[str],
+        appliance: str | None = None,
     ) -> list[dict[str, str]]:
         """Return the status of PVs from a list of files.
 
@@ -249,7 +315,9 @@ class ArchiverAppliance:
         return cast(list[str], r.json())
 
     def get_unarchived_pvs_from_files(
-        self, files: list[str], appliance: str | None = None
+        self,
+        files: list[str],
+        appliance: str | None = None,
     ) -> list[str]:
         """Return the list of unarchived PVs from a list of files.
 
@@ -298,7 +366,9 @@ class ArchiverAppliance:
         return cast(list[dict[str, str]], r.json())
 
     def archive_pvs_from_files(
-        self, files: list[str], appliance: str | None = None
+        self,
+        files: list[str],
+        appliance: str | None = None,
     ) -> list[dict[str, str]]:
         """Archive PVs from a list of files.
 
@@ -312,24 +382,6 @@ class ArchiverAppliance:
         """
         pvs = archive_files.get_pvs_from_files([Path(f) for f in files], appliance)
         return self.archive_pvs(pvs)
-
-    def _get_or_post(self, endpoint: str, pv: str) -> Any:
-        """Send a GET or POST if pv is a comma separated list.
-
-        Args:
-            endpoint: API endpoint
-            pv: name of the pv. Can be a GLOB wildcards or a list of
-                comma separated names.
-
-        Returns:
-            list of submitted PVs
-        """
-        r = (
-            self._post(endpoint, data=pv)
-            if "," in pv
-            else self._get(endpoint, params={"pv": pv})
-        )
-        return r.json()
 
     def pause_pv(self, pv: str) -> list[dict[str, str]] | dict[str, str]:
         """Pause the archiving of a PV(s).
@@ -414,7 +466,10 @@ class ArchiverAppliance:
         return cast(dict[str, str], r.json())
 
     def update_pv(
-        self, pv: str, samplingperiod: float, samplingmethod: str | None = None
+        self,
+        pv: str,
+        samplingperiod: float,
+        samplingmethod: str | None = None,
     ) -> list[str]:
         """Change the archival parameters for a PV.
 
@@ -432,71 +487,6 @@ class ArchiverAppliance:
             params["samplingmethod"] = samplingmethod
         r = self._get("/changeArchivalParameters", params=params)
         return cast(list[str], r.json())
-
-    def _get_data_raw(
-        self, pv: str, start: str | datetime.datetime, end: str | datetime.datetime
-    ) -> Response:
-        """Retrieve archived data.
-
-        Args:
-            pv: name of the pv.
-            start: start time. Can be a string or `datetime.datetime`
-                object.
-            end: end time. Can be a string or `datetime.datetime`
-                object.
-
-        Returns:
-            `Response`
-        """
-        # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
-        params = {
-            "pv": pv,
-            "from": format_date(start),
-            "to": format_date(end),
-        }
-        return self._get(
-            self.data_url(),
-            params=params,
-            stream=True,
-        )
-
-    def get_events(
-        self, pv: str, start: str | datetime.datetime, end: str | datetime.datetime
-    ) -> list[ArchiveEvent]:
-        """Retrieve archived data.
-
-        Args:
-            pv: name of the pv.
-            start: start time. Can be a string or `datetime.datetime`
-                object.
-            end: end time. Can be a string or `datetime.datetime`
-                object.
-
-        Returns:
-            `pandas.DataFrame`
-        """
-        # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
-        r = self._get_data_raw(pv, start, end)
-        pb_data = r.content
-        return parse_pb_data(pb_data)
-
-    def get_data(
-        self, pv: str, start: str | datetime.datetime, end: str | datetime.datetime
-    ) -> pd.DataFrame:
-        """Retrieve archived data.
-
-        Args:
-            pv: name of the pv.
-            start: start time. Can be a string or `datetime.datetime`
-                object.
-            end: end time. Can be a string or `datetime.datetime`
-                object.
-
-        Returns:
-            `pandas.DataFrame`
-        """
-        # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
-        return archive_event.dataframe_from_events(self.get_events(pv, start, end))
 
     def pause_rename_resume_pv(self, pv: str, new: str) -> None:
         """Pause, rename and resume a PV.
@@ -542,9 +532,140 @@ class ArchiverAppliance:
         for current, new in pvs:
             self.pause_rename_resume_pv(current, new)
 
-    # Statistics endpoints
+
+def check_result(
+    result: dict[str, str] | list[dict[str, str]],
+    default_message: str | None = None,
+) -> bool:
+    """Check a result returned by the Archiver Appliance.
+
+    Return True if the status is ok
+    Return False otherwise and print the default_message or validation value
+    """
+    if isinstance(result, list):
+        LOG.error(
+            "Method check_result does not support multiple PVs from result %s",
+            result,
+        )
+        return False
+    status = result.get("status", "nok")
+    if status.lower() != "ok":
+        message = result.get("validation", default_message)
+        LOG.error(message)
+        return False
+    return True
+
+
+class ArchiverRetrieval(BaseArchiverAppliance):
+    """Retrieval EPICS Archiver Appliance client.
+
+    Hold a session to the Retrieval Archiver Appliance web application.
+
+    Args:
+        hostname: EPICS Archiver Appliance hostname [default: localhost]
+        port: EPICS Archiver Appliance management port [default: 17665]
+
+    Examples:
+    .. code-block:: python
+
+        from epicsarchiver.archiver.retrieval import ArchiverRetrieval
+
+        archappl = ArchiverRetrieval("archiver-01.tn.esss.lu.se")
+        print(archappl.version)
+        df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
+    """
+
+    def data_url(self) -> str:
+        """EPICS Archiver Appliance data retrieval url."""
+        if self._data_url is None:
+            data_url_base = self.info.get("dataRetrievalURL")
+            if data_url_base is None:
+                raise ConnectionError
+            self._data_url = data_url_base + "/data/getData.raw"
+        return self._data_url
+
+    def _get_data_raw(
+        self,
+        pv: str,
+        start: str | datetime.datetime,
+        end: str | datetime.datetime,
+    ) -> Response:
+        """Retrieve archived data.
+
+        Args:
+            pv: name of the pv.
+            start: start time. Can be a string or `datetime.datetime`
+                object.
+            end: end time. Can be a string or `datetime.datetime`
+                object.
+
+        Returns:
+            `Response`
+        """
+        # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
+        params = {
+            "pv": pv,
+            "from": format_date(start),
+            "to": format_date(end),
+        }
+        return self._get(
+            self.data_url(),
+            params=params,
+            stream=True,
+        )
+
+    def get_events(
+        self,
+        pv: str,
+        start: str | datetime.datetime,
+        end: str | datetime.datetime,
+    ) -> list[ArchiveEvent]:
+        """Retrieve archived data.
+
+        Args:
+            pv: name of the pv.
+            start: start time. Can be a string or `datetime.datetime`
+                object.
+            end: end time. Can be a string or `datetime.datetime`
+                object.
+
+        Returns:
+            `pandas.DataFrame`
+        """
+        # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
+        r = self._get_data_raw(pv, start, end)
+        pb_data = r.content
+        return parse_pb_data(pb_data)
+
+    def get_data(
+        self,
+        pv: str,
+        start: str | datetime.datetime,
+        end: str | datetime.datetime,
+    ) -> pd.DataFrame:
+        """Retrieve archived data.
+
+        Args:
+            pv: name of the pv.
+            start: start time. Can be a string or `datetime.datetime`
+                object.
+            end: end time. Can be a string or `datetime.datetime`
+                object.
+
+        Returns:
+            `pandas.DataFrame`
+        """
+        # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
+        return dataframe_from_events(self.get_events(pv, start, end))
+
+
+class ArchiverStatistics(BaseArchiverAppliance):
+    """Responses from the reports of the archiver appliance."""
+
     def get_pvs_dropped(
-        self, reason: DroppedReason, limit: int | None = 1000
+        self,
+        reason: DroppedReason,
+        limit: int | None = 1000,
     ) -> list[DroppedPVResponse]:
         """Gets the pvs ordered by dropped events."""
         params = None
@@ -567,7 +688,8 @@ class ArchiverAppliance:
         return [SilentPVsResponse.from_json(rs) for rs in r]
 
     def get_lost_connections_pvs(
-        self, limit: int | None = 1000
+        self,
+        limit: int | None = 1000,
     ) -> list[LostConnectionsResponse]:
         """Gets the list of pvs with no events."""
         params = None
@@ -590,65 +712,22 @@ class ArchiverAppliance:
         return [PausedPVResponse.from_json(rs) for rs in r]
 
 
-def check_result(
-    result: dict[str, str] | list[dict[str, str]], default_message: str | None = None
-) -> bool:
-    """Check a result returned by the Archiver Appliance.
+class ArchiverAppliance(ArchiverMgmt, ArchiverRetrieval, ArchiverStatistics):
+    """EPICS Archiver Appliance client.
 
-    Return True if the status is ok
-    Return False otherwise and print the default_message or validation value
-    """
-    if isinstance(result, list):
-        LOG.error(
-            "Method check_result does not support multiple PVs from result %s", result
-        )
-        return False
-    status = result.get("status", "nok")
-    if status.lower() != "ok":
-        message = result.get("validation", default_message)
-        LOG.error(message)
-        return False
-    return True
-
-
-def format_date(date_or_str: datetime.datetime | str) -> str:
-    """Return a string representing the date and time in ISO 8601 format.
+    Hold a session to the Archiver Appliance web application.
 
     Args:
-        date_or_str: can be a datetime object or string if a string is
-            given, it will be parsed automatically. Timezone is ignored.
-            UTC is always assumed.
+        hostname: EPICS Archiver Appliance hostname [default: localhost]
+        port: EPICS Archiver Appliance management port [default: 17665]
 
-    Returns:
-        string in ISO 8601 format
+    Examples:
+    .. code-block:: python
+
+        from epicsarchiver import ArchiverAppliance
+
+        archappl = ArchiverAppliance("archiver-01.tn.esss.lu.se")
+        print(archappl.version)
+        archappl.get_pv_status(pv="BPM*")
+        df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
     """
-    if not isinstance(date_or_str, datetime.datetime):
-        dt = parser.parse(date_or_str, ignoretz=True)
-    else:
-        dt = date_or_str.replace(tzinfo=None)
-    return dt.isoformat(timespec="microseconds") + "Z"
-
-
-def json_to_dataframe(data: Any) -> pd.DataFrame:
-    """Converts json from the archiver.
-
-    Converts to a dataframe with two
-    columns "date" and "val" and the index is "date".
-
-    Args:
-        data: json from a json archiver request
-
-    Returns:
-        pd.DataFrame
-    """
-    df = pd.DataFrame(data[0]["data"])
-    try:
-        total_nanos = df["secs"].multiply(1e9).add(df["nanos"])
-        df["date"] = pd.to_datetime(total_nanos, unit="ns", utc=True)
-    except KeyError:
-        # Empty data
-        pass
-    else:
-        df = df[["date", "val"]]
-        df = df.set_index("date")
-    return df

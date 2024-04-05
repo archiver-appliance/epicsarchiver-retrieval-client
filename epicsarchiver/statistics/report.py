@@ -31,8 +31,8 @@ from typing import IO
 import pytz
 from rich.console import Console
 
-from epicsarchiver import ArchiverAppliance
 from epicsarchiver.channelfinder import ChannelFinder
+from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics._external_stats import (
     filter_by_ioc,
     get_double_archived,
@@ -84,7 +84,9 @@ class Stat(str, enum.Enum):
 
     @classmethod
     def _is_greater_than_time_minimum(
-        cls, in_time: datetime.datetime | None, time_minimum: timedelta
+        cls,
+        in_time: datetime.datetime | None,
+        time_minimum: timedelta,
     ) -> bool:
         now = datetime.datetime.now(tz=pytz.utc)
         diff = now - (
@@ -95,12 +97,13 @@ class Stat(str, enum.Enum):
         return diff > time_minimum
 
     async def _response_report_dict(
-        self, responses: Sequence[BaseStatResponse]
+        self,
+        responses: Sequence[BaseStatResponse],
     ) -> dict[str, BaseStatResponse]:
         LOG.info("Found %s satisfying stat %s", len(responses), self)
         return {r.pv_name: r for r in responses}
 
-    async def _get_responses(
+    async def _get_responses(  # noqa: PLR0911
         self,
         archiver: ArchiverAppliance,
         config: ReportConfig,
@@ -111,21 +114,24 @@ class Stat(str, enum.Enum):
                 return [
                     f
                     for f in archiver.get_pvs_dropped(
-                        DroppedReason.BufferOverflow, limit=config.query_limit
+                        DroppedReason.BufferOverflow,
+                        limit=config.query_limit,
                     )
                     if f.events_dropped > config.events_dropped_minimum
                 ]
 
             case Stat.TypeChange:
                 return archiver.get_pvs_dropped(
-                    DroppedReason.TypeChange, limit=config.query_limit
+                    DroppedReason.TypeChange,
+                    limit=config.query_limit,
                 )
 
             case Stat.IncorrectTimestamp:
                 return [
                     f
                     for f in archiver.get_pvs_dropped(
-                        DroppedReason.IncorrectTimestamp, limit=config.query_limit
+                        DroppedReason.IncorrectTimestamp,
+                        limit=config.query_limit,
                     )
                     if f.events_dropped > config.events_dropped_minimum
                 ]
@@ -134,7 +140,8 @@ class Stat(str, enum.Enum):
                 return [
                     f
                     for f in archiver.get_pvs_dropped(
-                        DroppedReason.SlowChanging, limit=None
+                        DroppedReason.SlowChanging,
+                        limit=None,
                     )
                     if f.events_dropped > config.events_dropped_minimum
                 ]
@@ -144,7 +151,8 @@ class Stat(str, enum.Enum):
                     ev
                     for ev in archiver.get_disconnected_pvs()
                     if Stat._is_greater_than_time_minimum(
-                        ev.connection_lost_at, config.time_minimum
+                        ev.connection_lost_at,
+                        config.time_minimum,
                     )
                 ]
 
@@ -153,7 +161,8 @@ class Stat(str, enum.Enum):
                     ev
                     for ev in archiver.get_silent_pvs(limit=config.query_limit)
                     if Stat._is_greater_than_time_minimum(
-                        ev.last_known_event, config.time_minimum
+                        ev.last_known_event,
+                        config.time_minimum,
                     )
                 ]
 
@@ -161,7 +170,7 @@ class Stat(str, enum.Enum):
                 return [
                     el
                     for el in archiver.get_lost_connections_pvs(
-                        limit=config.query_limit
+                        limit=config.query_limit,
                     )
                     if el.lost_connections > config.connection_drops_minimum
                 ]
@@ -195,7 +204,7 @@ class Stat(str, enum.Enum):
     ) -> dict[str, BaseStatResponse]:
         """Produce a list of PVs and stats."""
         return await self._response_report_dict(
-            await self._get_responses(archiver, config)
+            await self._get_responses(archiver, config),
         )
 
 
@@ -258,7 +267,9 @@ async def generate_all_stats(
     inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats, strict=True)))
     if config.channelfinder:
         return await _organise_by_ioc(
-            inverted_data, config.channelfinder, ioc_name=config.ioc_name
+            inverted_data,
+            config.channelfinder,
+            ioc_name=config.ioc_name,
         )
     return {UNKNOWN_IOC: inverted_data}
 
@@ -270,7 +281,9 @@ async def _organise_by_ioc(
 ) -> dict[Ioc, dict[str, _PVStats]]:
     if ioc_name:
         iocs = await filter_by_ioc(
-            channelfinder, ioc_name, list(inverted_report.keys())
+            channelfinder,
+            ioc_name,
+            list(inverted_report.keys()),
         )
     else:
         iocs = await get_iocs(channelfinder, list(inverted_report.keys()))

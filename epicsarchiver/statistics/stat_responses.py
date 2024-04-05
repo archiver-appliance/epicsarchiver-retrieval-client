@@ -37,7 +37,9 @@ class DroppedPVResponse(BaseStatResponse):
 
     @classmethod
     def from_json(
-        cls, json: dict[str, str], dropped_reason: DroppedReason
+        cls,
+        json: dict[str, str],
+        dropped_reason: DroppedReason,
     ) -> "DroppedPVResponse":
         """Convert to DroppedPVResponse from dictionary generated from json.
 
@@ -49,7 +51,9 @@ class DroppedPVResponse(BaseStatResponse):
             DroppedPVResponse: The corresponding DroppedPVResponse
         """
         return DroppedPVResponse(
-            json["pvName"], int(json["eventsDropped"]), dropped_reason
+            json["pvName"],
+            int(json["eventsDropped"]),
+            dropped_reason,
         )
 
     def __str__(self) -> str:
@@ -129,7 +133,7 @@ class DisconnectedPVsResponse(BaseStatResponse):
         """
         if self.connection_lost_at:
             time_difference = str(
-                datetime.datetime.now(tz=pytz.utc) - self.connection_lost_at
+                datetime.datetime.now(tz=pytz.utc) - self.connection_lost_at,
             )
         else:
             time_difference = "Never"
@@ -172,6 +176,17 @@ class SilentPVsResponse(BaseStatResponse):
         )
 
 
+class ConnectionStatus(enum.Enum):
+    """Connection status enum.
+
+    Args:
+        enum (int): Placement of enum.
+    """
+
+    CurrentlyConnected = enum.auto()
+    NotCurrentlyConnected = enum.auto()
+
+
 @dataclass
 class LostConnectionsResponse(BaseStatResponse):
     """Return a list of PVs sorted by the no. of connection drops.
@@ -188,7 +203,7 @@ class LostConnectionsResponse(BaseStatResponse):
         }
     """
 
-    currently_connected: bool
+    currently_connected: ConnectionStatus
     instance: str
     lost_connections: int
 
@@ -197,7 +212,9 @@ class LostConnectionsResponse(BaseStatResponse):
         """Response from the endpoint in getLostConnectionsReport."""
         return LostConnectionsResponse(
             json["pvName"],
-            json["currentlyConnected"] == "Yes",
+            ConnectionStatus.CurrentlyConnected
+            if json["currentlyConnected"] == "Yes"
+            else ConnectionStatus.NotCurrentlyConnected,
             json["instance"],
             int(json["lostConnections"]),
         )
@@ -279,7 +296,9 @@ class PausedPVResponse(BaseStatResponse):
     def from_json(cls, json: dict[str, str]) -> "PausedPVResponse":
         """Response from the endpoint in getPausedPVsReport."""
         return PausedPVResponse(
-            json["pvName"], json["instance"], json["modificationTime"]
+            json["pvName"],
+            json["instance"],
+            json["modificationTime"],
         )
 
     def __str__(self) -> str:

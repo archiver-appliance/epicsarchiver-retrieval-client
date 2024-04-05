@@ -10,7 +10,8 @@ LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def parse_archive_file(
-    filename: Path, appliance: str | None = None
+    filename: Path,
+    appliance: str | None = None,
 ) -> Generator[dict[str, str], None, None]:
     """Parses an archive file.
 
@@ -25,7 +26,7 @@ def parse_archive_file(
         Generator[dict[str, str], None, None]: produces
         dictionary with keys {"pv", "policy", "appliance"}
     """
-    with open(filename, encoding="locale") as file:
+    with filename.open(encoding="locale") as file:
         LOG.debug("PARSE archive file %s", filename)
         for line in file:
             stripped_line = line.strip()
@@ -54,7 +55,8 @@ def _parse_rename_line(line: str) -> tuple[str, str] | None:
         old_name, new_name = stripped_line.split()
     except ValueError:
         LOG.exception(
-            "Skipping: %s. Invalid format, must be OLDNAME NEWNAME.", stripped_line
+            "Skipping: %s. Invalid format, must be OLDNAME NEWNAME.",
+            stripped_line,
         )
         return None
     else:
@@ -70,20 +72,21 @@ def parse_rename_file(filename: Path) -> Generator[tuple[str, str], None, None]:
     Yields:
         Generator[tuple[str, str], None, None]: produces a pair old_pv_name, new_pv_name
     """
-    with open(filename, encoding="locale") as f:
+    with filename.open(encoding="locale") as f:
         for line in f:
             if parsed_line := _parse_rename_line(line):
                 yield parsed_line
 
 
 def get_pvs_from_files(
-    files: list[Path], appliance: str | None = None
+    files: list[Path],
+    appliance: str | None = None,
 ) -> list[dict[str, str]]:
     """Return a list of PV (as dict) from a list of files."""
     return list(
         itertools.chain.from_iterable([
             parse_archive_file(filename, appliance) for filename in files
-        ])
+        ]),
     )
 
 
@@ -92,5 +95,5 @@ def get_rename_pvs_from_files(files: list[str] | list[Path]) -> list[tuple[str, 
     return list(
         itertools.chain.from_iterable([
             parse_rename_file(Path(filename)) for filename in files
-        ])
+        ]),
     )

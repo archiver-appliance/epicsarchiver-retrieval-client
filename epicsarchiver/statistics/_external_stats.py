@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from os import listdir
-from os.path import isfile, join
 from pathlib import Path
 
 from numpy import mean
@@ -22,7 +21,8 @@ LOG: logging.Logger = logging.getLogger(__name__)
 
 
 async def get_all_non_paused_pvs(
-    archiver: ArchiverAppliance, all_pvs: set[str] | None = None
+    archiver: ArchiverAppliance,
+    all_pvs: set[str] | None = None,
 ) -> set[str]:
     if not all_pvs:
         all_pvs = set(archiver.get_all_pvs(limit=-1))
@@ -30,7 +30,8 @@ async def get_all_non_paused_pvs(
 
 
 async def get_double_archived(
-    archiver: ArchiverAppliance, other_archiver: ArchiverAppliance
+    archiver: ArchiverAppliance,
+    other_archiver: ArchiverAppliance,
 ) -> list[BothArchiversResponse]:
     """Return list of pvs archived in both archivers, filtered by those paused.
 
@@ -71,12 +72,14 @@ async def get_not_configured(
     """
     config_files = await fetch_config_files(config_gitlab_repo)
     onlyfiles = [
-        Path(join(config_files, f))
+        config_files / f
         for f in listdir(config_files)
-        if isfile(join(config_files, f)) and f.endswith(".archive")
+        if (config_files / f).is_file() and f.endswith(".archive")
     ]
     LOG.debug(
-        "CALC Not configured PVs from %s and filed %s", archiver.hostname, onlyfiles
+        "CALC Not configured PVs from %s and filed %s",
+        archiver.hostname,
+        onlyfiles,
     )
     all_pvs = set(archiver.get_all_pvs(limit=-1))
     all_non_paused_pvs = await get_all_non_paused_pvs(archiver, all_pvs=all_pvs)
@@ -93,10 +96,14 @@ async def get_not_configured(
             configured_not_archived_alias,
         ) = await asyncio.gather(*[
             get_aliases(
-                channelfinder, list(archived_not_configured), ioc_name=ioc_name
+                channelfinder,
+                list(archived_not_configured),
+                ioc_name=ioc_name,
             ),
             get_aliases(
-                channelfinder, list(configured_not_archived), ioc_name=ioc_name
+                channelfinder,
+                list(configured_not_archived),
+                ioc_name=ioc_name,
             ),
         ])
 
@@ -135,7 +142,8 @@ async def _gen_no_config_responses(
 
 
 async def get_iocs(
-    channelfinder: ChannelFinder, pvs: list[str]
+    channelfinder: ChannelFinder,
+    pvs: list[str],
 ) -> dict[Ioc, list[str]]:
     """Get the IOC hosts for a list of pvs.
 
@@ -147,7 +155,8 @@ async def get_iocs(
         dict[Ioc, list[str]]: dictionary mapping ioc name to pv
     """
     channels = await channelfinder.get_all_channels(
-        pvs, int(mean([len(pv) for pv in pvs]) / 2)
+        pvs,
+        int(mean([len(pv) for pv in pvs]) / 2),
     )
     iocs = {pv: Ioc.from_channel(channel) for pv, channel in channels.items()}
 
@@ -164,9 +173,11 @@ async def get_iocs(
 
 
 async def filter_by_ioc(
-    channelfinder: ChannelFinder, ioc_name: str, pvs: list[str]
+    channelfinder: ChannelFinder,
+    ioc_name: str,
+    pvs: list[str],
 ) -> dict[Ioc, list[str]]:
-    """Filter a list of pvs by an ioc name
+    """Filter a list of pvs by an ioc name.
 
     Args:
         channelfinder (ChannelFinder): channelfinder
@@ -181,13 +192,15 @@ async def filter_by_ioc(
         return {
             Ioc.from_channel(channels[0]): [
                 channel.name for channel in channels if channel.name in pvs
-            ]
+            ],
         }
     return {}
 
 
 async def get_aliases(
-    channelfinder: ChannelFinder, pvs: list[str], ioc_name: str | None
+    channelfinder: ChannelFinder,
+    pvs: list[str],
+    ioc_name: str | None,
 ) -> dict[str, list[str]]:
     """Get the aliases for a list of pvs.
 

@@ -1,3 +1,5 @@
+"""Archive Event module for the ArchiveEvent class."""
+
 from dataclasses import dataclass
 from datetime import datetime as pydt
 
@@ -63,7 +65,7 @@ def year_timestamp(year: int) -> int:
         int: seconds from epoch of start of year.
     """
     return int(
-        (pydt(year, 1, 1, tzinfo=UTC) - pydt(1970, 1, 1, tzinfo=UTC)).total_seconds()
+        (pydt(year, 1, 1, tzinfo=UTC) - pydt(1970, 1, 1, tzinfo=UTC)).total_seconds(),
     )
 
 

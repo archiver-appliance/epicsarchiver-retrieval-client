@@ -228,7 +228,7 @@ def rename(
     type=click.Path(exists=False, path_type=Path, resolve_path=True),
 )
 @click.pass_context
-def stats(
+def stats(  # noqa: PLR0917, PLR0913
     ctx: click.core.Context,
     limit: int,
     other_hostname: str | None,
@@ -268,7 +268,7 @@ def stats(
         ChannelFinder(channelfinder_hostname) if channelfinder_hostname else None
     )
 
-    with open(output, "w", encoding="locale") as out_file:
+    with output.open("w", encoding="locale") as out_file:
         config = ReportConfig(
             query_limit=limit,
             time_minimum=timedelta(days=time_minimum),
