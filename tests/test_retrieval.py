@@ -1,0 +1,145 @@
+from collections.abc import Sequence
+
+import pandas as pd
+import responses
+from pytz import UTC
+
+import epicsarchiver.EPICSEvent_pb2 as ee
+from epicsarchiver.archive_event import ArchiveEvent, year_timestamp
+from epicsarchiver.epicsarchiver import ArchiverRetrieval
+from epicsarchiver.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo, ScalarInt
+from epicsarchiver.pb import EeEvent, escape_bytes, to_field_value
+
+
+def create_pb_bytes(
+    events: Sequence[EeEvent],
+    info: ee.PayloadInfo,
+) -> bytes:
+    """Mostly used for testing, converts list of events to escaped protobuf bytes.
+
+    Args:
+        events (list[EeEvent]): list of events
+        info (ee.PayloadInfo): payload data
+
+    Returns:
+        bytes: escaped bytes
+    """
+    info_bytes = escape_bytes(info.SerializeToString())
+    events_bytes = b"\n".join(escape_bytes(e.SerializeToString()) for e in events)
+    return info_bytes + b"\n" + events_bytes
+
+
+TEST_EVENTS = [
+    ScalarInt(
+        secondsintoyear=22537583,
+        val=1,
+        nano=931598267,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="hey", val="ho")],
+    ),
+    ScalarInt(
+        secondsintoyear=22537584,
+        val=2,
+        nano=907631989,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="hey", val="ho")],
+    ),
+    ScalarInt(
+        secondsintoyear=22537585,
+        val=3,
+        nano=931598267,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="hey", val="ho")],
+    ),
+    ScalarInt(
+        secondsintoyear=22537586,
+        val=4,
+        nano=911606448,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="hey", val="ho")],
+    ),
+]
+
+
+@responses.activate
+def test_get_data() -> None:
+    host = "archiver.example.org"
+    archiver = ArchiverRetrieval(host)
+    pv = "mypv"
+    events = TEST_EVENTS
+    dates = [
+        pd.Timestamp(
+            (year_timestamp(2018) + d.secondsintoyear) * int(1e9) + d.nano,
+            tz=UTC,
+        )
+        for d in events
+    ]
+    pd_dates = pd.DatetimeIndex(
+        dates,
+        tz=UTC,
+    )
+    ref_df = pd.DataFrame([e.val for e in TEST_EVENTS], index=pd_dates)
+    ref_df = ref_df.rename_axis("date")
+    ref_df.columns = ["val"]  # type: ignore[assignment]
+    responses.add(
+        responses.GET,
+        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z",
+        body=create_pb_bytes(
+            events,
+            PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018),
+        ),
+        status=200,
+        match_querystring=True,
+    )
+    resp_data = archiver.get_data(pv, "20180825 17:45", "20180825 18:45")
+    assert len(responses.calls) == 2
+    pd.testing.assert_frame_equal(ref_df, resp_data)
+
+
+@responses.activate
+def test_get_events_pb() -> None:
+    host = "archiver.example.org"
+    archiver = ArchiverRetrieval(host)
+    pv = "mypv"
+    events = TEST_EVENTS
+    responses.add(
+        responses.GET,
+        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z",
+        body=create_pb_bytes(
+            events,
+            PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018),
+        ),
+        status=200,
+        match_querystring=True,
+    )
+    res_data = archiver.get_events(pv, "20180825 17:45", "20180825 18:45")
+    assert len(responses.calls) == 2
+    assert res_data == [
+        ArchiveEvent(
+            pv,
+            e.val,
+            e.secondsintoyear,
+            2018,
+            e.nano,
+            e.severity,
+            e.status,
+            [to_field_value(f) for f in e.fieldvalues],
+        )
+        for e in events
+    ]

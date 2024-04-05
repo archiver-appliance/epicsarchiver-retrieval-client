@@ -1,24 +1,22 @@
 """Tests for `epicsarchiver` package."""
 
+import datetime
 import json
 import logging
-from datetime import datetime
 from pathlib import Path
 
-import pandas as pd
 import pytest
 import requests
 import responses
 from pytz import utc as UTC  # noqa: N812
 from rich.logging import RichHandler
 
-from epicsarchiver import ArchiveEvent, ArchiverAppliance, epicsarchiver
-from epicsarchiver.archive_event import year_timestamp
-from epicsarchiver.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo, ScalarInt
-from epicsarchiver.EPICSEvent_pb2 import FieldValue as eeFieldValue
-from epicsarchiver.pb import (
-    create_pb_bytes,
-    to_field_value,
+from epicsarchiver.epicsarchiver import (
+    ArchiverMgmt,
+    ArchiverRetrieval,
+    BaseArchiverAppliance,
+    check_result,
+    format_date,
 )
 
 logging.basicConfig(
@@ -27,18 +25,20 @@ logging.basicConfig(
 )
 LOG: logging.Logger = logging.getLogger(__name__)
 
+# Test the BaseArchiverAppliance
+
 
 def test_epicsarchiver_url() -> None:
     """Test the CLI."""
-    archiver = ArchiverAppliance()
+    archiver = BaseArchiverAppliance()
     assert archiver.mgmt_url == "http://localhost:17665/mgmt/bpl/"
-    archiver = ArchiverAppliance("archiver-01.example.com", port=80)
+    archiver = BaseArchiverAppliance("archiver-01.example.com", port=80)
     assert archiver.mgmt_url == "http://archiver-01.example.com:80/mgmt/bpl/"
 
 
 @responses.activate
 def test_request_get_status_ok() -> None:
-    archiver = ArchiverAppliance()
+    archiver = BaseArchiverAppliance()
     url = "http://test.example.com"
     data = {"test": "hello"}
     responses.add(responses.GET, url, json=data, status=200)
@@ -49,7 +49,7 @@ def test_request_get_status_ok() -> None:
 
 @responses.activate
 def test_request_raise_exception() -> None:
-    archiver = ArchiverAppliance()
+    archiver = BaseArchiverAppliance()
     url = "http://test.example.com"
     responses.add(responses.GET, url, status=404)
     with pytest.raises(requests.exceptions.HTTPError):
@@ -59,9 +59,12 @@ def test_request_raise_exception() -> None:
 
 @responses.activate
 def test_get_relative_endpoint() -> None:
-    archiver = ArchiverAppliance("archiver.example.com")
+    archiver = BaseArchiverAppliance("archiver.example.com")
+    url = "http://archiver.example.com:17665/mgmt/bpl/endpoint"
     responses.add(
-        responses.GET, "http://archiver.example.com:17665/mgmt/bpl/endpoint", status=200
+        responses.GET,
+        url,
+        status=200,
     )
     archiver._get("endpoint")
     assert len(responses.calls) == 1
@@ -71,7 +74,7 @@ def test_get_relative_endpoint() -> None:
 
 @responses.activate
 def test_get_absolute_endpoint() -> None:
-    archiver = ArchiverAppliance("archiver.example.com")
+    archiver = BaseArchiverAppliance("archiver.example.com")
     url = "http://archiver.another.com:17667/this/is/a/test"
     responses.add(responses.GET, url, status=200)
     archiver._get(url)
@@ -80,7 +83,7 @@ def test_get_absolute_endpoint() -> None:
 
 @responses.activate
 def test_get_return_response() -> None:
-    archiver = ArchiverAppliance()
+    archiver = BaseArchiverAppliance()
     url = "http://archiver.example.com:17665/my/endpoint"
     data = {"test": "hello"}
     responses.add(responses.GET, url, json=data, status=200)
@@ -91,7 +94,7 @@ def test_get_return_response() -> None:
 
 @responses.activate
 def test_post_return_response() -> None:
-    archiver = ArchiverAppliance()
+    archiver = BaseArchiverAppliance()
     url = "http://test.example.com"
     data = {"test": "hello"}
     responses.add(responses.POST, url, json=data, status=201)
@@ -102,7 +105,7 @@ def test_post_return_response() -> None:
 
 @responses.activate
 def test_post_relative_endpoint() -> None:
-    archiver = ArchiverAppliance("archiver.example.com")
+    archiver = BaseArchiverAppliance("archiver.example.com")
     responses.add(
         responses.POST,
         "http://archiver.example.com:17665/mgmt/bpl/endpoint",
@@ -116,7 +119,7 @@ def test_post_relative_endpoint() -> None:
 
 @responses.activate
 def test_info() -> None:
-    archiver = ArchiverAppliance("archiver-01.example.com")
+    archiver = BaseArchiverAppliance("archiver-01.example.com")
     data = {
         "engineURL": "http://archiver-01:17666/engine/bpl",
         "identity": "appliance0",
@@ -137,7 +140,7 @@ def test_info() -> None:
 
 @responses.activate
 def test_identity_and_version() -> None:
-    archiver = ArchiverAppliance("archiver-01.example.com")
+    archiver = BaseArchiverAppliance("archiver-01.example.com")
     data = {"identity": "appliance0", "version": "v1.0.0"}
     responses.add(
         responses.GET,
@@ -155,42 +158,57 @@ def test_identity_and_version() -> None:
 
 
 @responses.activate
-@pytest.mark.parametrize("host", ["archiver-01.example.com", "192.168.4.75"])
-def test_data_url_with_same_archiver_host(host: str) -> None:
-    archiver = ArchiverAppliance(host)
-    data = {"dataRetrievalURL": "http://archiver-01:17668/retrieval"}
+def test_get_or_post_single_pv() -> None:
+    archiver = BaseArchiverAppliance("archiver.example.org")
+    data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        "http://archiver.example.org:17665/mgmt/bpl/endpoint?pv=mypv",
         json=data,
         status=200,
+        match_querystring=True,
     )
-    data_url = archiver.data_url()
+    r = archiver._get_or_post("/endpoint", "mypv")
     assert len(responses.calls) == 1
-    assert data_url == "http://archiver-01:17668/retrieval/data/getData.raw"
-    # data_url shall be cached
-    _ = archiver.data_url()
-    assert len(responses.calls) == 1
+    assert r == data
 
 
 @responses.activate
-def test_data_url_with_no_specific_port() -> None:
-    archiver = ArchiverAppliance("archiver-01.example.com")
-    data = {"dataRetrievalURL": "http://archiver-01/foo"}
+def test_get_or_post_comma_separated_list() -> None:
+    archiver = BaseArchiverAppliance("archiver.example.org")
+    data = ["1", "2", "3"]
     responses.add(
-        responses.GET,
-        "http://archiver-01.example.com:17665/mgmt/bpl/getApplianceInfo",
+        responses.POST,
+        "http://archiver.example.org:17665/mgmt/bpl/endpoint",
         json=data,
         status=200,
+        match_querystring=True,
     )
-    data_url = archiver.data_url()
-    assert len(responses.calls) == 1
-    assert data_url == "http://archiver-01/foo/data/getData.raw"
+    pvs = "mypv1,mypv2"
+    r = archiver._get_or_post("/endpoint", pvs)
+    assert (
+        len(responses.calls) == 1
+    )  # ignore for https://github.com/getsentry/responses/pull/690
+
+    assert responses.calls[0].request.body == pvs
+    assert r == data
+
+
+def test_format_date() -> None:
+    assert format_date("20180715") == "2018-07-15T00:00:00.000000Z"
+    assert format_date("20180715 17:45") == "2018-07-15T17:45:00.000000Z"
+    assert (
+        format_date(datetime.datetime(2018, 7, 15, 19, 5, tzinfo=UTC))
+        == "2018-07-15T19:05:00.000000Z"
+    )
+
+
+# Test ArchiverMgmt
 
 
 @responses.activate
 def test_get_all_expanded_pvs() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
@@ -205,7 +223,7 @@ def test_get_all_expanded_pvs() -> None:
 
 @responses.activate
 def test_get_all_pvs_no_argument() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
@@ -221,7 +239,7 @@ def test_get_all_pvs_no_argument() -> None:
 
 @responses.activate
 def test_get_all_pvs_with_limit() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
@@ -237,7 +255,7 @@ def test_get_all_pvs_with_limit() -> None:
 
 @responses.activate
 def test_get_all_pvs_with_pv() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
@@ -253,7 +271,7 @@ def test_get_all_pvs_with_pv() -> None:
 
 @responses.activate
 def test_get_all_pvs_with_regex() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
@@ -269,7 +287,7 @@ def test_get_all_pvs_with_regex() -> None:
 
 @responses.activate
 def test_get_pv_status() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [{"pvName": "mypv"}]
     responses.add(
         responses.GET,
@@ -285,9 +303,9 @@ def test_get_pv_status() -> None:
 
 @responses.activate
 def test_archive_pv() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [
-        {"pvName": "ISrc-010:HVAC-HT:AmbHumR", "status": "Archive request submitted"}
+        {"pvName": "ISrc-010:HVAC-HT:AmbHumR", "status": "Archive request submitted"},
     ]
     responses.add(
         responses.GET,
@@ -303,9 +321,9 @@ def test_archive_pv() -> None:
 
 @responses.activate
 def test_archive_pv_with_extra_args() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [
-        {"pvName": "ISrc-010:HVAC-HT:AmbHumR", "status": "Archive request submitted"}
+        {"pvName": "ISrc-010:HVAC-HT:AmbHumR", "status": "Archive request submitted"},
     ]
     responses.add(
         responses.GET,
@@ -315,7 +333,9 @@ def test_archive_pv_with_extra_args() -> None:
         match_querystring=True,
     )
     r = archiver.archive_pv(
-        "ISrc-010:HVAC-HT:AmbHumR", samplingperiod=2.0, samplingmethod="SCAN"
+        "ISrc-010:HVAC-HT:AmbHumR",
+        samplingperiod=2.0,
+        samplingmethod="SCAN",
     )
     assert len(responses.calls) == 1
     assert r == data
@@ -323,7 +343,7 @@ def test_archive_pv_with_extra_args() -> None:
 
 @responses.activate
 def test_archive_pvs() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [{"pvName": "MY:PV", "status": "Already submitted"}]
     responses.add(
         responses.POST,
@@ -334,8 +354,9 @@ def test_archive_pvs() -> None:
     pvs = [{"pv": "first:pv"}, {"pv": "second:pv"}]
     r = archiver.archive_pvs(pvs)
     assert len(responses.calls) == 1
-    # ignore for https://github.com/getsentry/responses/pull/690
-    body = json.loads(responses.calls[0].request.body.decode("utf-8"))  # type: ignore
+    body_text = responses.calls[0].request.body
+    assert body_text is not None
+    body = json.loads(body_text)
     assert body == pvs
     assert r == data
 
@@ -354,7 +375,7 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
     pvs2 = [{"pv": "LEBT-010:PBI-NPM-001:HCAM-COM", "policy": "slow"}]
     file2 = tmp.joinpath("file2")
     file2.open("w").write(pvs2[0]["pv"] + " " + pvs2[0]["policy"] + "\n")
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [
         {"pvName": "LEBT-010:PBI-NPM-001:HCAM-COM", "status": "Already submitted"},
         {
@@ -374,15 +395,20 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
     )
     r = archiver.archive_pvs_from_files([str(file1), str(file2)])
     assert len(responses.calls) == 1
-    body = json.loads(responses.calls[0].request.body.decode("utf-8"))  # type: ignore
+    body_text = responses.calls[0].request.body
+    assert body_text is not None
+    body = json.loads(body_text)
     assert body == pvs1 + pvs2
     assert r == data
     # With appliance as parameter
     r = archiver.archive_pvs_from_files(
-        [str(file1), str(file2)], appliance="appliance0"
+        [str(file1), str(file2)],
+        appliance="appliance0",
     )  # ignore for https://github.com/getsentry/responses/pull/690
 
-    body = json.loads(responses.calls[1].request.body.decode("utf-8"))  # type: ignore
+    body_text = responses.calls[1].request.body
+    assert body_text is not None
+    body = json.loads(body_text)
     pvs = pvs1 + pvs2
     for pv in pvs:
         pv["appliance"] = "appliance0"
@@ -390,45 +416,8 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
 
 
 @responses.activate
-def test_get_or_post_single_pv() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/endpoint?pv=mypv",
-        json=data,
-        status=200,
-        match_querystring=True,
-    )
-    r = archiver._get_or_post("/endpoint", "mypv")
-    assert len(responses.calls) == 1
-    assert r == data
-
-
-@responses.activate
-def test_get_or_post_comma_separated_list() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.POST,
-        "http://archiver.example.org:17665/mgmt/bpl/endpoint",
-        json=data,
-        status=200,
-        match_querystring=True,
-    )
-    pvs = "mypv1,mypv2"
-    r = archiver._get_or_post("/endpoint", pvs)
-    assert (
-        len(responses.calls) == 1
-    )  # ignore for https://github.com/getsentry/responses/pull/690
-
-    assert responses.calls[0].request.body == pvs
-    assert r == data
-
-
-@responses.activate
 def test_pause_pv_single() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [
         {
             "pvName": "MY:PV",
@@ -439,7 +428,7 @@ def test_pause_pv_single() -> None:
             "etl_desc": "Successfully removed PV MY:PV from the cluster",
             "etl_pvName": "MY:PV",
             "status": "ok",
-        }
+        },
     ]
 
     pv = "KLYS*"
@@ -457,7 +446,7 @@ def test_pause_pv_single() -> None:
 
 @responses.activate
 def test_pause_pv_comma_separated_list() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [{"validation": "Unable to pause PV MY:PV"}]
     pvs = "mypv1,mypv2"
     responses.add(
@@ -478,7 +467,7 @@ def test_pause_pv_comma_separated_list() -> None:
 
 @responses.activate
 def test_resume_pv_single() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [{"validation": "Unable to resume PV MY:PV"}]
     pv = "KLYS*"
     responses.add(
@@ -495,7 +484,7 @@ def test_resume_pv_single() -> None:
 
 @responses.activate
 def test_resume_pv_comma_separated_list() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = [
         {"validation": "Unable to pause PV mypv1"},
         {"validation": "Unable to pause PV mypv2"},
@@ -519,7 +508,7 @@ def test_resume_pv_comma_separated_list() -> None:
 
 @responses.activate
 def test_abort_pv() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
@@ -536,7 +525,7 @@ def test_abort_pv() -> None:
 
 @responses.activate
 def test_delete_pv_data_false() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
@@ -553,7 +542,7 @@ def test_delete_pv_data_false() -> None:
 
 @responses.activate
 def test_delete_pv_data_true() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
@@ -570,7 +559,7 @@ def test_delete_pv_data_true() -> None:
 
 @responses.activate
 def test_update_pv() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     pv = "mypv"
     responses.add(
@@ -587,7 +576,7 @@ def test_update_pv() -> None:
 
 @responses.activate
 def test_update_pv_samplingmethod() -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     data = ["1", "2", "3"]
     pv = "mypv"
     responses.add(
@@ -602,122 +591,9 @@ def test_update_pv_samplingmethod() -> None:
     assert r == data
 
 
-TEST_EVENTS = [
-    ScalarInt(
-        secondsintoyear=22537583,
-        val=1,
-        nano=931598267,
-        severity=0,
-        status=0,
-        fieldvalues=[eeFieldValue(name="hey", val="ho")],
-    ),
-    ScalarInt(
-        secondsintoyear=22537584,
-        val=2,
-        nano=907631989,
-        severity=0,
-        status=0,
-        fieldvalues=[eeFieldValue(name="hey", val="ho")],
-    ),
-    ScalarInt(
-        secondsintoyear=22537585,
-        val=3,
-        nano=931598267,
-        severity=0,
-        status=0,
-        fieldvalues=[eeFieldValue(name="hey", val="ho")],
-    ),
-    ScalarInt(
-        secondsintoyear=22537586,
-        val=4,
-        nano=911606448,
-        severity=0,
-        status=0,
-        fieldvalues=[eeFieldValue(name="hey", val="ho")],
-    ),
-]
-
-
-@responses.activate
-def test_get_data() -> None:
-    host = "archiver.example.org"
-    archiver = ArchiverAppliance(host)
-    pv = "mypv"
-    events = TEST_EVENTS
-    dates = [
-        pd.Timestamp(
-            (year_timestamp(2018) + d.secondsintoyear) * int(1e9) + d.nano, tz=UTC
-        )
-        for d in events
-    ]
-    pd_dates = pd.DatetimeIndex(
-        dates,
-        tz=UTC,
-    )
-    ref_df = pd.DataFrame([e.val for e in TEST_EVENTS], index=pd_dates)
-    ref_df = ref_df.rename_axis("date")
-    ref_df.columns = ["val"]  # type: ignore[assignment]
-    responses.add(
-        responses.GET,
-        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
-        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z",
-        body=create_pb_bytes(
-            events, PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018)
-        ),
-        status=200,
-        match_querystring=True,
-    )
-    resp_data = archiver.get_data(pv, "20180825 17:45", "20180825 18:45")
-    assert len(responses.calls) == 2
-    pd.testing.assert_frame_equal(ref_df, resp_data)
-
-
-@responses.activate
-def test_get_events_pb() -> None:
-    host = "archiver.example.org"
-    archiver = ArchiverAppliance(host)
-    pv = "mypv"
-    events = TEST_EVENTS
-    responses.add(
-        responses.GET,
-        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
-        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z",
-        body=create_pb_bytes(
-            events, PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018)
-        ),
-        status=200,
-        match_querystring=True,
-    )
-    res_data = archiver.get_events(pv, "20180825 17:45", "20180825 18:45")
-    assert len(responses.calls) == 2
-    assert res_data == [
-        ArchiveEvent(
-            pv,
-            e.val,
-            e.secondsintoyear,
-            2018,
-            e.nano,
-            e.severity,
-            e.status,
-            [to_field_value(f) for f in e.fieldvalues],
-        )
-        for e in events
-    ]
-
-
 @responses.activate
 def test_pause_rename_resume_pv(caplog: pytest.LogCaptureFixture) -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
@@ -766,7 +642,7 @@ def test_pause_rename_resume_pv(caplog: pytest.LogCaptureFixture) -> None:
 def test_pause_rename_resume_pv_not_archived_pv(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
@@ -785,7 +661,7 @@ def test_pause_rename_resume_pv_not_archived_pv(
 
 @responses.activate
 def test_pause_rename_resume_pv_existing_new(caplog: pytest.LogCaptureFixture) -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
@@ -811,7 +687,7 @@ def test_pause_rename_resume_pv_existing_new(caplog: pytest.LogCaptureFixture) -
 
 @responses.activate
 def test_pause_rename_resume_pv_error_rename(caplog: pytest.LogCaptureFixture) -> None:
-    archiver = ArchiverAppliance("archiver.example.org")
+    archiver = ArchiverMgmt("archiver.example.org")
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
@@ -850,15 +726,6 @@ def test_pause_rename_resume_pv_error_rename(caplog: pytest.LogCaptureFixture) -
     assert "error during rename" in captured_log
 
 
-def test_format_date() -> None:
-    assert epicsarchiver.format_date("20180715") == "2018-07-15T00:00:00.000000Z"
-    assert epicsarchiver.format_date("20180715 17:45") == "2018-07-15T17:45:00.000000Z"
-    assert (
-        epicsarchiver.format_date(datetime(2018, 7, 15, 19, 5, tzinfo=UTC))
-        == "2018-07-15T19:05:00.000000Z"
-    )
-
-
 @pytest.mark.parametrize(
     ("test_input", "expected"),
     [({"status": "ok"}, True), ({"status": "foo"}, False), ({"hello": "world"}, False)],
@@ -867,7 +734,7 @@ def test_check_result(
     test_input: dict[str, str],
     expected: bool,  # noqa: FBT001
 ) -> None:
-    output = epicsarchiver.check_result(test_input)
+    output = check_result(test_input)
     assert output is expected
 
 
@@ -886,6 +753,43 @@ def test_check_result_message(
     output: str,
 ) -> None:
     with caplog.at_level(logging.ERROR):
-        epicsarchiver.check_result(test_input, default_message)
+        check_result(test_input, default_message)
     captured_log = caplog.text
     assert output in captured_log
+
+
+# Test ArchiverRetrieval
+
+
+@responses.activate
+@pytest.mark.parametrize("host", ["archiver-01.example.com", "192.168.4.75"])
+def test_data_url_with_same_archiver_host(host: str) -> None:
+    archiver = ArchiverRetrieval(host)
+    data = {"dataRetrievalURL": "http://archiver-01:17668/retrieval"}
+    responses.add(
+        responses.GET,
+        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        json=data,
+        status=200,
+    )
+    data_url = archiver.data_url()
+    assert len(responses.calls) == 1
+    assert data_url == "http://archiver-01:17668/retrieval/data/getData.raw"
+    # data_url shall be cached
+    _ = archiver.data_url()
+    assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_data_url_with_no_specific_port() -> None:
+    archiver = ArchiverRetrieval("archiver-01.example.com")
+    data = {"dataRetrievalURL": "http://archiver-01/foo"}
+    responses.add(
+        responses.GET,
+        "http://archiver-01.example.com:17665/mgmt/bpl/getApplianceInfo",
+        json=data,
+        status=200,
+    )
+    data_url = archiver.data_url()
+    assert len(responses.calls) == 1
+    assert data_url == "http://archiver-01/foo/data/getData.raw"
