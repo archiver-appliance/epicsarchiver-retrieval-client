@@ -100,7 +100,7 @@ class Stat(str, enum.Enum):
         LOG.info("Found %s satisfying stat %s", len(responses), self)
         return {r.pv_name: r for r in responses}
 
-    async def _get_responses(
+    async def _get_responses(  # noqa: PLR0911
         self,
         archiver: ArchiverAppliance,
         config: ReportConfig,
