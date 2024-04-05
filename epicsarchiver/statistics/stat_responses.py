@@ -183,8 +183,8 @@ class ConnectionStatus(enum.Enum):
         enum (int): Placement of enum.
     """
 
-    CurrentlyConnected = 1
-    NotCurrentlyConnected = 2
+    CurrentlyConnected = enum.auto()
+    NotCurrentlyConnected = enum.auto()
 
 
 @dataclass
