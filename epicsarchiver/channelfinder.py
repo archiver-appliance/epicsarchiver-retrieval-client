@@ -2,13 +2,17 @@
 
 import asyncio
 import logging
-import urllib.parse
 from dataclasses import dataclass
 from itertools import chain
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import aiohttp
 import urllib3
+from universalasync import wrap
+
+from epicsarchiver.service import ServiceClient
+
+if TYPE_CHECKING:
+    from aiohttp import ClientSession
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -61,23 +65,8 @@ class ChannelFinderRequestError(BaseException):
     session_info: str
 
 
-async def _fetch(
-    session: aiohttp.ClientSession,
-    url: str,
-    params: dict[str, str],
-) -> list[Channel]:
-    async with session.get(
-        url=url,
-        params=params,
-        raise_for_status=True,
-        ssl=False,
-    ) as value:
-        value_json = await value.json()
-        LOG.debug("Result from channelfinder search: %s", str(value_json))
-        return [Channel.from_json(rs) for rs in value_json]
-
-
-class ChannelFinder:
+@wrap
+class ChannelFinder(ServiceClient):
     """Minimal Channel Finder client.
 
     Hold a session to the Channel Finder web application.
@@ -86,6 +75,7 @@ class ChannelFinder:
         hostname: Channel Finder url [default: localhost]
 
     Examples:
+
     .. code-block:: python
 
         from epicsarchiver.channelfinder import ChannelFinder
@@ -101,6 +91,18 @@ class ChannelFinder:
             hostname (str, optional): hostname of channelfinder.
         """
         self.hostname = hostname
+        self.base_url = f"https://{hostname}"
+        self._sessions: dict[asyncio.AbstractEventLoop, ClientSession] = {}
+
+    async def _fetch_channels(
+        self,
+        url: str,
+        params: dict[str, str],
+    ) -> list[Channel]:
+        async with await self._get(url, params=params) as value:
+            value_json = await value.json()
+            LOG.debug("Result from channelfinder search: %s", str(value_json))
+            return [Channel.from_json(rs) for rs in value_json]
 
     def __repr__(self) -> str:
         """String representation of Channel Finder.
@@ -112,7 +114,6 @@ class ChannelFinder:
 
     async def get_channels(
         self,
-        session: aiohttp.ClientSession | None,
         pvs: list[str] | None,
         alias: str | None = None,
         ioc_name: str | None = None,
@@ -128,10 +129,7 @@ class ChannelFinder:
         Returns:
             list[Channel]: list of matching channels
         """
-        url = urllib.parse.urljoin(
-            f"https://{self.hostname}",
-            "/ChannelFinder/resources/channels",
-        )
+        url = "/ChannelFinder/resources/channels"
         urllib3.disable_warnings()  # ignoring warnings that certificate is self signed
         params = {}
         if pvs and len(pvs) > 0:
@@ -141,16 +139,10 @@ class ChannelFinder:
         if ioc_name:
             params["iocName"] = ioc_name
         LOG.debug("GET url: %s params: %s", url, str(params))
-        if not session:
-            async with aiohttp.ClientSession() as asession:
-                return await _fetch(asession, url, params)
-        else:
-            return await _fetch(session, url, params)
+        return await self._fetch_channels(url, params=params)
 
     async def get_all_channels(
-        self,
-        pvs: list[str],
-        group_size: int = 10,
+        self, pvs: list[str], group_size: int = 10
     ) -> dict[str, Channel]:
         """Get the list of channels matching the pv names from channelfinder.
 
@@ -163,16 +155,15 @@ class ChannelFinder:
         """
         pv_groups = [pvs[i : i + group_size] for i in range(0, len(pvs), group_size)]
         LOG.debug(pv_groups)
-        async with aiohttp.ClientSession() as session:
-            channel_request_res: list[list[Channel]] = await asyncio.gather(*[
-                self.get_channels(session, pv_group) for pv_group in pv_groups
-            ])
-            channels: set[Channel] = set(chain(*channel_request_res))
+        channel_request_res: list[list[Channel]] = await asyncio.gather(*[
+            self.get_channels(pv_group) for pv_group in pv_groups
+        ])
+        channels: set[Channel] = set(chain(*channel_request_res))
 
-            pvs_set = set(pvs)
-            return {
-                channel.name: channel for channel in channels if channel.name in pvs_set
-            }
+        pvs_set = set(pvs)
+        return {
+            channel.name: channel for channel in channels if channel.name in pvs_set
+        }
 
     async def get_ioc_channels(self, ioc_name: str) -> list[Channel]:
         """Get the list of channels with the specified ioc_name.
@@ -183,8 +174,7 @@ class ChannelFinder:
         Returns:
             dict[str, Channel]: dict of matching channels
         """
-        async with aiohttp.ClientSession() as session:
-            return await self.get_channels(session, None, ioc_name=ioc_name)
+        return await self.get_channels(None, ioc_name=ioc_name)
 
     async def get_all_alias_channels(
         self,
@@ -200,17 +190,13 @@ class ChannelFinder:
         Returns:
             dict[str, list[Channel]]: dict of matching channels to pv names
         """
-        async with aiohttp.ClientSession() as session:
-            alias_channel_requests = await asyncio.gather(*[
-                self.get_channels(session, [], alias=pv, ioc_name=ioc_name)
-                for pv in pvs
-            ])
-            channels = set(chain(*alias_channel_requests))
+        alias_channel_requests = await asyncio.gather(*[
+            self.get_channels([], alias=pv, ioc_name=ioc_name) for pv in pvs
+        ])
+        channels = set(chain(*alias_channel_requests))
 
-            pvs_set = set(pvs)
-            return {
-                pv: [
-                    channel for channel in channels if channel.properties["alias"] == pv
-                ]
-                for pv in pvs_set
-            }
+        pvs_set = set(pvs)
+        return {
+            pv: [channel for channel in channels if channel.properties["alias"] == pv]
+            for pv in pvs_set
+        }

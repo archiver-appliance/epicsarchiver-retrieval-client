@@ -2,13 +2,14 @@
 
 import datetime
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 import pytz
 import responses
 from pytest_mock import MockFixture
 
-from epicsarchiver.channelfinder import Channel, ChannelFinder
+from epicsarchiver.channelfinder import ChannelFinder
 from epicsarchiver.epicsarchiver import ArchiverAppliance, ArchiverStatistics
 from epicsarchiver.statistics._external_stats import (
     get_double_archived,
@@ -262,8 +263,8 @@ async def test_get_not_configured(mocker: MockFixture) -> None:
     )
     # covers both get_all_channels and get_all_alias_channels
     mocker.patch(
-        "epicsarchiver.channelfinder._fetch",
-        return_value=[Channel("MY:PV", {"alias": "MY:PV3"}, [])],
+        "epicsarchiver.statistics._external_stats.get_aliases",
+        side_effect=AsyncMock(return_value={"MY:PV": [], "MY:PV3": ["MY:PV"]}),
     )
     mocker.patch(
         "epicsarchiver.gitlab.Gitlab.get_tar_ball",

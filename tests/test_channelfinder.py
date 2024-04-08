@@ -50,7 +50,7 @@ async def test_get_channels() -> None:
             },
         ]
         mocked.get(url, body=json.dumps(data))
-        r = await channelfinder.get_channels(None, ["fred"])
+        r = await channelfinder.get_channels(["fred"])
         assert len(r) == 1
         expected_channel = Channel(
             "fred",
