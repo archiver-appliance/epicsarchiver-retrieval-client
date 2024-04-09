@@ -1,5 +1,6 @@
 import datetime
 from datetime import timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 import pytz
@@ -150,11 +151,11 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
     )
     mocker.patch(
         "epicsarchiver.channelfinder.ChannelFinder.get_all_channels",
-        return_value={"MY:PV": channel},
+        side_effect=AsyncMock(return_value={"MY:PV": channel}),
     )
     mocker.patch(
         "epicsarchiver.channelfinder.ChannelFinder.get_all_alias_channels",
-        return_value={"MY:PV": []},
+        side_effect=AsyncMock(return_value={"MY:PV": []}),
     )
     archiver = ArchiverAppliance("archiver.example.org")
     other_archiver = ArchiverAppliance("other_archiver.example.org")
