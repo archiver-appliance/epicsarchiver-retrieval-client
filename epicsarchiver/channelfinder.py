@@ -4,15 +4,12 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from itertools import chain
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import urllib3
 from universalasync import wrap
 
 from epicsarchiver.service import ServiceClient
-
-if TYPE_CHECKING:
-    from aiohttp import ClientSession
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -91,8 +88,7 @@ class ChannelFinder(ServiceClient):
             hostname (str, optional): hostname of channelfinder.
         """
         self.hostname = hostname
-        self.base_url = f"https://{hostname}"
-        self._sessions: dict[asyncio.AbstractEventLoop, ClientSession] = {}
+        super().__init__(f"https://{hostname}")
 
     async def _fetch_channels(
         self,

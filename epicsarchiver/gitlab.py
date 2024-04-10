@@ -6,14 +6,8 @@ import tarfile
 import tempfile
 import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from epicsarchiver.service import ServiceClient
-
-if TYPE_CHECKING:
-    import asyncio
-
-    import aiohttp
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -29,8 +23,7 @@ class Gitlab(ServiceClient):
                 Defaults to "gitlab.esss.lu.se".
         """
         self.fqdn = fqdn
-        self.base_url = f"https://{fqdn}"
-        self._sessions: dict[asyncio.AbstractEventLoop, aiohttp.ClientSession] = {}
+        super().__init__(f"https://{fqdn}")
 
     async def get_tar_ball(self, repo: Path) -> Path:
         """Fetch the tar ball from the input repository and store in a temp directory.
