@@ -31,7 +31,8 @@ cov-report = ["- coverage combine", "coverage report", "coverage xml"]
 cov = ["test-cov", "cov-report"]
 docs-check = "hatch run docs:check"
 type-check = "hatch run types:check"
-all = ["hatch fmt --check", "type-check", "cov", "docs-check"]
+jupyter-check = "hatch run jupyter:check"
+all = ["hatch fmt --check", "type-check", "cov", "jupyter-check", "docs-check"]
 
 [[envs.test.matrix]]
 python = ["3.10", "3.11", "3.12"]
@@ -61,6 +62,16 @@ build = ["make -C docs html"]
 check = ['make -C docs html SPHINXOPTS="-W --keep-going"']
 live = ["sphinx-autobuild docs/source docs/build/html"]
 clean = ["make -C docs clean html"]
+
+[envs.jupyter]
+extra-dependencies = [
+  "notebook==7.1.2",
+  "nbval==0.11.0",
+  "matplotlib==3.8.3"
+]
+
+[envs.jupyter.scripts]
+check = ['py.test --nbval tests/jupyter/']
 
 [envs.hatch-static-analysis]
 dependencies = ["ruff==0.1.11"]
