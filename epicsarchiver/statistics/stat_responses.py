@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pytz
 
-from epicsarchiver.channelfinder import Channel
+from epicsarchiver.statistics.channelfinder import Channel
 
 
 class DroppedReason(str, enum.Enum):

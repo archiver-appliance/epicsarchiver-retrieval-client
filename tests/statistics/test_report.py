@@ -6,8 +6,8 @@ import pytest
 import pytz
 from pytest_mock import MockFixture
 
-from epicsarchiver.channelfinder import Channel, ChannelFinder
 from epicsarchiver.epicsarchiver import ArchiverAppliance
+from epicsarchiver.statistics.channelfinder import Channel, ChannelFinder
 from epicsarchiver.statistics.report import (
     ReportConfig,
     Stat,
@@ -150,11 +150,11 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
         return_value=[],
     )
     mocker.patch(
-        "epicsarchiver.channelfinder.ChannelFinder.get_all_channels",
+        "epicsarchiver.statistics.channelfinder.ChannelFinder.get_all_channels",
         side_effect=AsyncMock(return_value={"MY:PV": channel}),
     )
     mocker.patch(
-        "epicsarchiver.channelfinder.ChannelFinder.get_all_alias_channels",
+        "epicsarchiver.statistics.channelfinder.ChannelFinder.get_all_alias_channels",
         side_effect=AsyncMock(return_value={"MY:PV": []}),
     )
     archiver = ArchiverAppliance("archiver.example.org")

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from epicsarchiver import archive_files
+from epicsarchiver.mgmt import archive_files
 
 SAMPLES_PATH = Path(__file__).parent.resolve() / "samples"
 FILE1_PVS = [

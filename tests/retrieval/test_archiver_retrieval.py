@@ -1,14 +1,15 @@
 from collections.abc import Sequence
 
 import pandas as pd
+import pytest
 import responses
 from pytz import UTC
 
-import epicsarchiver.EPICSEvent_pb2 as ee
-from epicsarchiver.archive_event import ArchiveEvent, year_timestamp
-from epicsarchiver.epicsarchiver import ArchiverRetrieval
-from epicsarchiver.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo, ScalarInt
-from epicsarchiver.pb import EeEvent, escape_bytes, to_field_value
+import epicsarchiver.retrieval.EPICSEvent_pb2 as ee
+from epicsarchiver.retrieval.archive_event import ArchiveEvent, year_timestamp
+from epicsarchiver.retrieval.archiver_retrieval import ArchiverRetrieval
+from epicsarchiver.retrieval.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo, ScalarInt
+from epicsarchiver.retrieval.pb import EeEvent, escape_bytes, to_field_value
 
 
 def create_pb_bytes(
@@ -143,3 +144,40 @@ def test_get_events_pb() -> None:
         )
         for e in events
     ]
+
+
+# Test ArchiverRetrieval
+
+
+@responses.activate
+@pytest.mark.parametrize("host", ["archiver-01.example.com", "192.168.4.75"])
+def test_data_url_with_same_archiver_host(host: str) -> None:
+    archiver = ArchiverRetrieval(host)
+    data = {"dataRetrievalURL": "http://archiver-01:17668/retrieval"}
+    responses.add(
+        responses.GET,
+        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        json=data,
+        status=200,
+    )
+    data_url = archiver.data_url()
+    assert len(responses.calls) == 1
+    assert data_url == "http://archiver-01:17668/retrieval/data/getData.raw"
+    # data_url shall be cached
+    _ = archiver.data_url()
+    assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_data_url_with_no_specific_port() -> None:
+    archiver = ArchiverRetrieval("archiver-01.example.com")
+    data = {"dataRetrievalURL": "http://archiver-01/foo"}
+    responses.add(
+        responses.GET,
+        "http://archiver-01.example.com:17665/mgmt/bpl/getApplianceInfo",
+        json=data,
+        status=200,
+    )
+    data_url = archiver.data_url()
+    assert len(responses.calls) == 1
+    assert data_url == "http://archiver-01/foo/data/getData.raw"
