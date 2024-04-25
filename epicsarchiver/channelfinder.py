@@ -7,7 +7,6 @@ from itertools import chain
 from typing import Any
 
 import urllib3
-from universalasync import wrap
 
 from epicsarchiver.service import ServiceClient
 
@@ -62,7 +61,6 @@ class ChannelFinderRequestError(BaseException):
     session_info: str
 
 
-@wrap
 class ChannelFinder(ServiceClient):
     """Minimal Channel Finder client.
 

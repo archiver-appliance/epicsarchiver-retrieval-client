@@ -30,7 +30,6 @@ dependencies = [
   "pytz",
   "asyncio",
   "aiohttp",
-  "universalasync"
 ]
 dynamic = ["version"]
 

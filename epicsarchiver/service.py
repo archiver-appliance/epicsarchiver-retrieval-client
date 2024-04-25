@@ -1,20 +1,16 @@
 """Module to cover the ServiceClient for doing http calls."""
 
+import asyncio
 import logging
 import urllib.parse
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from aiohttp import ClientResponse, ClientSession
-from universalasync import get_event_loop, wrap
-
-if TYPE_CHECKING:
-    import asyncio
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
-@wrap
 class ServiceClient:
     """An async and sync http service client.
 
@@ -24,30 +20,15 @@ class ServiceClient:
     def __init__(self, base_url: str) -> None:
         """Create Service object."""
         self.base_url = base_url
-        self._sessions: dict[asyncio.AbstractEventLoop, ClientSession] = {}
-
-    @property
-    def session(self) -> ClientSession:
-        """Get a client session to send requests with.
-
-        Returns:
-            ClientSession: An asynchronous session.
-        """
-        loop = get_event_loop()
-        session = self._sessions.get(loop)
-        if session is not None:
-            return session
-        self._sessions[loop] = ClientSession()
-        return self._sessions[loop]
+        self.session = ClientSession()
 
     async def _close(self) -> None:
-        for session in self._sessions.values():
-            if session is not None:
-                await session.close()
+        if self.session is not None:
+            await self.session.close()
 
     def __del__(self) -> None:
         """Delete method makes sure to close any clients first."""
-        loop = get_event_loop()
+        loop = asyncio.get_event_loop()
         if loop.is_running():
             loop.create_task(self._close())
         else:
