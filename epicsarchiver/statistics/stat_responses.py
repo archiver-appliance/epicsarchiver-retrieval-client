@@ -70,7 +70,16 @@ _DATE_FORMAT_OFFSET = "%b/%d/%Y %H:%M:%S %z"
 _DATE_FORMAT_TIMEZONE = "%b/%d/%Y %H:%M:%S %Z"
 
 
-def _parse_archiver_datetime(datetime_str: str) -> datetime.datetime | None:
+def parse_archiver_datetime(datetime_str: str) -> datetime.datetime | None:
+    """Calculate a datetime.datetime from the possible input strings of the archiver.
+
+    Args:
+        datetime_str (str): Either "%b/%d/%Y %H:%M:%S %z", "Never", ""
+            or "%b/%d/%Y %H:%M:%S %Z"
+
+    Returns:
+        datetime.datetime | None: Datetime representation
+    """
     if datetime_str in {"Never", ""}:
         return None
     try:
@@ -118,11 +127,11 @@ class DisconnectedPVsResponse(BaseStatResponse):
         return DisconnectedPVsResponse(
             json["pvName"],
             json["hostName"],
-            _parse_archiver_datetime(json["connectionLostAt"]),
+            parse_archiver_datetime(json["connectionLostAt"]),
             json["instance"],
             int(json["commandThreadID"]),
             int(json["noConnectionAsOfEpochSecs"]),
-            _parse_archiver_datetime(json["lastKnownEvent"]),
+            parse_archiver_datetime(json["lastKnownEvent"]),
         )
 
     def __str__(self) -> str:
@@ -162,7 +171,7 @@ class SilentPVsResponse(BaseStatResponse):
         return SilentPVsResponse(
             json["pvName"],
             json["instance"],
-            _parse_archiver_datetime(json["lastKnownEvent"]),
+            parse_archiver_datetime(json["lastKnownEvent"]),
         )
 
     def __str__(self) -> str:
@@ -247,8 +256,8 @@ class StorageRatesResponse(BaseStatResponse):
     """
 
     mb_per_day: float
-    kb_per_hour: float
-    gb_per_year: float
+    kb_per_hour: float | None
+    gb_per_year: float | None
 
     @classmethod
     def from_json(cls, json: dict[str, str]) -> "StorageRatesResponse":
