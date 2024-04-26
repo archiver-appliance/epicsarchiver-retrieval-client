@@ -35,7 +35,7 @@ jupyter-check = "hatch run jupyter:check"
 all = ["hatch fmt --check", "type-check", "cov", "jupyter-check", "docs-check"]
 
 [[envs.test.matrix]]
-python = ["3.10", "3.11", "3.12"]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
 [envs.types]
 extra-dependencies = [

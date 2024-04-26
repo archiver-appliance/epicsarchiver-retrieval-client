@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import datetime
 from datetime import timedelta
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock
 
 import pytest
 import pytz
-from pytest_mock import MockFixture
 
 from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics.channelfinder import Channel, ChannelFinder
@@ -26,6 +28,9 @@ from epicsarchiver.statistics.stat_responses import (
     SilentPVsResponse,
     StorageRatesResponse,
 )
+
+if TYPE_CHECKING:
+    from pytest_mock import MockFixture
 
 expected_all_stats: dict[Stat, BaseStatResponse] = {
     Stat.BufferOverflow: DroppedPVResponse("MY:PV", 11, DroppedReason.BufferOverflow),
@@ -106,15 +111,14 @@ def mock_get_pvs_dropped(
     reason: DroppedReason,
     limit: int,  # noqa: ARG001
 ) -> list[BaseStatResponse]:
-    match reason:
-        case DroppedReason.BufferOverflow:
-            return [expected_all_stats[Stat.BufferOverflow]]
-        case DroppedReason.IncorrectTimestamp:
-            return [expected_all_stats[Stat.IncorrectTimestamp]]
-        case DroppedReason.TypeChange:
-            return [expected_all_stats[Stat.TypeChange]]
-        case DroppedReason.SlowChanging:
-            return [expected_all_stats[Stat.SlowChanging]]
+    if reason == DroppedReason.BufferOverflow:
+        return [expected_all_stats[Stat.BufferOverflow]]
+    if reason == DroppedReason.IncorrectTimestamp:
+        return [expected_all_stats[Stat.IncorrectTimestamp]]
+    if reason == DroppedReason.TypeChange:
+        return [expected_all_stats[Stat.TypeChange]]
+    if reason == DroppedReason.SlowChanging:
+        return [expected_all_stats[Stat.SlowChanging]]
     return []
 
 

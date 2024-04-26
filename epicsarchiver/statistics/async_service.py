@@ -1,12 +1,16 @@
 """Module to cover the ServiceClient for doing http calls."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import urllib.parse
-from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from aiohttp import ClientResponse, ClientSession
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 LOG: logging.Logger = logging.getLogger(__name__)
 

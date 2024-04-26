@@ -1,5 +1,7 @@
 """Command module."""
 
+from __future__ import annotations
+
 import logging
 from datetime import timedelta
 from pathlib import Path
@@ -136,7 +138,7 @@ def stats(  # noqa: PLR0917, PLR0913
         ChannelFinder(channelfinder_hostname) if channelfinder_hostname else None
     )
 
-    with output.open("w", encoding="locale") as out_file:
+    with output.open("w") as out_file:
         config = ReportConfig(
             query_limit=limit,
             time_minimum=timedelta(days=time_minimum),

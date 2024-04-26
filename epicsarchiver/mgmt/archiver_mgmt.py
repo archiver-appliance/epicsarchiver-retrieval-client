@@ -1,8 +1,10 @@
 """ArchiverMgmt module."""
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Dict, List, cast
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 from epicsarchiver.mgmt import archive_files
@@ -42,7 +44,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetAllExpandedPVNames.html
         r = self._get("/getAllExpandedPVNames")
-        return cast(list[str], r.json())
+        return cast(List[str], r.json())
 
     def get_all_pvs(
         self,
@@ -72,7 +74,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         if regex is not None:
             params["regex"] = regex
         r = self._get("/getAllPVs", params=params)
-        return cast(list[str], r.json())
+        return cast(List[str], r.json())
 
     def get_pv_status(self, pv: str | list[str]) -> list[dict[str, str]]:
         """Return the status of a PV.
@@ -87,7 +89,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVStatusAction.html
         r = self._get("/getPVStatus", params={"pv": pv})
-        return cast(list[dict[str, str]], r.json())
+        return cast(List[Dict[str, str]], r.json())
 
     def get_pv_details(self, pv: str | list[str]) -> list[dict[str, str]]:
         """Return the details of a PV.
@@ -102,7 +104,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVDetailsAction.html
         r = self._get("/getPVDetails", params={"pv": pv})
-        return cast(list[dict[str, str]], r.json())
+        return cast(List[Dict[str, str]], r.json())
 
     def get_pv_status_from_files(
         self,
@@ -137,7 +139,23 @@ class ArchiverMgmt(BaseArchiverAppliance):
         if isinstance(pvs, list):
             pvs = ",".join(pvs)
         r = self._post("/unarchivedPVs", data={"pv": pvs})
-        return cast(list[str], r.json())
+        return cast(List[str], r.json())
+
+    def get_archived_pvs(self, pvs: str | list[str]) -> list[str]:
+        """Return the list of unarchived PVs out of PVs specified in pvs.
+
+        Args:
+            pvs: a list of PVs either in CSV format or as a python
+                string list
+
+        Returns:
+            list of unarchived PV names
+        """
+        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivedPVsAction.html
+        if isinstance(pvs, list):
+            pvs = ",".join(pvs)
+        r = self._post("/archivedPVs", data={"pv": pvs})
+        return cast(List[str], r.json())
 
     def get_unarchived_pvs_from_files(
         self,
@@ -175,7 +193,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         params = {"pv": pv}
         params.update(kwargs)
         r = self._get("/archivePV", params=params)
-        return cast(list[dict[str, str]], r.json())
+        return cast(List[Dict[str, str]], r.json())
 
     def archive_pvs(self, pvs: list[dict[str, str]]) -> list[dict[str, str]]:
         """Archive a list of PVs.
@@ -188,7 +206,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivePVAction.html
         r = self._post("/archivePV", json=pvs)
-        return cast(list[dict[str, str]], r.json())
+        return cast(List[Dict[str, str]], r.json())
 
     def archive_pvs_from_files(
         self,
@@ -221,8 +239,8 @@ class ArchiverMgmt(BaseArchiverAppliance):
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/PauseArchivingPV.html
         response = self._get_or_post("/pauseArchivingPV", pv)
         if "," not in pv:
-            return cast(dict[str, str], response)
-        return cast(list[dict[str, str]], response)
+            return cast(Dict[str, str], response)
+        return cast(List[Dict[str, str]], response)
 
     def resume_pv(self, pv: str) -> list[dict[str, str]] | dict[str, str]:
         """Resume the archiving of a PV(s).
@@ -237,8 +255,8 @@ class ArchiverMgmt(BaseArchiverAppliance):
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ResumeArchivingPV.html
         response = self._get_or_post("/resumeArchivingPV", pv)
         if "," not in pv:
-            return cast(dict[str, str], response)
-        return cast(list[dict[str, str]], response)
+            return cast(Dict[str, str], response)
+        return cast(List[Dict[str, str]], response)
 
     def abort_pv(self, pv: str) -> list[str]:
         """Abort any pending requests for archiving this PV.
@@ -251,7 +269,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/AbortArchiveRequest.html
         r = self._get("/abortArchivingPV", params={"pv": pv})
-        return cast(list[str], r.json())
+        return cast(List[str], r.json())
 
     def delete_pv(
         self,
@@ -272,7 +290,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/DeletePV.html
         r = self._get("/deletePV", params={"pv": pv, "delete_data": delete_data})
-        return cast(list[str], r.json())
+        return cast(List[str], r.json())
 
     def rename_pv(self, pv: str, newname: str) -> dict[str, str]:
         """Rename this pv to a new name.
@@ -288,7 +306,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         """
         # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/RenamePVAction.html
         r = self._get("/renamePV", params={"pv": pv, "newname": newname})
-        return cast(dict[str, str], r.json())
+        return cast(Dict[str, str], r.json())
 
     def update_pv(
         self,
@@ -311,7 +329,7 @@ class ArchiverMgmt(BaseArchiverAppliance):
         if samplingmethod:
             params["samplingmethod"] = samplingmethod
         r = self._get("/changeArchivalParameters", params=params)
-        return cast(list[str], r.json())
+        return cast(List[str], r.json())
 
     def pause_rename_resume_pv(self, pv: str, new: str) -> None:
         """Pause, rename and resume a PV.

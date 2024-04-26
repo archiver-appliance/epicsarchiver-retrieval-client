@@ -1,5 +1,7 @@
 """Minimal Channel Finder interface for calculating archiver statistics."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -26,7 +28,7 @@ class Channel:
     tags: list[str]
 
     @classmethod
-    def from_json(cls, json: dict[str, Any]) -> "Channel":
+    def from_json(cls, json: dict[str, Any]) -> Channel:
         """Convert from json direct from channel finder to a "Channel".
 
         Args:
