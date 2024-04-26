@@ -11,10 +11,9 @@ import pytz
 from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics.channelfinder import Channel, ChannelFinder
 from epicsarchiver.statistics.report import (
-    ReportConfig,
+    ArchiverReport,
     Stat,
     _PVStats,
-    generate_all_stats,
 )
 from epicsarchiver.statistics.stat_responses import (
     BaseStatResponse,
@@ -88,7 +87,7 @@ async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
         return_value=[expected_all_stats[Stat.BufferOverflow]],
     )
     archiver = ArchiverAppliance("archiver.example.org")
-    config = ReportConfig(
+    report = ArchiverReport(
         query_limit=2,
         time_minimum=timedelta(days=10),
         connection_drops_minimum=10,
@@ -99,7 +98,7 @@ async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
         channelfinder=ChannelFinder("channelfinder.example.org"),
         ioc_name=None,
     )
-    actual = await Stat.BufferOverflow.generate_stats(archiver, config)
+    actual = await report.generate_stats(Stat.BufferOverflow, archiver)
     assert actual == {
         expected_all_stats[Stat.BufferOverflow].pv_name: expected_all_stats[
             Stat.BufferOverflow
@@ -163,7 +162,7 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
     )
     archiver = ArchiverAppliance("archiver.example.org")
     other_archiver = ArchiverAppliance("other_archiver.example.org")
-    config = ReportConfig(
+    report = ArchiverReport(
         query_limit=2,
         time_minimum=timedelta(days=10),
         connection_drops_minimum=10,
@@ -175,7 +174,7 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
         ioc_name=None,
     )
     ioc = Ioc(channel.properties["hostName"], channel.properties["iocName"])
-    actual = await generate_all_stats(archiver, config)
+    actual = await report.generate(archiver)
     assert ioc in actual
     assert "MY:PV" in actual[ioc]
     assert _PVStats("MY:PV", expected_all_stats) == actual[ioc]["MY:PV"]

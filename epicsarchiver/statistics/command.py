@@ -11,7 +11,7 @@ import click
 from epicsarchiver.common.command import handle_debug
 from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics.channelfinder import ChannelFinder
-from epicsarchiver.statistics.report import ReportConfig, print_report
+from epicsarchiver.statistics.report import ArchiverReport
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -139,7 +139,7 @@ def stats(  # noqa: PLR0917, PLR0913
     )
 
     with output.open("w") as out_file:
-        config = ReportConfig(
+        report = ArchiverReport(
             query_limit=limit,
             time_minimum=timedelta(days=time_minimum),
             connection_drops_minimum=connection_drops_minimum,
@@ -150,7 +150,7 @@ def stats(  # noqa: PLR0917, PLR0913
             channelfinder=channelfinder,
             ioc_name=ioc,
         )
-        LOG.info("Collecting statistics with configuration %s", config)
+        LOG.info("Collecting statistics with configuration %s", report)
 
-        print_report(archiver, config, out_file, verbose=verbose)
+        report.print_report(archiver, out_file, verbose=verbose)
     ctx.exit(0)
