@@ -5,10 +5,10 @@ from pathlib import Path
 
 from numpy import mean
 
-from epicsarchiver.archive_files import get_pvs_from_files
-from epicsarchiver.channelfinder import ChannelFinder
 from epicsarchiver.epicsarchiver import ArchiverAppliance
-from epicsarchiver.gitlab import Gitlab
+from epicsarchiver.mgmt.archive_files import get_pvs_from_files
+from epicsarchiver.statistics.channelfinder import ChannelFinder
+from epicsarchiver.statistics.gitlab import Gitlab
 from epicsarchiver.statistics.stat_responses import (
     UNKNOWN_IOC,
     BothArchiversResponse,

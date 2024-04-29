@@ -9,12 +9,13 @@ import pytz
 import responses
 from pytest_mock import MockFixture
 
-from epicsarchiver.channelfinder import ChannelFinder
-from epicsarchiver.epicsarchiver import ArchiverAppliance, ArchiverStatistics
+from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics._external_stats import (
     get_double_archived,
     get_not_configured,
 )
+from epicsarchiver.statistics.archiver_statistics import ArchiverStatistics
+from epicsarchiver.statistics.channelfinder import ChannelFinder
 from epicsarchiver.statistics.stat_responses import (
     BothArchiversResponse,
     ConfiguredStatus,
@@ -267,7 +268,7 @@ async def test_get_not_configured(mocker: MockFixture) -> None:
         side_effect=AsyncMock(return_value={"MY:PV": [], "MY:PV3": ["MY:PV"]}),
     )
     mocker.patch(
-        "epicsarchiver.gitlab.Gitlab.get_tar_ball",
+        "epicsarchiver.statistics.gitlab.Gitlab.get_tar_ball",
         return_value=SAMPLES_PATH,
     )
     pvs_response = await get_not_configured(archiver, channelfinder, config_gitlab_repo)

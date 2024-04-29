@@ -1,19 +1,18 @@
 """Archiver appliance module."""
 
 __all__ = [
-    "archive_files",
     "epicsarchiver",
-    "EPICSEvent_pb2",
-    "pb",
-    "epicsarchiver.statistics",
+    "mgmt",
+    "retrieval",
+    "statistics",
 ]
 
-from epicsarchiver.archive_event import (
-    ArchiveEvent,
-    FieldValue,
-)
 from epicsarchiver.epicsarchiver import (
     ArchiverAppliance,
 )
+from epicsarchiver.retrieval.archive_event import (
+    ArchiveEvent,
+    FieldValue,
+)
 
-__all__ += ["ArchiverAppliance", "ArchiveEvent", "FieldValue"]
+__all__ += ["ArchiveEvent", "ArchiverAppliance", "FieldValue"]

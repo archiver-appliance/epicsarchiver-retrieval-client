@@ -4,8 +4,9 @@ from unittest import mock
 import numpy as np
 from pytz import utc as UTC  # noqa: N812
 
-from epicsarchiver import ArchiveEvent, pb
-from epicsarchiver import EPICSEvent_pb2 as ee
+from epicsarchiver import ArchiveEvent
+from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
+from epicsarchiver.retrieval import pb
 
 TIMESTAMP_2001 = 978307200
 TIMESTAMP_INACCURACY = 1e-6
@@ -109,7 +110,7 @@ def test_event_timestamp_gives_correct_answer_2001() -> None:
 
 
 def test_read_pb_file() -> None:
-    data = pb.read_pb_file("tests/samples/string_event.pb")
+    data = pb.read_pb_file("tests/retrieval/samples/string_event.pb")
     assert data[0].val == "2015-01-08 19:47:01 UTC"
     assert data[0].timestamp.timestamp() == 1507712433.235971
 
@@ -124,7 +125,7 @@ def test_get_iso_timestamp_for_event_has_expected_output() -> None:
 
 
 def test_read_sigma_file() -> None:
-    data = pb.read_pb_file("tests/samples/sigma_test_pb.pb")
+    data = pb.read_pb_file("tests/retrieval/samples/sigma_test_pb.pb")
     assert "Sigma" in data[0].pv
     assert 0.11091079832009144 in np.array(data[0].val)
     assert data[0].year == 2023

@@ -22,6 +22,7 @@ import csv
 import datetime
 import enum
 import logging
+import operator
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
@@ -31,7 +32,6 @@ from typing import IO
 import pytz
 from rich.console import Console
 
-from epicsarchiver.channelfinder import ChannelFinder
 from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics._external_stats import (
     filter_by_ioc,
@@ -39,6 +39,7 @@ from epicsarchiver.statistics._external_stats import (
     get_iocs,
     get_not_configured,
 )
+from epicsarchiver.statistics.channelfinder import ChannelFinder
 from epicsarchiver.statistics.stat_responses import (
     UNKNOWN_IOC,
     BaseStatResponse,
@@ -293,7 +294,7 @@ async def _organise_by_ioc(
 
 async def _iocs_summary(iocs: dict[Ioc, list[str]]) -> list[str]:
     sorted_iocs = [(ioc, len(pvs)) for ioc, pvs in iocs.items()]
-    sorted_iocs = sorted(sorted_iocs, key=lambda pair: pair[1])
+    sorted_iocs = sorted(sorted_iocs, key=operator.itemgetter(1))
     return [f"{ioc_pair[0]}:{ioc_pair[1]} PVs" for ioc_pair in sorted_iocs]
 
 

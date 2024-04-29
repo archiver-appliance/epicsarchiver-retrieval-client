@@ -7,7 +7,7 @@ import tempfile
 import urllib.parse
 from pathlib import Path
 
-from epicsarchiver.service import ServiceClient
+from epicsarchiver.statistics.async_service import ServiceClient
 
 LOG: logging.Logger = logging.getLogger(__name__)
 

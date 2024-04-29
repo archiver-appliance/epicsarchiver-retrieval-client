@@ -32,8 +32,12 @@ from typing import TYPE_CHECKING
 import pandas as pd
 from pandas import Timestamp
 
-from epicsarchiver import EPICSEvent_pb2 as ee
-from epicsarchiver.archive_event import ArchiveEvent, FieldValue, ysn_timestamp
+from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
+from epicsarchiver.retrieval.archive_event import (
+    ArchiveEvent,
+    FieldValue,
+    ysn_timestamp,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable

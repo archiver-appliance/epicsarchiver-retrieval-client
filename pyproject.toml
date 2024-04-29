@@ -44,8 +44,8 @@ extend = "ruff_defaults.toml"
 target-version = "py310"
 line-length = 88
 exclude = [
-  "epicsarchiver/EPICSEvent_pb2.py",
-  "epicsarchiver/EPICSEvent_pb2.pyi",
+  "epicsarchiver/retrieval/EPICSEvent_pb2.py",
+  "epicsarchiver/retrieval/EPICSEvent_pb2.pyi",
   "docs/source/conf.py",
 ]
 preview = true
@@ -60,9 +60,6 @@ convention = "google"
 
 [tool.mypy]
 strict = true
-
-[[tool.mypy.overrides]]
-module = "*"
 
 [tool.coverage.run]
 source_pkgs = ["epicsarchiver", "tests"]
