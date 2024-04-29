@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from epicsarchiver.common.base_archiver import mgmt_url
 from epicsarchiver.mgmt.archiver_mgmt import ArchiverMgmt
 from epicsarchiver.statistics.async_service import ServiceClient
+from epicsarchiver.statistics.pv_details import DetailEnum, Details
+from epicsarchiver.statistics.report import PVStats
 from epicsarchiver.statistics.stat_responses import (
     DisconnectedPVsResponse,
     DroppedPVResponse,
@@ -79,6 +83,28 @@ class ArchiverStatistics(ServiceClient):
         """Gets the list of paused pvs."""
         r = await self._get_json("/getPausedPVsReport")
         return [PausedPVResponse.from_json(rs) for rs in r]
+
+    async def get_pv_details(self, pvs: list[str]) -> dict[str, PVStats]:
+        """Return the details of a PV.
+
+        Args:
+            pvs (list[str]): names of the pvs for which the details are to be
+                determined.
+
+        Returns:
+            list of dict with the details of the matching PVs
+        """
+        base_details = await asyncio.gather(*[
+            self._get_json("/getPVDetails", params={"pv": pv}) for pv in pvs
+        ])
+        details = [Details.from_json(dets) for dets in base_details]
+        # Convert each detail to stat_responses
+        return {
+            pv_details[DetailEnum.PVName]: PVStats(
+                pv_details[DetailEnum.PVName], pv_details.to_base_responses()
+            )
+            for pv_details in details
+        }
 
 
 class ArchiverWrapper:

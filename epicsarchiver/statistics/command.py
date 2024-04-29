@@ -11,7 +11,7 @@ import click
 from epicsarchiver.common.command import handle_debug
 from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
 from epicsarchiver.statistics.channelfinder import ChannelFinder
-from epicsarchiver.statistics.report import ArchiverReport
+from epicsarchiver.statistics.report import ArchiverReport, IocReport
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -153,4 +153,41 @@ def stats(  # noqa: PLR0917, PLR0913
         LOG.info("Collecting statistics with configuration %s", report)
 
         report.print_report(archiver, out_file, verbose=verbose)
+    ctx.exit(0)
+
+
+@click.command()
+@click.option(
+    "--channelfinder",
+    "-cf",
+    default="channelfinder.tn.esss.lu.se",
+    type=str,
+    help="Channel Finder hostname or IP [default: channelfinder.tn.esss.lu.se]",
+)
+@click.option(
+    "--config-gitlab-repo",
+    "-d",
+    type=click.Path(path_type=Path),
+    help="Gitlab repo for files with lists of PVs",
+)
+@click.argument(
+    "ioc",
+    type=str,
+)
+@click.pass_context
+def ioc_check(
+    ctx: click.core.Context,
+    ioc: str,
+    config_gitlab_repo: Path | None,
+    channelfinder: str,
+    debug: bool,  # noqa: FBT001, ARG001
+) -> None:
+    """Print out statistics of a single IOC from an archiver cluster.
+
+    ARGUMENT IOC Name of IOC to check
+    """
+    archiver: ArchiverWrapper = ArchiverWrapper(ctx.obj["archiver"].hostname)
+    channelfinder_service = ChannelFinder(channelfinder)
+    ioc_report = IocReport(ioc, channelfinder_service, archiver, config_gitlab_repo)
+    ioc_report.print_report()
     ctx.exit(0)

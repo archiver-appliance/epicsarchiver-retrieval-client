@@ -25,6 +25,7 @@ import datetime
 import enum
 import logging
 import operator
+import sys
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import IO, TYPE_CHECKING
@@ -88,6 +89,15 @@ class Stat(str, enum.Enum):
     StorageRates = "In the top storage rates."
     LostConnection = "In the top dropped connections."
     NotConfigured = "PV archived, but not in config."
+
+
+CSV_HEADINGS = [
+    "IOC Name",
+    "IOC hostname",
+    "PV name",
+    "Statistic",
+    "Statistic Note",
+]
 
 
 @dataclass
@@ -264,15 +274,78 @@ class ArchiverReport:
             return
         sum_report = csv_output(report)
         csvwriter = csv.writer(file)
-        csvwriter.writerow([
-            "IOC Name",
-            "IOC hostname",
-            "PV name",
-            "Statistic",
-            "Statistic Note",
-        ])
+        csvwriter.writerow(CSV_HEADINGS)
         for row in sum_report:
             csvwriter.writerow(row)
+
+
+@dataclass
+class IocReport:
+    """Data for generating a report about an ioc connection to archiver.
+
+    Args:
+        ioc (str): Name of ioc
+        channelfinder (ChannelFinder): Channelfinder to get pv info of ioc
+        archiver (ArchiverWrapper): Archiver to check
+        config_gitlab_repo: Path | None
+    """
+
+    ioc_name: str
+    channelfinder: ChannelFinder
+    archiver: ArchiverWrapper
+    config_gitlab_repo: Path | None
+
+    def print_report(self) -> None:
+        """Print report about the statistics of connections from IOC to archiver."""
+        report = asyncio.run(self.generate())
+        sum_report = csv_output(report)
+        csvwriter = csv.writer(sys.stdout)
+        csvwriter.writerow(CSV_HEADINGS)
+        for row in sum_report:
+            csvwriter.writerow(row)
+
+    async def generate(self) -> dict[Ioc, dict[str, PVStats]]:
+        """Generate all the statistics data for an ioc.
+
+        Returns:
+            dict[Ioc, dict[str, _PVStats]]: statistics list
+        """
+        # Get all pvs on IOC
+        channels = await self.channelfinder.get_ioc_channels(self.ioc_name)
+        LOG.info("Found %s PVs in ChannelFinder", len(channels))
+        if len(channels) < 0:
+            return {}
+
+        pv_names = {pv.name for pv in channels}
+        pv_details = await self._get_archived_pvs_details(pv_names)
+        if self.config_gitlab_repo:
+            await self._check_not_configured(
+                pv_names, pv_details, self.config_gitlab_repo
+            )
+        return {Ioc.from_channel(channels[0]): pv_details}
+
+    async def _check_not_configured(
+        self,
+        pv_names: set[str],
+        pv_details: dict[str, PVStats],
+        config_gitlab_repo: Path,
+    ) -> None:
+        not_configured = await get_not_configured(
+            self.archiver,
+            self.channelfinder,
+            config_gitlab_repo,
+            self.ioc_name,
+            pv_names,
+        )
+        for pv_not in not_configured:
+            if pv_not.pv_name not in pv_details:
+                pv_details[pv_not.pv_name] = PVStats(pv_not.pv_name, {})
+            pv_details[pv_not.pv_name].stats[Stat.NotConfigured] = pv_not
+
+    async def _get_archived_pvs_details(self, pv_names: set[str]) -> dict[str, PVStats]:
+        all_archived = self.archiver.mgmt.get_archived_pvs(list(pv_names))
+        archived_pvs = set(all_archived).intersection(pv_names)
+        return await self.archiver.stats.get_pv_details(list(archived_pvs))
 
 
 async def _organise_by_ioc(

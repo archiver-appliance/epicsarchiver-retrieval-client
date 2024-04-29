@@ -70,6 +70,7 @@ async def get_not_configured(
     channelfinder: ChannelFinder | None,
     config_gitlab_repo: Path,
     ioc_name: str | None = None,
+    filter_pvs: set[str] | None = None,
 ) -> list[NoConfigResponse]:
     """Return list of pvs archived but not in config or configured but not archived.
 
@@ -78,6 +79,7 @@ async def get_not_configured(
         channelfinder (ChannelFinder): channelfinder
         config_gitlab_repo (Path): Gitlab repo with files with lists of pvs
         ioc_name (str): Name of an ioc to filter by
+        filter_pvs (set[str]): Set of pvs to filter by
 
     Returns:
         list[NoConfigResponse]: Details of pvs.
@@ -86,8 +88,10 @@ async def get_not_configured(
     all_pvs = set(archiver.mgmt.get_all_pvs(limit=-1))
     all_non_paused_pvs = await get_all_non_paused_pvs(archiver, all_pvs=all_pvs)
 
-    if not file_pvs:
-        return []
+    if filter_pvs:
+        file_pvs = filter_pvs.intersection(file_pvs)
+        all_pvs = filter_pvs.intersection(all_pvs)
+        all_non_paused_pvs = filter_pvs.intersection(all_non_paused_pvs)
 
     archived_not_configured = set(all_non_paused_pvs - file_pvs)
     LOG.info("%s Archived but not configured.", len(archived_not_configured))
