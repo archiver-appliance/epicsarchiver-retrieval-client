@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from pathlib import Path
 
-    from epicsarchiver.epicsarchiver import ArchiverAppliance
+    from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
     from epicsarchiver.statistics.channelfinder import ChannelFinder
 
 LOG: logging.Logger = logging.getLogger(__name__)
@@ -110,7 +110,7 @@ class ArchiverReport:
     time_minimum: timedelta
     connection_drops_minimum: int
     config_gitlab_repo: Path | None
-    other_archiver: ArchiverAppliance | None
+    other_archiver: ArchiverWrapper | None
     mb_per_day_minimum: float
     events_dropped_minimum: int
     channelfinder: ChannelFinder | None
@@ -119,13 +119,13 @@ class ArchiverReport:
     async def _get_responses(  # noqa: PLR0911, C901
         self,
         statistic: Stat,
-        archiver: ArchiverAppliance,
+        archiver: ArchiverWrapper,
     ) -> Sequence[BaseStatResponse]:
         """Produce a list of PVs and stats."""
         if statistic == Stat.BufferOverflow:
             return [
                 f
-                for f in archiver.get_pvs_dropped(
+                for f in await archiver.stats.get_pvs_dropped(
                     DroppedReason.BufferOverflow,
                     limit=self.query_limit,
                 )
@@ -133,7 +133,7 @@ class ArchiverReport:
             ]
 
         if statistic == Stat.TypeChange:
-            return archiver.get_pvs_dropped(
+            return await archiver.stats.get_pvs_dropped(
                 DroppedReason.TypeChange,
                 limit=self.query_limit,
             )
@@ -141,7 +141,7 @@ class ArchiverReport:
         if statistic == Stat.IncorrectTimestamp:
             return [
                 f
-                for f in archiver.get_pvs_dropped(
+                for f in await archiver.stats.get_pvs_dropped(
                     DroppedReason.IncorrectTimestamp,
                     limit=self.query_limit,
                 )
@@ -151,7 +151,7 @@ class ArchiverReport:
         if statistic == Stat.SlowChanging:
             return [
                 f
-                for f in archiver.get_pvs_dropped(
+                for f in await archiver.stats.get_pvs_dropped(
                     DroppedReason.SlowChanging,
                     limit=None,
                 )
@@ -161,7 +161,7 @@ class ArchiverReport:
         if statistic == Stat.DisconnectedPVs:
             return [
                 ev
-                for ev in archiver.get_disconnected_pvs()
+                for ev in await archiver.stats.get_disconnected_pvs()
                 if _is_greater_than_time_minimum(
                     ev.connection_lost_at,
                     self.time_minimum,
@@ -169,9 +169,10 @@ class ArchiverReport:
             ]
 
         if statistic == Stat.SilentPVs:
+            silent_pvs = await archiver.stats.get_silent_pvs(limit=self.query_limit)
             return [
                 ev
-                for ev in archiver.get_silent_pvs(limit=self.query_limit)
+                for ev in silent_pvs
                 if _is_greater_than_time_minimum(
                     ev.last_known_event,
                     self.time_minimum,
@@ -181,18 +182,17 @@ class ArchiverReport:
         if statistic == Stat.LostConnection:
             return [
                 el
-                for el in archiver.get_lost_connections_pvs(
+                for el in await archiver.stats.get_lost_connections_pvs(
                     limit=self.query_limit,
                 )
                 if el.lost_connections > self.connection_drops_minimum
             ]
 
         if statistic == Stat.StorageRates:
-            return [
-                r
-                for r in archiver.get_storage_rates(limit=self.query_limit)
-                if r.mb_per_day > self.mb_per_day_minimum
-            ]
+            storage_rates = await archiver.stats.get_storage_rates(
+                limit=self.query_limit
+            )
+            return [r for r in storage_rates if r.mb_per_day > self.mb_per_day_minimum]
 
         if statistic == Stat.DoubleArchived:
             if self.other_archiver:
@@ -213,19 +213,19 @@ class ArchiverReport:
     async def generate_stats(
         self,
         statistic: Stat,
-        archiver: ArchiverAppliance,
+        archiver: ArchiverWrapper,
     ) -> dict[str, BaseStatResponse]:
         """Produce a list of PVs and stats."""
         return _response_report_dict(await self._get_responses(statistic, archiver))
 
     async def generate(
         self,
-        archiver: ArchiverAppliance,
+        archiver: ArchiverWrapper,
     ) -> dict[Ioc, dict[str, PVStats]]:
         """Generate all the statistics available from the Stat list.
 
         Args:
-            archiver (ArchiverAppliance): Archiver to get statistics from
+            archiver (ArchiverWrapper): Archiver to get statistics from
 
         Returns:
             dict[Ioc, dict[str, PVStats]]: Return a dictionary with pv names as keys,
@@ -245,7 +245,7 @@ class ArchiverReport:
 
     def print_report(
         self,
-        archiver: ArchiverAppliance,
+        archiver: ArchiverWrapper,
         file: IO[str],
         *,
         verbose: bool = False,
@@ -253,7 +253,7 @@ class ArchiverReport:
         """Prints a report about the statitics of PVs in the archiver.
 
         Args:
-            archiver (ArchiverAppliance): Archiver to get statistics
+            archiver (ArchiverWrapper): Archiver to get statistics
             file (IO[str]): file to print the report to
             verbose (bool, optional): Verbose output or not. Defaults to False.
         """

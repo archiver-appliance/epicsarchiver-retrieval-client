@@ -9,7 +9,7 @@ from pathlib import Path
 import click
 
 from epicsarchiver.common.command import handle_debug
-from epicsarchiver.epicsarchiver import ArchiverAppliance
+from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
 from epicsarchiver.statistics.channelfinder import ChannelFinder
 from epicsarchiver.statistics.report import ArchiverReport
 
@@ -130,9 +130,9 @@ def stats(  # noqa: PLR0917, PLR0913
     IOC_NAME, PV:NAME, BufferOverflow, Dropped 33393 events by BufferOverflow
 
     """
-    archiver: ArchiverAppliance = ctx.obj["archiver"]
+    archiver: ArchiverWrapper = ArchiverWrapper(ctx.obj["archiver"].hostname)
     other_archiver = (
-        ArchiverAppliance(hostname=other_hostname) if other_hostname else None
+        ArchiverWrapper(hostname=other_hostname) if other_hostname else None
     )
     channelfinder = (
         ChannelFinder(channelfinder_hostname) if channelfinder_hostname else None

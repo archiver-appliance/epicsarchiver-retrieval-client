@@ -54,6 +54,21 @@ class ServiceClient:
         LOG.debug("GET url: %s", url)
         return await self.session.get(url, params=params, raise_for_status=True)
 
+    async def _get_json(
+        self, endpoint: str, params: Mapping[str, str] | None = None
+    ) -> Any:
+        """Send a GET request to the given endpoint and return the json.
+
+        Args:
+            endpoint: API endpoint (relative or absolute)
+            params: parameters to be sent
+
+        Returns:
+            :class:`ClientResponse` object
+        """
+        async with await self._get(endpoint, params=params) as response:
+            return await response.json()
+
     async def _post(
         self,
         endpoint: str,

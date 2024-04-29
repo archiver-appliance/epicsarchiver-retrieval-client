@@ -20,24 +20,24 @@ from epicsarchiver.statistics.stat_responses import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from epicsarchiver.epicsarchiver import ArchiverAppliance
+    from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
     from epicsarchiver.statistics.channelfinder import ChannelFinder
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
 async def get_all_non_paused_pvs(
-    archiver: ArchiverAppliance,
+    archiver: ArchiverWrapper,
     all_pvs: set[str] | None = None,
 ) -> set[str]:
-    if not all_pvs:
-        all_pvs = set(archiver.get_all_pvs(limit=-1))
-    return set(all_pvs - {paused.pv_name for paused in archiver.get_paused_pvs()})
+    all_archiver_pvs = all_pvs or set(archiver.mgmt.get_all_pvs(limit=-1))
+    paused_pvs = {paused.pv_name for paused in await archiver.stats.get_paused_pvs()}
+    return all_archiver_pvs - paused_pvs
 
 
 async def get_double_archived(
-    archiver: ArchiverAppliance,
-    other_archiver: ArchiverAppliance,
+    archiver: ArchiverWrapper,
+    other_archiver: ArchiverWrapper,
 ) -> list[BothArchiversResponse]:
     """Return list of pvs archived in both archivers, filtered by those paused.
 
@@ -49,18 +49,24 @@ async def get_double_archived(
         get_all_non_paused_pvs(other_archiver),
     ])
     return [
-        BothArchiversResponse(pv, archiver.hostname, other_archiver.hostname)
+        BothArchiversResponse(pv, archiver.mgmt.hostname, other_archiver.mgmt.hostname)
         for pv in set(set(non_paused_pvs).intersection(set(other_non_paused_pvs)))
     ]
 
 
-async def fetch_config_files(config_gitlab_repo: Path) -> Path:
+async def fetch_configured_pvs(config_gitlab_repo: Path) -> set[str]:
     gitlab = Gitlab()
-    return await gitlab.get_tar_ball(config_gitlab_repo)
+    config_files = await gitlab.get_tar_ball(config_gitlab_repo)
+    onlyfiles = [
+        config_files / f
+        for f in listdir(config_files)
+        if (config_files / f).is_file() and f.endswith(".archive")
+    ]
+    return {ar["pv"] for ar in get_pvs_from_files(onlyfiles)}
 
 
 async def get_not_configured(
-    archiver: ArchiverAppliance,
+    archiver: ArchiverWrapper,
     channelfinder: ChannelFinder | None,
     config_gitlab_repo: Path,
     ioc_name: str | None = None,
@@ -76,74 +82,55 @@ async def get_not_configured(
     Returns:
         list[NoConfigResponse]: Details of pvs.
     """
-    config_files = await fetch_config_files(config_gitlab_repo)
-    onlyfiles = [
-        config_files / f
-        for f in listdir(config_files)
-        if (config_files / f).is_file() and f.endswith(".archive")
-    ]
-    LOG.debug(
-        "CALC Not configured PVs from %s and filed %s",
-        archiver.hostname,
-        onlyfiles,
-    )
-    all_pvs = set(archiver.get_all_pvs(limit=-1))
+    file_pvs = await fetch_configured_pvs(config_gitlab_repo)
+    all_pvs = set(archiver.mgmt.get_all_pvs(limit=-1))
     all_non_paused_pvs = await get_all_non_paused_pvs(archiver, all_pvs=all_pvs)
-    file_pvs = {ar["pv"] for ar in get_pvs_from_files(onlyfiles)}
+
     if not file_pvs:
         return []
+
     archived_not_configured = set(all_non_paused_pvs - file_pvs)
     LOG.info("%s Archived but not configured.", len(archived_not_configured))
     configured_not_archived = set(file_pvs - all_pvs)
     LOG.info("%s Configured but not archived.", len(configured_not_archived))
-    if channelfinder:
-        (
-            archived_not_configured_alias,
-            configured_not_archived_alias,
-        ) = await asyncio.gather(*[
-            get_aliases(
-                channelfinder,
-                list(archived_not_configured),
-                ioc_name=ioc_name,
-            ),
-            get_aliases(
-                channelfinder,
-                list(configured_not_archived),
-                ioc_name=ioc_name,
-            ),
-        ])
 
     responses = await asyncio.gather(*[
-        _gen_no_config_responses(
+        _get_configuration_responses(
+            channelfinder,
             all_pvs,
             archived_not_configured,
-            archived_not_configured_alias,
             ConfiguredStatus.Archived,
+            ioc_name,
         ),
-        _gen_no_config_responses(
+        _get_configuration_responses(
+            channelfinder,
             all_pvs,
             configured_not_archived,
-            configured_not_archived_alias,
             ConfiguredStatus.Configured,
+            ioc_name,
         ),
     ])
     return list(responses[0] + responses[1])
 
 
-async def _gen_no_config_responses(
-    all_archived_pvs: set[str],
-    pv_list: set[str],
-    aliases: dict[str, list[str]],
-    configured_status: ConfiguredStatus,
+async def _get_configuration_responses(
+    channelfinder: ChannelFinder | None,
+    all_pvs: set[str],
+    pvs: set[str],
+    status: ConfiguredStatus,
+    ioc_name: str | None = None,
 ) -> list[NoConfigResponse]:
+    if channelfinder:
+        aliases = await get_aliases(channelfinder, list(pvs), ioc_name=ioc_name)
+
     return [
         NoConfigResponse(
             pv,
-            configured_status,
+            status,
             aliases[pv],
-            [pv_alias for pv_alias in aliases[pv] if pv_alias in all_archived_pvs],
+            [pv_alias for pv_alias in aliases[pv] if pv_alias in all_pvs],
         )
-        for pv in pv_list
+        for pv in pvs
     ]
 
 

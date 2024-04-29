@@ -12,6 +12,19 @@ from requests import Response
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
+def mgmt_url(hostname: str, port: int) -> str:
+    """Generate the mgmt url from a hostname and a port number.
+
+    Args:
+        hostname (str): fqdn of service
+        port (int): Port number
+
+    Returns:
+        str: Completed url, for example "http://localhost:17665/mgmt/bpl/"
+    """
+    return f"http://{hostname}:{port}/mgmt/bpl/"
+
+
 class BaseArchiverAppliance:
     """Base EPICS Archiver Appliance client.
 
@@ -30,7 +43,7 @@ class BaseArchiverAppliance:
             port (int, optional): port number of mgmt interface. Defaults to 17665.
         """
         self.hostname = hostname
-        self.mgmt_url = f"http://{hostname}:{port}/mgmt/bpl/"
+        self.mgmt_url = mgmt_url(hostname, port)
         self._info: dict[str, str] = {}
         self._data_url: str | None = None
         self.session = requests.Session()
