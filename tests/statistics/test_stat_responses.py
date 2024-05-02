@@ -28,7 +28,7 @@ from epicsarchiver.statistics.stat_responses import (
     PausedPVResponse,
     SilentPVsResponse,
     StorageRatesResponse,
-    _parse_archiver_datetime,
+    parse_archiver_datetime,
 )
 
 SAMPLES_PATH = Path(__file__).parent.resolve() / "samples"
@@ -311,4 +311,4 @@ async def test_get_not_configured(mocker: MockFixture) -> None:
     ],
 )
 def test_parse_archiver_datetime(test_input: str, expected: datetime.datetime) -> None:
-    assert _parse_archiver_datetime(test_input) == expected
+    assert parse_archiver_datetime(test_input) == expected
