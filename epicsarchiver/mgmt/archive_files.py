@@ -1,10 +1,14 @@
 """Handle parsing files of lists of PVs to submit for archiver operations."""
 
+from __future__ import annotations
+
 import itertools
 import logging
-from collections.abc import Generator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -26,7 +30,7 @@ def parse_archive_file(
         Generator[dict[str, str], None, None]: produces
         dictionary with keys {"pv", "policy", "appliance"}
     """
-    with filename.open(encoding="locale") as file:
+    with filename.open() as file:
         LOG.debug("PARSE archive file %s", filename)
         for line in file:
             stripped_line = line.strip()
@@ -72,7 +76,7 @@ def parse_rename_file(filename: Path) -> Generator[tuple[str, str], None, None]:
     Yields:
         Generator[tuple[str, str], None, None]: produces a pair old_pv_name, new_pv_name
     """
-    with filename.open(encoding="locale") as f:
+    with filename.open() as f:
         for line in f:
             if parsed_line := _parse_rename_line(line):
                 yield parsed_line

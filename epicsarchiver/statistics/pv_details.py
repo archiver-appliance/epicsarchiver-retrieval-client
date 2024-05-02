@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Dict
 
 from epicsarchiver.statistics.report import Stat
 from epicsarchiver.statistics.stat_responses import (
@@ -66,7 +67,7 @@ class DetailEnum(str, Enum):
         return None
 
 
-class Details(dict[DetailEnum, str]):
+class Details(Dict[DetailEnum, str]):
     """Representation of the response from the pvDetails endpoint in archiver."""
 
     @classmethod
@@ -115,69 +116,62 @@ class Details(dict[DetailEnum, str]):
             tuple[Stat, BaseStatResponse] | None: Output
         """
         pv_name = self[DetailEnum.PVName]
-        match detail_enum:
-            case DetailEnum.LostEventsTimestamp:
-                return (
-                    Stat.IncorrectTimestamp,
-                    DroppedPVResponse(
-                        pv_name, int(value), DroppedReason.IncorrectTimestamp
-                    ),
-                )
+        if detail_enum == DetailEnum.LostEventsTimestamp:
+            return (
+                Stat.IncorrectTimestamp,
+                DroppedPVResponse(
+                    pv_name, int(value), DroppedReason.IncorrectTimestamp
+                ),
+            )
 
-            case DetailEnum.LostEventsType:
-                return (
-                    Stat.TypeChange,
-                    DroppedPVResponse(pv_name, int(value), DroppedReason.TypeChange),
-                )
+        if detail_enum == DetailEnum.LostEventsType:
+            return (
+                Stat.TypeChange,
+                DroppedPVResponse(pv_name, int(value), DroppedReason.TypeChange),
+            )
 
-            case DetailEnum.LostEventsBuffer:
-                return (
-                    Stat.BufferOverflow,
-                    DroppedPVResponse(
-                        pv_name, int(value), DroppedReason.BufferOverflow
-                    ),
-                )
+        if detail_enum == DetailEnum.LostEventsBuffer:
+            return (
+                Stat.BufferOverflow,
+                DroppedPVResponse(pv_name, int(value), DroppedReason.BufferOverflow),
+            )
 
-            case DetailEnum.Connnected:
-                if value != "yes":
-                    return (
-                        Stat.DisconnectedPVs,
-                        DisconnectedPVsResponse(
-                            pv_name,
-                            self[DetailEnum.Hostname],
-                            parse_archiver_datetime(
-                                self[DetailEnum.LastLostConnection]
-                            ),
-                            self[DetailEnum.Instance],
-                            int(self[DetailEnum.CommandThread]),
-                            0,
-                            parse_archiver_datetime(self[DetailEnum.LastEvent]),
-                        ),
-                    )
+        if detail_enum == DetailEnum.Connnected and value != "yes":
+            return (
+                Stat.DisconnectedPVs,
+                DisconnectedPVsResponse(
+                    pv_name,
+                    self[DetailEnum.Hostname],
+                    parse_archiver_datetime(self[DetailEnum.LastLostConnection]),
+                    self[DetailEnum.Instance],
+                    int(self[DetailEnum.CommandThread]),
+                    0,
+                    parse_archiver_datetime(self[DetailEnum.LastEvent]),
+                ),
+            )
 
-            case DetailEnum.LastEvent:
-                if value == "Never":
-                    return (
-                        Stat.SilentPVs,
-                        SilentPVsResponse(pv_name, self[DetailEnum.Instance], None),
-                    )
+        if detail_enum == DetailEnum.LastEvent and value == "Never":
+            return (
+                Stat.SilentPVs,
+                SilentPVsResponse(pv_name, self[DetailEnum.Instance], None),
+            )
 
-            case DetailEnum.LostConnections:
-                return (
-                    Stat.LostConnection,
-                    LostConnectionsResponse(
-                        pv_name,
-                        ConnectionStatus.CurrentlyConnected
-                        if self[DetailEnum.Connnected] == "yes"
-                        else ConnectionStatus.NotCurrentlyConnected,
-                        self[DetailEnum.Instance],
-                        int(value),
-                    ),
-                )
+        if detail_enum == DetailEnum.LostConnections:
+            return (
+                Stat.LostConnection,
+                LostConnectionsResponse(
+                    pv_name,
+                    ConnectionStatus.CurrentlyConnected
+                    if self[DetailEnum.Connnected] == "yes"
+                    else ConnectionStatus.NotCurrentlyConnected,
+                    self[DetailEnum.Instance],
+                    int(value),
+                ),
+            )
 
-            case DetailEnum.MBStorageRate:
-                return (
-                    Stat.StorageRates,
-                    StorageRatesResponse(pv_name, float(value), None, None),
-                )
+        if detail_enum == DetailEnum.MBStorageRate:
+            return (
+                Stat.StorageRates,
+                StorageRatesResponse(pv_name, float(value), None, None),
+            )
         return None

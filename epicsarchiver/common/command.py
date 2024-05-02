@@ -1,9 +1,14 @@
 """Shared Command methods module."""
 
-import logging
+from __future__ import annotations
 
-import click
+import logging
+from typing import TYPE_CHECKING
+
 from rich.logging import RichHandler
+
+if TYPE_CHECKING:
+    import click
 
 LOG: logging.Logger = logging.getLogger(__name__)
 

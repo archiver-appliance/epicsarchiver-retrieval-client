@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "py-epicsarchiver"
 description = "A python script for managing and pulling data from the Archiver Appliance"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 keywords = []
 authors = [
   { name = "Sky Brewer", email = "sky.brewer@ess.eu" },
@@ -15,6 +15,8 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -41,7 +43,7 @@ Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
 
 [tool.ruff]
 extend = "ruff_defaults.toml"
-target-version = "py310"
+target-version = "py38"
 line-length = 88
 exclude = [
   "epicsarchiver/retrieval/EPICSEvent_pb2.py",

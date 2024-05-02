@@ -1,13 +1,13 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 from os import listdir
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from numpy import mean
 
-from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.mgmt.archive_files import get_pvs_from_files
-from epicsarchiver.statistics.channelfinder import ChannelFinder
 from epicsarchiver.statistics.gitlab import Gitlab
 from epicsarchiver.statistics.stat_responses import (
     UNKNOWN_IOC,
@@ -16,6 +16,12 @@ from epicsarchiver.statistics.stat_responses import (
     Ioc,
     NoConfigResponse,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from epicsarchiver.epicsarchiver import ArchiverAppliance
+    from epicsarchiver.statistics.channelfinder import ChannelFinder
 
 LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -1,12 +1,16 @@
 """Data structures for the statistics endpoints from the archiver."""
 
+from __future__ import annotations
+
 import datetime
 import enum
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import pytz
 
-from epicsarchiver.statistics.channelfinder import Channel
+if TYPE_CHECKING:
+    from epicsarchiver.statistics.channelfinder import Channel
 
 
 class DroppedReason(str, enum.Enum):
@@ -40,7 +44,7 @@ class DroppedPVResponse(BaseStatResponse):
         cls,
         json: dict[str, str],
         dropped_reason: DroppedReason,
-    ) -> "DroppedPVResponse":
+    ) -> DroppedPVResponse:
         """Convert to DroppedPVResponse from dictionary generated from json.
 
         Args:
@@ -122,7 +126,7 @@ class DisconnectedPVsResponse(BaseStatResponse):
     last_known_event: datetime.datetime | None
 
     @classmethod
-    def from_json(cls, json: dict[str, str]) -> "DisconnectedPVsResponse":
+    def from_json(cls, json: dict[str, str]) -> DisconnectedPVsResponse:
         """Response from the endpoint in getCurrentlyDisconnectedPVs."""
         return DisconnectedPVsResponse(
             json["pvName"],
@@ -166,7 +170,7 @@ class SilentPVsResponse(BaseStatResponse):
     last_known_event: datetime.datetime | None
 
     @classmethod
-    def from_json(cls, json: dict[str, str]) -> "SilentPVsResponse":
+    def from_json(cls, json: dict[str, str]) -> SilentPVsResponse:
         """Response from the endpoint in getSilentPVsReport."""
         return SilentPVsResponse(
             json["pvName"],
@@ -217,7 +221,7 @@ class LostConnectionsResponse(BaseStatResponse):
     lost_connections: int
 
     @classmethod
-    def from_json(cls, json: dict[str, str]) -> "LostConnectionsResponse":
+    def from_json(cls, json: dict[str, str]) -> LostConnectionsResponse:
         """Response from the endpoint in getLostConnectionsReport."""
         return LostConnectionsResponse(
             json["pvName"],
@@ -260,7 +264,7 @@ class StorageRatesResponse(BaseStatResponse):
     gb_per_year: float | None
 
     @classmethod
-    def from_json(cls, json: dict[str, str]) -> "StorageRatesResponse":
+    def from_json(cls, json: dict[str, str]) -> StorageRatesResponse:
         """Response from the endpoint in getStorageRateReport."""
         return StorageRatesResponse(
             json["pvName"],
@@ -302,7 +306,7 @@ class PausedPVResponse(BaseStatResponse):
     modification_time: str
 
     @classmethod
-    def from_json(cls, json: dict[str, str]) -> "PausedPVResponse":
+    def from_json(cls, json: dict[str, str]) -> PausedPVResponse:
         """Response from the endpoint in getPausedPVsReport."""
         return PausedPVResponse(
             json["pvName"],
@@ -368,7 +372,7 @@ class Ioc:
     name: str
 
     @classmethod
-    def from_channel(cls, channel: Channel) -> "Ioc":
+    def from_channel(cls, channel: Channel) -> Ioc:
         """Gets IOC info from a channel."""
         return Ioc(channel.properties["hostName"], channel.properties["iocName"])
 

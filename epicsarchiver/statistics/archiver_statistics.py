@@ -1,5 +1,7 @@
 """Archiver Statistics module."""
 
+from __future__ import annotations
+
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 from epicsarchiver.statistics.stat_responses import (
     DisconnectedPVsResponse,

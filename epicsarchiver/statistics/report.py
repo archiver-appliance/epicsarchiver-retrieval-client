@@ -17,35 +17,40 @@ Examples:
 
 """
 
+from __future__ import annotations
+
 import asyncio
 import csv
 import datetime
 import enum
 import logging
 import operator
-from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
-from pathlib import Path
-from typing import IO
+from typing import IO, TYPE_CHECKING
 
 import pytz
 from rich.console import Console
 
-from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.statistics._external_stats import (
     filter_by_ioc,
     get_double_archived,
     get_iocs,
     get_not_configured,
 )
-from epicsarchiver.statistics.channelfinder import ChannelFinder
 from epicsarchiver.statistics.stat_responses import (
     UNKNOWN_IOC,
     BaseStatResponse,
     DroppedReason,
     Ioc,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
+
+    from epicsarchiver.epicsarchiver import ArchiverAppliance
+    from epicsarchiver.statistics.channelfinder import ChannelFinder
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -104,99 +109,99 @@ class Stat(str, enum.Enum):
         LOG.info("Found %s satisfying stat %s", len(responses), self)
         return {r.pv_name: r for r in responses}
 
-    async def _get_responses(  # noqa: PLR0911
+    async def _get_responses(  # noqa: PLR0911, C901
         self,
         archiver: ArchiverAppliance,
         config: ReportConfig,
     ) -> Sequence[BaseStatResponse]:
         """Produce a list of PVs and stats."""
-        match self:
-            case Stat.BufferOverflow:
-                return [
-                    f
-                    for f in archiver.get_pvs_dropped(
-                        DroppedReason.BufferOverflow,
-                        limit=config.query_limit,
-                    )
-                    if f.events_dropped > config.events_dropped_minimum
-                ]
-
-            case Stat.TypeChange:
-                return archiver.get_pvs_dropped(
-                    DroppedReason.TypeChange,
+        if self == Stat.BufferOverflow:
+            return [
+                f
+                for f in archiver.get_pvs_dropped(
+                    DroppedReason.BufferOverflow,
                     limit=config.query_limit,
                 )
+                if f.events_dropped > config.events_dropped_minimum
+            ]
 
-            case Stat.IncorrectTimestamp:
-                return [
-                    f
-                    for f in archiver.get_pvs_dropped(
-                        DroppedReason.IncorrectTimestamp,
-                        limit=config.query_limit,
-                    )
-                    if f.events_dropped > config.events_dropped_minimum
-                ]
+        if self == Stat.TypeChange:
+            return archiver.get_pvs_dropped(
+                DroppedReason.TypeChange,
+                limit=config.query_limit,
+            )
 
-            case Stat.SlowChanging:
-                return [
-                    f
-                    for f in archiver.get_pvs_dropped(
-                        DroppedReason.SlowChanging,
-                        limit=None,
-                    )
-                    if f.events_dropped > config.events_dropped_minimum
-                ]
+        if self == Stat.IncorrectTimestamp:
+            return [
+                f
+                for f in archiver.get_pvs_dropped(
+                    DroppedReason.IncorrectTimestamp,
+                    limit=config.query_limit,
+                )
+                if f.events_dropped > config.events_dropped_minimum
+            ]
 
-            case Stat.DisconnectedPVs:
-                return [
-                    ev
-                    for ev in archiver.get_disconnected_pvs()
-                    if Stat._is_greater_than_time_minimum(
-                        ev.connection_lost_at,
-                        config.time_minimum,
-                    )
-                ]
+        if self == Stat.SlowChanging:
+            return [
+                f
+                for f in archiver.get_pvs_dropped(
+                    DroppedReason.SlowChanging,
+                    limit=None,
+                )
+                if f.events_dropped > config.events_dropped_minimum
+            ]
 
-            case Stat.SilentPVs:
-                return [
-                    ev
-                    for ev in archiver.get_silent_pvs(limit=config.query_limit)
-                    if Stat._is_greater_than_time_minimum(
-                        ev.last_known_event,
-                        config.time_minimum,
-                    )
-                ]
+        if self == Stat.DisconnectedPVs:
+            return [
+                ev
+                for ev in archiver.get_disconnected_pvs()
+                if Stat._is_greater_than_time_minimum(
+                    ev.connection_lost_at,
+                    config.time_minimum,
+                )
+            ]
 
-            case Stat.LostConnection:
-                return [
-                    el
-                    for el in archiver.get_lost_connections_pvs(
-                        limit=config.query_limit,
-                    )
-                    if el.lost_connections > config.connection_drops_minimum
-                ]
+        if self == Stat.SilentPVs:
+            return [
+                ev
+                for ev in archiver.get_silent_pvs(limit=config.query_limit)
+                if Stat._is_greater_than_time_minimum(
+                    ev.last_known_event,
+                    config.time_minimum,
+                )
+            ]
 
-            case Stat.StorageRates:
-                return [
-                    r
-                    for r in archiver.get_storage_rates(limit=config.query_limit)
-                    if r.mb_per_day > config.mb_per_day_minimum
-                ]
+        if self == Stat.LostConnection:
+            return [
+                el
+                for el in archiver.get_lost_connections_pvs(
+                    limit=config.query_limit,
+                )
+                if el.lost_connections > config.connection_drops_minimum
+            ]
 
-            case Stat.DoubleArchived:
-                if config.other_archiver:
-                    return await get_double_archived(archiver, config.other_archiver)
-                return []
+        if self == Stat.StorageRates:
+            return [
+                r
+                for r in archiver.get_storage_rates(limit=config.query_limit)
+                if r.mb_per_day > config.mb_per_day_minimum
+            ]
 
-            case Stat.NotConfigured:
-                if config.config_gitlab_repo:
-                    return await get_not_configured(
-                        archiver,
-                        config.channelfinder,
-                        config.config_gitlab_repo,
-                        config.ioc_name,
-                    )
-                return []
+        if self == Stat.DoubleArchived:
+            if config.other_archiver:
+                return await get_double_archived(archiver, config.other_archiver)
+            return []
+
+        if self == Stat.NotConfigured:
+            if config.config_gitlab_repo:
+                return await get_not_configured(
+                    archiver,
+                    config.channelfinder,
+                    config.config_gitlab_repo,
+                    config.ioc_name,
+                )
+            return []
+        return []
 
     async def generate_stats(
         self,
@@ -265,7 +270,7 @@ async def generate_all_stats(
     gather_all_stats = await asyncio.gather(*[
         stat.generate_stats(archiver, config) for stat in Stat
     ])
-    inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats, strict=True)))
+    inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats)))
     if config.channelfinder:
         return await _organise_by_ioc(
             inverted_data,

@@ -1,15 +1,19 @@
 """Archiver Retrieval methods."""
 
+from __future__ import annotations
+
 import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 from dateutil import parser
-from requests import Response
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 from epicsarchiver.retrieval.archive_event import ArchiveEvent, dataframe_from_events
 from epicsarchiver.retrieval.pb import parse_pb_data
+
+if TYPE_CHECKING:
+    from requests import Response
 
 
 def format_date(date_or_str: datetime.datetime | str) -> str:

@@ -27,7 +27,7 @@ import collections
 import logging as log
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import pandas as pd
 from pandas import Timestamp
@@ -87,26 +87,26 @@ PB_REPLACEMENTS_UNESCAPING = collections.OrderedDict([
     (ESC_BYTE + b"\x01", ESC_BYTE),
 ])
 
-EeScalarEvent = (
-    ee.ScalarString
-    | ee.ScalarShort
-    | ee.ScalarFloat
-    | ee.ScalarEnum
-    | ee.ScalarByte
-    | ee.ScalarInt
-    | ee.ScalarDouble
-)
-EeVectorEvent = (
-    ee.VectorString
-    | ee.VectorShort
-    | ee.VectorFloat
-    | ee.VectorEnum
-    | ee.VectorChar
-    | ee.VectorInt
-    | ee.VectorDouble
-    | ee.V4GenericBytes
-)
-EeEvent = EeScalarEvent | EeVectorEvent
+EeScalarEvent = Union[
+    ee.ScalarString,
+    ee.ScalarShort,
+    ee.ScalarFloat,
+    ee.ScalarEnum,
+    ee.ScalarByte,
+    ee.ScalarInt,
+    ee.ScalarDouble,
+]
+EeVectorEvent = Union[
+    ee.VectorString,
+    ee.VectorShort,
+    ee.VectorFloat,
+    ee.VectorEnum,
+    ee.VectorChar,
+    ee.VectorInt,
+    ee.VectorDouble,
+    ee.V4GenericBytes,
+]
+EeEvent = Union[EeScalarEvent, EeVectorEvent]
 
 
 def unescape_bytes(byte_seq: bytes) -> bytes:
@@ -244,13 +244,15 @@ def _event_from_line(line: bytes, pv: str, year: int, event_type: int) -> Archiv
     val = event.val
     if isinstance(
         event,
-        ee.VectorDouble
-        | ee.VectorEnum
-        | ee.VectorFloat
-        | ee.VectorInt
-        | ee.VectorShort
-        | ee.VectorString,
-    ):
+        (
+            ee.VectorDouble,
+            ee.VectorEnum,
+            ee.VectorFloat,
+            ee.VectorInt,
+            ee.VectorShort,
+            ee.VectorString,
+        ),
+    ):  # Note purposefully not including all Vectortypes here
         vector_val = list(val)
         val = vector_val
     return ArchiveEvent(

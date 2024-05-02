@@ -1,5 +1,7 @@
 """Archive Event module for the ArchiveEvent class."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime as pydt
 
