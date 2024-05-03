@@ -38,11 +38,11 @@ LOG: logging.Logger = logging.getLogger(__name__)
     help="Other Achiver Appliance hostname or IP [default: localhost]",
 )
 @click.option(
-    "--channelfinder_hostname",
+    "--channelfinder",
     "-cf",
     default="channelfinder.tn.esss.lu.se",
     type=str,
-    help="Channel Finder hostname or IP [default: localhost]",
+    help="Channel Finder hostname or IP [default: channelfinder.tn.esss.lu.se]",
 )
 @click.option(
     "--time_minimum",
@@ -107,7 +107,7 @@ def stats(  # noqa: PLR0917, PLR0913
     config_gitlab_repo: Path | None,
     mb_per_day_minimum: float,
     events_dropped_minimum: int,
-    channelfinder_hostname: str | None,
+    channelfinder: str,
     ioc: str | None,
     verbose: bool,  # noqa: FBT001
     output: Path,
@@ -134,9 +134,7 @@ def stats(  # noqa: PLR0917, PLR0913
     other_archiver = (
         ArchiverWrapper(hostname=other_hostname) if other_hostname else None
     )
-    channelfinder = (
-        ChannelFinder(channelfinder_hostname) if channelfinder_hostname else None
-    )
+    channelfinder_service = ChannelFinder(channelfinder)
 
     with output.open("w") as out_file:
         report = ArchiverReport(
@@ -147,7 +145,7 @@ def stats(  # noqa: PLR0917, PLR0913
             other_archiver=other_archiver,
             mb_per_day_minimum=mb_per_day_minimum,
             events_dropped_minimum=events_dropped_minimum,
-            channelfinder=channelfinder,
+            channelfinder=channelfinder_service,
             ioc_name=ioc,
         )
         LOG.info("Collecting statistics with configuration %s", report)

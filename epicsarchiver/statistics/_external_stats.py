@@ -67,7 +67,7 @@ async def fetch_configured_pvs(config_gitlab_repo: Path) -> set[str]:
 
 async def get_not_configured(
     archiver: ArchiverWrapper,
-    channelfinder: ChannelFinder | None,
+    channelfinder: ChannelFinder,
     config_gitlab_repo: Path,
     ioc_name: str | None = None,
     filter_pvs: set[str] | None = None,
@@ -118,14 +118,13 @@ async def get_not_configured(
 
 
 async def _get_configuration_responses(
-    channelfinder: ChannelFinder | None,
+    channelfinder: ChannelFinder,
     all_pvs: set[str],
     pvs: set[str],
     status: ConfiguredStatus,
     ioc_name: str | None = None,
 ) -> list[NoConfigResponse]:
-    if channelfinder:
-        aliases = await get_aliases(channelfinder, list(pvs), ioc_name=ioc_name)
+    aliases = await get_aliases(channelfinder, list(pvs), ioc_name=ioc_name)
 
     return [
         NoConfigResponse(

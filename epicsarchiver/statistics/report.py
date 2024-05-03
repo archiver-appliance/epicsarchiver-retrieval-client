@@ -123,7 +123,7 @@ class ArchiverReport:
     other_archiver: ArchiverWrapper | None
     mb_per_day_minimum: float
     events_dropped_minimum: int
-    channelfinder: ChannelFinder | None
+    channelfinder: ChannelFinder
     ioc_name: str | None
 
     async def _get_responses(  # noqa: PLR0911, C901
