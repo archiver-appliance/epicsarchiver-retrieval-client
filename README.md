@@ -24,7 +24,6 @@ The package also installs a command line tool. Used to fetch data from the archi
 
 ```console
 $ epicsarchiver --help
-
 Usage: epicsarchiver [OPTIONS] COMMAND [ARGS]...
 
   Command line tool for interacting with the archiver.
@@ -35,10 +34,11 @@ Options:
   --help               Show this message and exit.
 
 Commands:
-  archive  Archive all PVs included in the files passed as parameters.
-  get      Print out data from an archiver cluster.
-  rename   Rename all PVs included in the files passed as parameters.
-  stats    Print out statistics from an archiver cluster.
+  archive    Archive all PVs included in the files passed as parameters.
+  get        Print out data from an archiver cluster.
+  ioc-check  Print out statistics of a single IOC from an archiver cluster.
+  rename     Rename all PVs included in the files passed as parameters.
+  stats      Print out statistics from an archiver cluster.
 ```
 
 To fetch events using the python library:
