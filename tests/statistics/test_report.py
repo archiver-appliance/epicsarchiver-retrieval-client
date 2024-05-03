@@ -8,13 +8,12 @@ from unittest.mock import AsyncMock
 import pytest
 import pytz
 
-from epicsarchiver.epicsarchiver import ArchiverAppliance
+from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
 from epicsarchiver.statistics.channelfinder import Channel, ChannelFinder
 from epicsarchiver.statistics.report import (
-    ReportConfig,
+    ArchiverReport,
+    PVStats,
     Stat,
-    _PVStats,
-    generate_all_stats,
 )
 from epicsarchiver.statistics.stat_responses import (
     BaseStatResponse,
@@ -84,11 +83,11 @@ expected_all_stats: dict[Stat, BaseStatResponse] = {
 @pytest.mark.asyncio
 async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
     mocker.patch(
-        "epicsarchiver.ArchiverAppliance.get_pvs_dropped",
+        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_pvs_dropped",
         return_value=[expected_all_stats[Stat.BufferOverflow]],
     )
-    archiver = ArchiverAppliance("archiver.example.org")
-    config = ReportConfig(
+    archiver = ArchiverWrapper("archiver.example.org")
+    report = ArchiverReport(
         query_limit=2,
         time_minimum=timedelta(days=10),
         connection_drops_minimum=10,
@@ -99,7 +98,7 @@ async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
         channelfinder=ChannelFinder("channelfinder.example.org"),
         ioc_name=None,
     )
-    actual = await Stat.BufferOverflow.generate_stats(archiver, config)
+    actual = await report.generate_stats(Stat.BufferOverflow, archiver)
     assert actual == {
         expected_all_stats[Stat.BufferOverflow].pv_name: expected_all_stats[
             Stat.BufferOverflow
@@ -126,31 +125,31 @@ def mock_get_pvs_dropped(
 async def test_generate_all_stats(mocker: MockFixture) -> None:
     channel = Channel("MY:PV", {"iocName": "IOCNAME", "hostName": "IOCHOSTNAME"}, [])
     mocker.patch(
-        "epicsarchiver.ArchiverAppliance.get_pvs_dropped",
+        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_pvs_dropped",
         wraps=mock_get_pvs_dropped,
     )
     mocker.patch(
-        "epicsarchiver.ArchiverAppliance.get_disconnected_pvs",
+        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_disconnected_pvs",
         return_value=[expected_all_stats[Stat.DisconnectedPVs]],
     )
     mocker.patch(
-        "epicsarchiver.ArchiverAppliance.get_silent_pvs",
+        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_silent_pvs",
         return_value=[expected_all_stats[Stat.SilentPVs]],
     )
     mocker.patch(
-        "epicsarchiver.ArchiverAppliance.get_lost_connections_pvs",
+        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_lost_connections_pvs",
         return_value=[expected_all_stats[Stat.LostConnection]],
     )
     mocker.patch(
-        "epicsarchiver.ArchiverAppliance.get_storage_rates",
+        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_storage_rates",
         return_value=[expected_all_stats[Stat.StorageRates]],
     )
     mocker.patch(
-        "epicsarchiver.ArchiverAppliance.get_all_pvs",
+        "epicsarchiver.mgmt.archiver_mgmt.ArchiverMgmt.get_all_pvs",
         return_value=["MY:PV"],
     )
     mocker.patch(
-        "epicsarchiver.ArchiverAppliance.get_paused_pvs",
+        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_paused_pvs",
         return_value=[],
     )
     mocker.patch(
@@ -161,9 +160,9 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
         "epicsarchiver.statistics.channelfinder.ChannelFinder.get_all_alias_channels",
         side_effect=AsyncMock(return_value={"MY:PV": []}),
     )
-    archiver = ArchiverAppliance("archiver.example.org")
-    other_archiver = ArchiverAppliance("other_archiver.example.org")
-    config = ReportConfig(
+    archiver = ArchiverWrapper("archiver.example.org")
+    other_archiver = ArchiverWrapper("other_archiver.example.org")
+    report = ArchiverReport(
         query_limit=2,
         time_minimum=timedelta(days=10),
         connection_drops_minimum=10,
@@ -175,7 +174,7 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
         ioc_name=None,
     )
     ioc = Ioc(channel.properties["hostName"], channel.properties["iocName"])
-    actual = await generate_all_stats(archiver, config)
+    actual = await report.generate(archiver)
     assert ioc in actual
     assert "MY:PV" in actual[ioc]
-    assert _PVStats("MY:PV", expected_all_stats) == actual[ioc]["MY:PV"]
+    assert PVStats("MY:PV", expected_all_stats) == actual[ioc]["MY:PV"]

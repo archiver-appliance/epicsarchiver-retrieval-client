@@ -9,9 +9,9 @@ from pathlib import Path
 import click
 
 from epicsarchiver.common.command import handle_debug
-from epicsarchiver.epicsarchiver import ArchiverAppliance
+from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
 from epicsarchiver.statistics.channelfinder import ChannelFinder
-from epicsarchiver.statistics.report import ReportConfig, print_report
+from epicsarchiver.statistics.report import ArchiverReport, IocReport
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -38,11 +38,11 @@ LOG: logging.Logger = logging.getLogger(__name__)
     help="Other Achiver Appliance hostname or IP [default: localhost]",
 )
 @click.option(
-    "--channelfinder_hostname",
+    "--channelfinder",
     "-cf",
     default="channelfinder.tn.esss.lu.se",
     type=str,
-    help="Channel Finder hostname or IP [default: localhost]",
+    help="Channel Finder hostname or IP [default: channelfinder.tn.esss.lu.se]",
 )
 @click.option(
     "--time_minimum",
@@ -107,7 +107,7 @@ def stats(  # noqa: PLR0917, PLR0913
     config_gitlab_repo: Path | None,
     mb_per_day_minimum: float,
     events_dropped_minimum: int,
-    channelfinder_hostname: str | None,
+    channelfinder: str,
     ioc: str | None,
     verbose: bool,  # noqa: FBT001
     output: Path,
@@ -130,16 +130,14 @@ def stats(  # noqa: PLR0917, PLR0913
     IOC_NAME, PV:NAME, BufferOverflow, Dropped 33393 events by BufferOverflow
 
     """
-    archiver: ArchiverAppliance = ctx.obj["archiver"]
+    archiver: ArchiverWrapper = ArchiverWrapper(ctx.obj["archiver"].hostname)
     other_archiver = (
-        ArchiverAppliance(hostname=other_hostname) if other_hostname else None
+        ArchiverWrapper(hostname=other_hostname) if other_hostname else None
     )
-    channelfinder = (
-        ChannelFinder(channelfinder_hostname) if channelfinder_hostname else None
-    )
+    channelfinder_service = ChannelFinder(channelfinder)
 
     with output.open("w") as out_file:
-        config = ReportConfig(
+        report = ArchiverReport(
             query_limit=limit,
             time_minimum=timedelta(days=time_minimum),
             connection_drops_minimum=connection_drops_minimum,
@@ -147,10 +145,47 @@ def stats(  # noqa: PLR0917, PLR0913
             other_archiver=other_archiver,
             mb_per_day_minimum=mb_per_day_minimum,
             events_dropped_minimum=events_dropped_minimum,
-            channelfinder=channelfinder,
+            channelfinder=channelfinder_service,
             ioc_name=ioc,
         )
-        LOG.info("Collecting statistics with configuration %s", config)
+        LOG.info("Collecting statistics with configuration %s", report)
 
-        print_report(archiver, config, out_file, verbose=verbose)
+        report.print_report(archiver, out_file, verbose=verbose)
+    ctx.exit(0)
+
+
+@click.command()
+@click.option(
+    "--channelfinder",
+    "-cf",
+    default="channelfinder.tn.esss.lu.se",
+    type=str,
+    help="Channel Finder hostname or IP [default: channelfinder.tn.esss.lu.se]",
+)
+@click.option(
+    "--config-gitlab-repo",
+    "-d",
+    type=click.Path(path_type=Path),
+    help="Gitlab repo for files with lists of PVs",
+)
+@click.argument(
+    "ioc",
+    type=str,
+)
+@click.pass_context
+def ioc_check(
+    ctx: click.core.Context,
+    ioc: str,
+    config_gitlab_repo: Path | None,
+    channelfinder: str,
+    debug: bool,  # noqa: FBT001, ARG001
+) -> None:
+    """Print out statistics of a single IOC from an archiver cluster.
+
+    ARGUMENT IOC Name of IOC to check
+    """
+    archiver: ArchiverWrapper = ArchiverWrapper(ctx.obj["archiver"].hostname)
+    channelfinder_service = ChannelFinder(channelfinder)
+    ioc_report = IocReport(ioc, channelfinder_service, archiver, config_gitlab_repo)
+    ioc_report.print_report()
     ctx.exit(0)
