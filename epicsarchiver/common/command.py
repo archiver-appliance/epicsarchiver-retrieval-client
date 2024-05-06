@@ -22,17 +22,16 @@ def handle_debug(
     format_msg = "%(message)s"
 
     if debug:
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format=format_msg,
-            datefmt="[%X]",
-            handlers=[RichHandler(rich_tracebacks=True)],
-        )
+        level = logging.DEBUG
+        tracebacks = True
     else:
-        logging.basicConfig(
-            level=logging.INFO,
-            format=format_msg,
-            datefmt="[%X]",
-            handlers=[RichHandler()],
-        )
+        level = logging.INFO
+        tracebacks = False
+
+    logging.basicConfig(
+        level=level,
+        format=format_msg,
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=tracebacks)],
+    )
     return debug

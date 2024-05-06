@@ -45,28 +45,28 @@ LOG: logging.Logger = logging.getLogger(__name__)
     help="Channel Finder hostname or IP [default: channelfinder.tn.esss.lu.se]",
 )
 @click.option(
-    "--time_minimum",
+    "--time-minimum",
     "-t",
     default=100,
     type=int,
     help="Minimum time since last disconnect in days.",
 )
 @click.option(
-    "--mb_per_day_minimum",
+    "--mb-per-day-minimum",
     "-mb",
     default=100,
     type=float,
     help="Minimum storage rate in MB/day",
 )
 @click.option(
-    "--connection_drops_minimum",
+    "--connection-drops-minimum",
     "-c",
     default=30,
     type=int,
     help="Minimum connection drops to see.",
 )
 @click.option(
-    "--events_dropped_minimum",
+    "--events-dropped-minimum",
     "-edm",
     default=10,
     type=int,
@@ -87,7 +87,7 @@ LOG: logging.Logger = logging.getLogger(__name__)
     help="Verbose output",
 )
 @click.option(
-    "--config_gitlab_repo",
+    "--config-gitlab-repo",
     "-d",
     type=click.Path(path_type=Path),
     default="archiver-appliance/archiver-appliance-config-aa-linac-prod",

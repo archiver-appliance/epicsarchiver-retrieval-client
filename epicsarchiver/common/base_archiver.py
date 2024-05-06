@@ -43,6 +43,7 @@ class BaseArchiverAppliance:
             port (int, optional): port number of mgmt interface. Defaults to 17665.
         """
         self.hostname = hostname
+        self.port = port
         self.mgmt_url = mgmt_url(hostname, port)
         self._info: dict[str, str] = {}
         self._data_url: str | None = None
@@ -54,10 +55,10 @@ class BaseArchiverAppliance:
         Returns:
             str: details including hostname of Archiver appliance.
         """
-        return f"ArchiverAppliance({self.hostname})"
+        return f"ArchiverAppliance({self.hostname}, {self.port})"
 
     def _request(self, method: str, *args: Any, **kwargs: Any) -> Response:
-        r"""Sends a request using the session.
+        """Sends a request using the session.
 
         Args:
             method: HTTP method
@@ -121,12 +122,12 @@ class BaseArchiverAppliance:
         """Send a GET or POST if pv is a comma separated list.
 
         Args:
-            endpoint: API endpoint
-            pv: name of the pv. Can be a GLOB wildcards or a list of
+            endpoint (str): API endpoint
+            pv (str): name of the pv. Can be a GLOB wildcards or a list of
                 comma separated names.
 
         Returns:
-            list of submitted PVs
+            Any: list of submitted PVs
         """
         r = (
             self._post(endpoint, data=pv)
