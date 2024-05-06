@@ -58,7 +58,7 @@ class BaseArchiverAppliance:
         return f"ArchiverAppliance({self.hostname}, {self.port})"
 
     def _request(self, method: str, *args: Any, **kwargs: Any) -> Response:
-        r"""Sends a request using the session.
+        """Sends a request using the session.
 
         Args:
             method: HTTP method
