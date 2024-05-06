@@ -298,11 +298,12 @@ class ArchiverMgmt(BaseArchiverAppliance):
         The PV needs to be paused first.
 
         Args:
-            pv: name of the pv.
-            newname: new name of the pv
+            pv (str): name of the pv.
+            newname (str): new name of the pv
 
         Returns:
-            list of submitted PVs
+            dict[str, str]: Status of action and description. Example:
+                {"status":"ok","desc":"Successfully renamed PV PV1 to PV2"}
         """
         # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/RenamePVAction.html
         r = self._get("/renamePV", params={"pv": pv, "newname": newname})
