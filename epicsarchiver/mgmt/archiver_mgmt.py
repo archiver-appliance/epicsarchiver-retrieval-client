@@ -48,29 +48,29 @@ class ArchiverMgmt(BaseArchiverAppliance):
 
     def get_all_pvs(
         self,
-        pv: str | None = None,
+        pv_query: str | None = None,
         regex: str | None = None,
         limit: int = 500,
     ) -> list[str]:
         """Return all the PVs in the cluster.
 
         Args:
-            pv: An optional argument that can contain a GLOB wildcard.
+            pv_query (str): An optional argument that can contain a GLOB wildcard.
                 Will return PVs that match this GLOB. For example:
                 pv=KLYS*
-            regex: An optional argument that can contain a Java regex \
+            regex (str): An optional argument that can contain a Java regex \
                 wildcard. Will return PVs that match this regex.
-            limit: number of matched PV's that are returned. To get all
+            limit (int): number of matched PV's that are returned. To get all
                 the PV names, (potentially in the millions), set limit
                 to -1. Default to 500.
 
         Returns:
-            list of PV names
+            list[str]: list of PV names
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetAllPVs.html
         params: dict[str, str] = {"limit": str(limit)}
-        if pv is not None:
-            params["pv"] = pv
+        if pv_query is not None:
+            params["pv"] = pv_query
         if regex is not None:
             params["regex"] = regex
         r = self._get("/getAllPVs", params=params)

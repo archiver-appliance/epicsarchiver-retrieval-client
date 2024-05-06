@@ -75,7 +75,7 @@ def test_get_all_pvs_with_pv() -> None:
         status=200,
         match_querystring=True,
     )
-    pvs = archiver.get_all_pvs(pv="KLYS*")
+    pvs = archiver.get_all_pvs(pv_query="KLYS*")
     assert len(responses.calls) == 1
     assert pvs == data
 
