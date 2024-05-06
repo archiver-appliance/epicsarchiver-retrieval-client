@@ -43,6 +43,7 @@ class BaseArchiverAppliance:
             port (int, optional): port number of mgmt interface. Defaults to 17665.
         """
         self.hostname = hostname
+        self.port = port
         self.mgmt_url = mgmt_url(hostname, port)
         self._info: dict[str, str] = {}
         self._data_url: str | None = None
@@ -54,7 +55,7 @@ class BaseArchiverAppliance:
         Returns:
             str: details including hostname of Archiver appliance.
         """
-        return f"ArchiverAppliance({self.hostname})"
+        return f"ArchiverAppliance({self.hostname}, {self.port})"
 
     def _request(self, method: str, *args: Any, **kwargs: Any) -> Response:
         r"""Sends a request using the session.
