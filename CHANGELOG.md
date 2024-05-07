@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.0 (2023-05-03)
+ * Removes ArchiverStatistics methods from ArchiverAppliance and makes them async
+ * Adds a new command IOC Check which can check a single IOCs PVs archiver configuration
+ * Adds support down to python 3.8
+
 ## 0.8.3 (2023-12-08)
  * Expands statistics commands to get more pv data from channelfinder and organize by ioc
 
