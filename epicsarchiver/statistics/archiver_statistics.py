@@ -125,7 +125,7 @@ class ArchiverWrapper:
         if self.stats:
             await self.stats.close()
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         """String representation of ArchiverWrapper.
 
         Returns:
