@@ -65,13 +65,6 @@ def _is_greater_than_time_minimum(
     return diff > time_minimum
 
 
-def _response_report_dict(
-    responses: Sequence[BaseStatResponse],
-) -> dict[str, BaseStatResponse]:
-    LOG.info("Found %s responses", len(responses))
-    return {r.pv_name: r for r in responses}
-
-
 class Stat(str, enum.Enum):
     """List of statistics from the archiver.
 
@@ -226,7 +219,9 @@ class ArchiverReport:
         archiver: ArchiverWrapper,
     ) -> dict[str, BaseStatResponse]:
         """Produce a list of PVs and stats."""
-        return _response_report_dict(await self._get_responses(statistic, archiver))
+        responses = await self._get_responses(statistic, archiver)
+        LOG.info("Found %s responses for %s", len(responses), statistic)
+        return {r.pv_name: r for r in responses}
 
     async def generate(
         self,
@@ -322,6 +317,7 @@ class IocReport:
             await self._check_not_configured(
                 pv_names, pv_details, self.config_gitlab_repo
             )
+
         return {Ioc.from_channel(channels[0]): pv_details}
 
     async def _check_not_configured(
