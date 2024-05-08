@@ -119,3 +119,16 @@ class ArchiverWrapper:
         """
         self.mgmt = ArchiverMgmt(hostname, port)
         self.stats = ArchiverStatistics(hostname)
+
+    async def close(self) -> None:
+        """Closes any connected sessions."""
+        if self.stats:
+            await self.stats.close()
+
+    def __str__(self) -> str:
+        """String representation of ArchiverWrapper.
+
+        Returns:
+            str: ouput string
+        """
+        return f"ArchiverWrapper({self.mgmt.hostname}, {self.mgmt.port})"

@@ -57,6 +57,7 @@ async def get_double_archived(
 async def fetch_configured_pvs(config_gitlab_repo: Path) -> set[str]:
     gitlab = Gitlab()
     config_files = await gitlab.get_tar_ball(config_gitlab_repo)
+    await gitlab.close()
     onlyfiles = [
         config_files / f
         for f in listdir(config_files)

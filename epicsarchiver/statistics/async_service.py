@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import urllib.parse
 from typing import TYPE_CHECKING, Any
@@ -24,19 +23,23 @@ class ServiceClient:
     def __init__(self, base_url: str) -> None:
         """Create Service object."""
         self.base_url = base_url
-        self.session = ClientSession()
+        self._session: ClientSession | None = None
 
-    async def _close(self) -> None:
-        if self.session is not None:
-            await self.session.close()
+    @property
+    def session(self) -> ClientSession:
+        """Return the aiohttp session.
 
-    def __del__(self) -> None:
-        """Delete method makes sure to close any clients first."""
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            loop.create_task(self._close())
-        else:
-            loop.run_until_complete(self._close())
+        Returns:
+            ClientSession: The session.
+        """
+        if not self._session:
+            self._session = ClientSession()
+        return self._session
+
+    async def close(self) -> None:
+        """Close the Service (closes the session)."""
+        if self._session is not None:
+            await self._session.close()
 
     async def _get(
         self, endpoint: str, params: Mapping[str, str] | None = None
