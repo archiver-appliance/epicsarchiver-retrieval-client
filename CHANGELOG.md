@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.1 (2023-05-014)
+ * Fixes a bug in http sessions not closing.
+
 ## 0.9.0 (2023-05-03)
  * Removes ArchiverStatistics methods from ArchiverAppliance and makes them async
  * Adds a new command IOC Check which can check a single IOCs PVs archiver configuration
