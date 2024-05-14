@@ -1,4 +1,11 @@
-line-length = 120
+target-version = "py38"
+line-length = 88
+exclude = [
+  "epicsarchiver/retrieval/EPICSEvent_pb2.py",
+  "epicsarchiver/retrieval/EPICSEvent_pb2.pyi",
+  "docs/source/conf.py",
+]
+preview = true
 
 [format]
 docstring-code-format = true
@@ -23,6 +30,7 @@ ignore = [
   "S",
   "TID252",
 ]
+"tests/**/*" = ["PLR2004", "S101", "TID252", "D", "SLF001", "INP001", "PLC2701"]
 
 [lint.flake8-tidy-imports]
 ban-relative-imports = "all"
@@ -33,3 +41,7 @@ known-first-party = ["py_epicsarchiver"]
 [lint.flake8-pytest-style]
 fixture-parentheses = false
 mark-parentheses = false
+
+[lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
