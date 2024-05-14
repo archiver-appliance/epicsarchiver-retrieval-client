@@ -42,23 +42,7 @@ epicsarchiver = "epicsarchiver.command:cli"
 Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
 
 [tool.ruff]
-extend = "ruff_defaults.toml"
-target-version = "py38"
-line-length = 88
-exclude = [
-  "epicsarchiver/retrieval/EPICSEvent_pb2.py",
-  "epicsarchiver/retrieval/EPICSEvent_pb2.pyi",
-  "docs/source/conf.py",
-]
-preview = true
-
-[tool.ruff.per-file-ignores]
-# Tests can use magic values, assertions, and relative imports
-"tests/**/*" = ["PLR2004", "S101", "TID252", "D", "SLF001", "INP001"]
-
-[tool.ruff.pydocstyle]
-# Use Google-style docstrings.
-convention = "google"
+extend = "ruff.toml"
 
 [tool.mypy]
 strict = true
