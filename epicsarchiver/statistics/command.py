@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 from pathlib import Path
@@ -136,21 +137,29 @@ def stats(  # noqa: PLR0917, PLR0913
     )
     channelfinder_service = ChannelFinder(channelfinder)
 
-    with output.open("w") as out_file:
-        report = ArchiverReport(
-            query_limit=limit,
-            time_minimum=timedelta(days=time_minimum),
-            connection_drops_minimum=connection_drops_minimum,
-            config_gitlab_repo=config_gitlab_repo,
-            other_archiver=other_archiver,
-            mb_per_day_minimum=mb_per_day_minimum,
-            events_dropped_minimum=events_dropped_minimum,
-            channelfinder=channelfinder_service,
-            ioc_name=ioc,
-        )
-        LOG.info("Collecting statistics with configuration %s", report)
+    try:
+        with output.open("w") as out_file:
+            report = ArchiverReport(
+                query_limit=limit,
+                time_minimum=timedelta(days=time_minimum),
+                connection_drops_minimum=connection_drops_minimum,
+                config_gitlab_repo=config_gitlab_repo,
+                other_archiver=other_archiver,
+                mb_per_day_minimum=mb_per_day_minimum,
+                events_dropped_minimum=events_dropped_minimum,
+                channelfinder=channelfinder_service,
+                ioc_name=ioc,
+            )
+            LOG.info("Collecting statistics with configuration %s", report)
 
-        report.print_report(archiver, out_file, verbose=verbose)
+            report.print_report(archiver, out_file, verbose=verbose)
+    finally:
+        # Close all the service clients
+        asyncio.run(channelfinder_service.close())
+        asyncio.run(archiver.close())
+        if other_archiver:
+            asyncio.run(other_archiver.close())
+
     ctx.exit(0)
 
 
@@ -186,6 +195,11 @@ def ioc_check(
     """
     archiver: ArchiverWrapper = ArchiverWrapper(ctx.obj["archiver"].hostname)
     channelfinder_service = ChannelFinder(channelfinder)
-    ioc_report = IocReport(ioc, channelfinder_service, archiver, config_gitlab_repo)
-    ioc_report.print_report()
+    try:
+        ioc_report = IocReport(ioc, channelfinder_service, archiver, config_gitlab_repo)
+        ioc_report.print_report()
+    finally:
+        # Close all the service clients
+        asyncio.run(channelfinder_service.close())
+        asyncio.run(archiver.close())
     ctx.exit(0)
