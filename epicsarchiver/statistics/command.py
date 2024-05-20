@@ -165,6 +165,13 @@ def stats(  # noqa: PLR0917, PLR0913
 
 @click.command()
 @click.option(
+    "--debug",
+    is_flag=True,
+    callback=handle_debug,
+    show_default=True,
+    help="Turn on debug logging",
+)
+@click.option(
     "--channelfinder",
     "-cf",
     default="channelfinder.tn.esss.lu.se",
