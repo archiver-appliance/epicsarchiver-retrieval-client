@@ -67,6 +67,17 @@ class DetailEnum(str, Enum):
         return None
 
 
+def _dropped_pv_response(
+    pv_name: str, value: str, reason: DroppedReason, stat: Stat
+) -> tuple[Stat, DroppedPVResponse] | None:
+    if value != "0":
+        return (
+            stat,
+            DroppedPVResponse(pv_name, int(value), reason),
+        )
+    return None
+
+
 class Details(Dict[DetailEnum, str]):
     """Representation of the response from the pvDetails endpoint in archiver."""
 
@@ -117,23 +128,21 @@ class Details(Dict[DetailEnum, str]):
         """
         pv_name = self[DetailEnum.PVName]
         if detail_enum == DetailEnum.LostEventsTimestamp:
-            return (
+            return _dropped_pv_response(
+                pv_name,
+                value,
+                DroppedReason.IncorrectTimestamp,
                 Stat.IncorrectTimestamp,
-                DroppedPVResponse(
-                    pv_name, int(value), DroppedReason.IncorrectTimestamp
-                ),
             )
 
         if detail_enum == DetailEnum.LostEventsType:
-            return (
-                Stat.TypeChange,
-                DroppedPVResponse(pv_name, int(value), DroppedReason.TypeChange),
+            return _dropped_pv_response(
+                pv_name, value, DroppedReason.TypeChange, Stat.TypeChange
             )
 
         if detail_enum == DetailEnum.LostEventsBuffer:
-            return (
-                Stat.BufferOverflow,
-                DroppedPVResponse(pv_name, int(value), DroppedReason.BufferOverflow),
+            return _dropped_pv_response(
+                pv_name, value, DroppedReason.BufferOverflow, Stat.BufferOverflow
             )
 
         if detail_enum == DetailEnum.Connnected and value != "yes":
@@ -156,7 +165,7 @@ class Details(Dict[DetailEnum, str]):
                 SilentPVsResponse(pv_name, self[DetailEnum.Instance], None),
             )
 
-        if detail_enum == DetailEnum.LostConnections:
+        if detail_enum == DetailEnum.LostConnections and value != "0":
             return (
                 Stat.LostConnection,
                 LostConnectionsResponse(
@@ -169,7 +178,7 @@ class Details(Dict[DetailEnum, str]):
                 ),
             )
 
-        if detail_enum == DetailEnum.MBStorageRate:
+        if detail_enum == DetailEnum.MBStorageRate and value != "0":
             return (
                 Stat.StorageRates,
                 StorageRatesResponse(pv_name, float(value), None, None),
