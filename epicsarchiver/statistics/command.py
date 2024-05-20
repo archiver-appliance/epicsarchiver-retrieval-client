@@ -184,15 +184,23 @@ def stats(  # noqa: PLR0917, PLR0913
     type=click.Path(path_type=Path),
     help="Gitlab repo for files with lists of PVs",
 )
+@click.option(
+    "--mb-per-day-minimum",
+    "-mb",
+    default=100,
+    type=float,
+    help="Minimum storage rate in MB/day",
+)
 @click.argument(
     "ioc",
     type=str,
 )
 @click.pass_context
-def ioc_check(
+def ioc_check(  # noqa: PLR0917, PLR0913
     ctx: click.core.Context,
     ioc: str,
     config_gitlab_repo: Path | None,
+    mb_per_day_minimum: float,
     channelfinder: str,
     debug: bool,  # noqa: FBT001, ARG001
 ) -> None:
@@ -203,7 +211,9 @@ def ioc_check(
     archiver: ArchiverWrapper = ArchiverWrapper(ctx.obj["archiver"].hostname)
     channelfinder_service = ChannelFinder(channelfinder)
     try:
-        ioc_report = IocReport(ioc, channelfinder_service, archiver, config_gitlab_repo)
+        ioc_report = IocReport(
+            ioc, channelfinder_service, archiver, mb_per_day_minimum, config_gitlab_repo
+        )
         ioc_report.print_report()
     finally:
         # Close all the service clients

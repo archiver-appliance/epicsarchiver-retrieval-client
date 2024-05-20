@@ -100,21 +100,26 @@ class Details(Dict[DetailEnum, str]):
                 result[detail_enum] = json_det["value"]
         return result
 
-    def to_base_responses(self) -> dict[Stat, BaseStatResponse]:
+    def to_base_responses(
+        self, mb_per_day_min: float = 0
+    ) -> dict[Stat, BaseStatResponse]:
         """Convert to a BaseStatResponse dict to match Generic Archiver Statistics.
+
+        Args:
+            mb_per_day_min (float): Minimum MB per day to filter by
 
         Returns:
             dict[Stat, BaseStatResponse]: Stat to BaseStatResponse output
         """
         result: dict[Stat, BaseStatResponse] = {}
         for detail_enum, value in self.items():
-            response = self.detail_to_base_response(detail_enum, value)
+            response = self.detail_to_base_response(detail_enum, value, mb_per_day_min)
             if response:
                 result[response[0]] = response[1]
         return result
 
     def detail_to_base_response(  # noqa: PLR0911
-        self, detail_enum: DetailEnum, value: str
+        self, detail_enum: DetailEnum, value: str, mb_per_day_min: float = 0
     ) -> tuple[Stat, BaseStatResponse] | None:
         """Convert a single detail to a Stat and BaseStatResponse.
 
@@ -122,6 +127,7 @@ class Details(Dict[DetailEnum, str]):
             pv_name (str): Name of pv detail is about.
             detail_enum (DetailEnum): Detail
             value (str): String value of the detail
+            mb_per_day_min (float): Minimum MB per day to filter by
 
         Returns:
             tuple[Stat, BaseStatResponse] | None: Output
@@ -178,7 +184,9 @@ class Details(Dict[DetailEnum, str]):
                 ),
             )
 
-        if detail_enum == DetailEnum.MBStorageRate and value != "0":
+        if detail_enum == DetailEnum.MBStorageRate and (
+            value != "Not enough info" and float(value) > mb_per_day_min
+        ):
             return (
                 Stat.StorageRates,
                 StorageRatesResponse(pv_name, float(value), None, None),
