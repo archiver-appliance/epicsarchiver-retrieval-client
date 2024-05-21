@@ -53,7 +53,7 @@ extra-dependencies = [
   "sphinx-copybutton>=0.5.1",
   "sphinx-click",
   "sphinx-autobuild",
-  "sphinx-autoapi",
+  "sphinx-autoapi==3.0.0",
   "sphinx_rtd_theme",
 ]
 
