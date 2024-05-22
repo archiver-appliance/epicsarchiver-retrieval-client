@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.9.1 (2023-05-014)
+## 0.9.2 (2023-05-22)
+ * Filters out irrelevant 0 dropped events in ioc-check
+ * Fixes missing argument in ioc-check
+
+## 0.9.1 (2023-05-14)
  * Fixes a bug in http sessions not closing.
 
 ## 0.9.0 (2023-05-03)
