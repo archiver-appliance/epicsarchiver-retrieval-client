@@ -288,6 +288,7 @@ class IocReport:
     ioc_name: str
     channelfinder: ChannelFinder
     archiver: ArchiverWrapper
+    mb_per_day_minimum: float
     config_gitlab_repo: Path | None
 
     def print_report(self) -> None:
@@ -341,7 +342,9 @@ class IocReport:
     async def _get_archived_pvs_details(self, pv_names: set[str]) -> dict[str, PVStats]:
         all_archived = self.archiver.mgmt.get_archived_pvs(list(pv_names))
         archived_pvs = set(all_archived).intersection(pv_names)
-        return await self.archiver.stats.get_pv_details(list(archived_pvs))
+        return await self.archiver.stats.get_pv_details(
+            list(archived_pvs), self.mb_per_day_minimum
+        )
 
 
 async def _organise_by_ioc(

@@ -84,12 +84,15 @@ class ArchiverStatistics(ServiceClient):
         r = await self._get_json("/getPausedPVsReport")
         return [PausedPVResponse.from_json(rs) for rs in r]
 
-    async def get_pv_details(self, pvs: list[str]) -> dict[str, PVStats]:
+    async def get_pv_details(
+        self, pvs: list[str], mb_per_day_min: float = 0
+    ) -> dict[str, PVStats]:
         """Return the details of a PV.
 
         Args:
             pvs (list[str]): names of the pvs for which the details are to be
                 determined.
+            mb_per_day_min (float): Minimum MB per day to filter by
 
         Returns:
             list of dict with the details of the matching PVs
@@ -101,7 +104,8 @@ class ArchiverStatistics(ServiceClient):
         # Convert each detail to stat_responses
         return {
             pv_details[DetailEnum.PVName]: PVStats(
-                pv_details[DetailEnum.PVName], pv_details.to_base_responses()
+                pv_details[DetailEnum.PVName],
+                pv_details.to_base_responses(mb_per_day_min),
             )
             for pv_details in details
         }

@@ -67,6 +67,17 @@ class DetailEnum(str, Enum):
         return None
 
 
+def _dropped_pv_response(
+    pv_name: str, value: str, reason: DroppedReason, stat: Stat
+) -> tuple[Stat, DroppedPVResponse] | None:
+    if value != "0":
+        return (
+            stat,
+            DroppedPVResponse(pv_name, int(value), reason),
+        )
+    return None
+
+
 class Details(Dict[DetailEnum, str]):
     """Representation of the response from the pvDetails endpoint in archiver."""
 
@@ -89,21 +100,26 @@ class Details(Dict[DetailEnum, str]):
                 result[detail_enum] = json_det["value"]
         return result
 
-    def to_base_responses(self) -> dict[Stat, BaseStatResponse]:
+    def to_base_responses(
+        self, mb_per_day_min: float = 0
+    ) -> dict[Stat, BaseStatResponse]:
         """Convert to a BaseStatResponse dict to match Generic Archiver Statistics.
+
+        Args:
+            mb_per_day_min (float): Minimum MB per day to filter by
 
         Returns:
             dict[Stat, BaseStatResponse]: Stat to BaseStatResponse output
         """
         result: dict[Stat, BaseStatResponse] = {}
         for detail_enum, value in self.items():
-            response = self.detail_to_base_response(detail_enum, value)
+            response = self.detail_to_base_response(detail_enum, value, mb_per_day_min)
             if response:
                 result[response[0]] = response[1]
         return result
 
     def detail_to_base_response(  # noqa: PLR0911
-        self, detail_enum: DetailEnum, value: str
+        self, detail_enum: DetailEnum, value: str, mb_per_day_min: float = 0
     ) -> tuple[Stat, BaseStatResponse] | None:
         """Convert a single detail to a Stat and BaseStatResponse.
 
@@ -111,29 +127,28 @@ class Details(Dict[DetailEnum, str]):
             pv_name (str): Name of pv detail is about.
             detail_enum (DetailEnum): Detail
             value (str): String value of the detail
+            mb_per_day_min (float): Minimum MB per day to filter by
 
         Returns:
             tuple[Stat, BaseStatResponse] | None: Output
         """
         pv_name = self[DetailEnum.PVName]
         if detail_enum == DetailEnum.LostEventsTimestamp:
-            return (
+            return _dropped_pv_response(
+                pv_name,
+                value,
+                DroppedReason.IncorrectTimestamp,
                 Stat.IncorrectTimestamp,
-                DroppedPVResponse(
-                    pv_name, int(value), DroppedReason.IncorrectTimestamp
-                ),
             )
 
         if detail_enum == DetailEnum.LostEventsType:
-            return (
-                Stat.TypeChange,
-                DroppedPVResponse(pv_name, int(value), DroppedReason.TypeChange),
+            return _dropped_pv_response(
+                pv_name, value, DroppedReason.TypeChange, Stat.TypeChange
             )
 
         if detail_enum == DetailEnum.LostEventsBuffer:
-            return (
-                Stat.BufferOverflow,
-                DroppedPVResponse(pv_name, int(value), DroppedReason.BufferOverflow),
+            return _dropped_pv_response(
+                pv_name, value, DroppedReason.BufferOverflow, Stat.BufferOverflow
             )
 
         if detail_enum == DetailEnum.Connnected and value != "yes":
@@ -156,7 +171,7 @@ class Details(Dict[DetailEnum, str]):
                 SilentPVsResponse(pv_name, self[DetailEnum.Instance], None),
             )
 
-        if detail_enum == DetailEnum.LostConnections:
+        if detail_enum == DetailEnum.LostConnections and value != "0":
             return (
                 Stat.LostConnection,
                 LostConnectionsResponse(
@@ -169,7 +184,9 @@ class Details(Dict[DetailEnum, str]):
                 ),
             )
 
-        if detail_enum == DetailEnum.MBStorageRate:
+        if detail_enum == DetailEnum.MBStorageRate and (
+            value != "Not enough info" and float(value) > mb_per_day_min
+        ):
             return (
                 Stat.StorageRates,
                 StorageRatesResponse(pv_name, float(value), None, None),
