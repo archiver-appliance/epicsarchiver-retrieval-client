@@ -36,6 +36,7 @@ from rich.console import Console
 from epicsarchiver.statistics._external_stats import (
     filter_by_ioc,
     get_double_archived,
+    get_invalid_names,
     get_iocs,
     get_not_configured,
 )
@@ -82,6 +83,7 @@ class Stat(str, enum.Enum):
     StorageRates = "In the top storage rates."
     LostConnection = "In the top dropped connections."
     NotConfigured = "PV archived, but not in config."
+    InvalidName = "PV has name that should not be archived"
 
 
 CSV_HEADINGS = [
@@ -119,7 +121,7 @@ class ArchiverReport:
     channelfinder: ChannelFinder
     ioc_name: str | None
 
-    async def _get_responses(  # noqa: PLR0911, C901
+    async def _get_responses(  # noqa: PLR0911, C901, PLR0912
         self,
         statistic: Stat,
         archiver: ArchiverWrapper,
@@ -211,6 +213,8 @@ class ArchiverReport:
                     self.ioc_name,
                 )
             return []
+        if statistic == Stat.InvalidName:
+            return await get_invalid_names(archiver)
         return []
 
     async def generate_stats(
