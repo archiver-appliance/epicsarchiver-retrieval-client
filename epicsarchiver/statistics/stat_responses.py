@@ -378,3 +378,23 @@ class Ioc:
 
 
 UNKNOWN_IOC: Ioc = Ioc("unknown.ioc", "UNKNOWN:IOC")
+
+
+@dataclass
+class NameCheckResponse(BaseStatResponse):
+    """Response of pvs paused."""
+
+    suffix: str | None
+    internal: bool
+
+    def __str__(self) -> str:
+        """Generate a display string for the response.
+
+        Returns:
+            str: "{pv} has a name discouraged to be archived,
+                      as {it ends with {suffix}} {it contains #}"
+        """
+        init_str = f"{self.pv_name} has a name discouraged to be archived, as "
+        if self.internal:
+            return f"{init_str} it is an internal PV."
+        return f"{init_str} it ends with {self.suffix}."
