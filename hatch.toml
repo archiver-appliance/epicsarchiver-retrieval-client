@@ -1,5 +1,11 @@
 [version]
-path = "epicsarchiver/__about__.py"
+source = "vcs"
+
+[version.raw-options]
+git_describe_command = ["git", "describe", "--dirty", "--tags", "--long"]
+
+[build.hooks.vcs]
+version-file = "epicsarchiver/_version.py"
 
 [build.targets.sdist]
 include = ["/epicsarchiver", "/tests"]
