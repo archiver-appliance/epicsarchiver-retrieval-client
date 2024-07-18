@@ -10,11 +10,14 @@ from pathlib import Path
 import click
 
 from epicsarchiver.common.command import handle_debug
+from epicsarchiver.statistics import configuration
 from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
 from epicsarchiver.statistics.channelfinder import ChannelFinder
 from epicsarchiver.statistics.report import ArchiverReport, IocReport
 
 LOG: logging.Logger = logging.getLogger(__name__)
+
+ARCHIVER_ALIASES = ["tn", "nin", "lab"]
 
 
 @click.command()
@@ -94,6 +97,12 @@ LOG: logging.Logger = logging.getLogger(__name__)
     default="archiver-appliance/archiver-appliance-config-aa-linac-prod",
     help="Gitlab repo for files with lists of PVs",
 )
+@click.option(
+    "--config-archiver-alias",
+    type=click.Choice(ARCHIVER_ALIASES, case_sensitive=False),
+    default="tn",
+    help="Alias of the Archiver cluster chosen via info tag in IOC Record",
+)
 @click.argument(
     "output",
     type=click.Path(exists=False, path_type=Path, resolve_path=True),
@@ -106,6 +115,7 @@ def stats(  # noqa: PLR0917, PLR0913
     time_minimum: int,
     connection_drops_minimum: int,
     config_gitlab_repo: Path | None,
+    config_archiver_alias: str | None,
     mb_per_day_minimum: float,
     events_dropped_minimum: int,
     channelfinder: str,
@@ -143,7 +153,9 @@ def stats(  # noqa: PLR0917, PLR0913
                 query_limit=limit,
                 time_minimum=timedelta(days=time_minimum),
                 connection_drops_minimum=connection_drops_minimum,
-                config_gitlab_repo=config_gitlab_repo,
+                config_options=configuration.ConfigOptions(
+                    config_gitlab_repo, config_archiver_alias
+                ),
                 other_archiver=other_archiver,
                 mb_per_day_minimum=mb_per_day_minimum,
                 events_dropped_minimum=events_dropped_minimum,
@@ -185,6 +197,12 @@ def stats(  # noqa: PLR0917, PLR0913
     help="Gitlab repo for files with lists of PVs",
 )
 @click.option(
+    "--config-archiver-alias",
+    type=click.Choice(ARCHIVER_ALIASES, case_sensitive=False),
+    default="tn",
+    help="Alias of the Archiver cluster chosen via info tag in IOC Record",
+)
+@click.option(
     "--mb-per-day-minimum",
     "-mb",
     default=100,
@@ -200,6 +218,7 @@ def ioc_check(  # noqa: PLR0917, PLR0913
     ctx: click.core.Context,
     ioc: str,
     config_gitlab_repo: Path | None,
+    config_archiver_alias: str | None,
     mb_per_day_minimum: float,
     channelfinder: str,
     debug: bool,  # noqa: FBT001, ARG001
@@ -212,7 +231,11 @@ def ioc_check(  # noqa: PLR0917, PLR0913
     channelfinder_service = ChannelFinder(channelfinder)
     try:
         ioc_report = IocReport(
-            ioc, channelfinder_service, archiver, mb_per_day_minimum, config_gitlab_repo
+            ioc,
+            channelfinder_service,
+            archiver,
+            mb_per_day_minimum,
+            configuration.ConfigOptions(config_gitlab_repo, config_archiver_alias),
         )
         ioc_report.print_report()
     finally:

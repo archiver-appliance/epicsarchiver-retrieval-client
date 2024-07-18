@@ -38,3 +38,6 @@ __pycache__/
 coverage.xml
 output
 test_sets
+
+# Version file
+epicsarchiver/_version.py
