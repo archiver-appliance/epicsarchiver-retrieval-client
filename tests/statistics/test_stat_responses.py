@@ -1,34 +1,28 @@
-"""Tests for `epicsarchiver.statistics` package."""
+"""Tests for `epicsarchiver.statistics.stat_responses` package."""
 
 import datetime
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock
 
 import pytest
 import pytz
 import responses
 from aioresponses import aioresponses
-from pytest_mock import MockFixture
 
 from epicsarchiver.statistics._external_stats import (
     get_double_archived,
-    get_not_configured,
 )
 from epicsarchiver.statistics.archiver_statistics import (
     ArchiverStatistics,
     ArchiverWrapper,
 )
-from epicsarchiver.statistics.channelfinder import ChannelFinder
 from epicsarchiver.statistics.stat_responses import (
     BothArchiversResponse,
-    ConfiguredStatus,
     ConnectionStatus,
     DisconnectedPVsResponse,
     DroppedPVResponse,
     DroppedReason,
     LostConnectionsResponse,
-    NoConfigResponse,
     PausedPVResponse,
     SilentPVsResponse,
     StorageRatesResponse,
@@ -247,34 +241,6 @@ async def test_get_double_archived() -> None:
                 "MY:PV", archiver.mgmt.hostname, other_archiver.mgmt.hostname
             ),
         ] == pvs_response
-
-
-@pytest.mark.asyncio
-async def test_get_not_configured(mocker: MockFixture) -> None:
-    archiver = ArchiverWrapper("archiver.example.org")
-    channelfinder = ChannelFinder("channelfinder.example.org")
-    config_gitlab_repo = Path()
-    mocker.patch(
-        "epicsarchiver.mgmt.archiver_mgmt.ArchiverMgmt.get_all_pvs",
-        return_value=["MY:PV", "MY:PV2"],
-    )
-    mocker.patch(
-        "epicsarchiver.statistics._external_stats.get_all_non_paused_pvs",
-        side_effect=AsyncMock(return_value={"MY:PV", "MY:PV2"}),
-    )
-    mocker.patch(
-        "epicsarchiver.statistics._external_stats.get_aliases",
-        side_effect=AsyncMock(return_value={"MY:PV": [], "MY:PV3": ["MY:PV"]}),
-    )
-    mocker.patch(
-        "epicsarchiver.statistics.gitlab.Gitlab.get_tar_ball",
-        return_value=SAMPLES_PATH,
-    )
-    pvs_response = await get_not_configured(archiver, channelfinder, config_gitlab_repo)
-    assert {
-        NoConfigResponse("MY:PV", ConfiguredStatus.Archived, [], []),
-        NoConfigResponse("MY:PV3", ConfiguredStatus.Configured, ["MY:PV"], ["MY:PV"]),
-    } == set(pvs_response)
 
 
 @pytest.mark.parametrize(

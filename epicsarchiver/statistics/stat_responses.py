@@ -323,11 +323,12 @@ class PausedPVResponse(BaseStatResponse):
         return f"{self.pv_name} is paused"
 
 
-class ConfiguredStatus(enum.Enum):
-    """Represents if a pv is configured or archived."""
+class ConfiguredStatus(str, enum.Enum):
+    """Represents if a pv is configured in gitlab, channelfinder or archived only."""
 
-    Archived = 1
-    Configured = 2
+    Archived = "Archived but not in config."
+    ConfiguredGitlab = "Configured in Gitlab but not in archiver."
+    ConfiguredChannelFinder = "Configured in ChannelFinder but not in archiver."
 
 
 @dataclass
@@ -344,11 +345,7 @@ class NoConfigResponse(BaseStatResponse):
         Returns:
             str: f"Archived but not in config."
         """
-        display = (
-            "Archived but not in config."
-            if self.configured_status == ConfiguredStatus.Archived
-            else "Configured but not in archiver."
-        )
+        display = self.configured_status.value
         if self.alias:
             display = f"{display} Has aliases {self.alias}."
         if self.alias_archived:

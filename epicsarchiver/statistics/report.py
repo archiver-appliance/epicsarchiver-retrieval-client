@@ -8,7 +8,7 @@ Examples:
             query_limit=1000,
             time_minimum=timedelta(days=100),
             connection_drops_minimum=30,
-            config_files="/config_files_dir",
+            config_options=configuration.ConfigOptions("/config_repo", "tn"),
             other_archiver=ArchiverAppliance("other_archiver.example.org"),
             mb_per_day_minimum=1000,
         )
@@ -33,12 +33,12 @@ from typing import IO, TYPE_CHECKING
 import pytz
 from rich.console import Console
 
+from epicsarchiver.statistics import configuration
 from epicsarchiver.statistics._external_stats import (
     filter_by_ioc,
     get_double_archived,
     get_invalid_names,
     get_iocs,
-    get_not_configured,
 )
 from epicsarchiver.statistics.stat_responses import (
     UNKNOWN_IOC,
@@ -49,7 +49,6 @@ from epicsarchiver.statistics.stat_responses import (
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from pathlib import Path
 
     from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
     from epicsarchiver.statistics.channelfinder import ChannelFinder
@@ -114,7 +113,7 @@ class ArchiverReport:
     query_limit: int | None
     time_minimum: timedelta
     connection_drops_minimum: int
-    config_gitlab_repo: Path | None
+    config_options: configuration.ConfigOptions | None
     other_archiver: ArchiverWrapper | None
     mb_per_day_minimum: float
     events_dropped_minimum: int
@@ -205,11 +204,11 @@ class ArchiverReport:
             return []
 
         if statistic == Stat.NotConfigured:
-            if self.config_gitlab_repo:
-                return await get_not_configured(
+            if self.config_options:
+                return await configuration.get_not_configured(
                     archiver,
                     self.channelfinder,
-                    self.config_gitlab_repo,
+                    self.config_options,
                     self.ioc_name,
                 )
             return []
@@ -293,7 +292,7 @@ class IocReport:
     channelfinder: ChannelFinder
     archiver: ArchiverWrapper
     mb_per_day_minimum: float
-    config_gitlab_repo: Path | None
+    config_options: configuration.ConfigOptions | None
 
     def print_report(self) -> None:
         """Print report about the statistics of connections from IOC to archiver."""
@@ -318,10 +317,8 @@ class IocReport:
 
         pv_names = {pv.name for pv in channels}
         pv_details = await self._get_archived_pvs_details(pv_names)
-        if self.config_gitlab_repo:
-            await self._check_not_configured(
-                pv_names, pv_details, self.config_gitlab_repo
-            )
+        if self.config_options:
+            await self._check_not_configured(pv_names, pv_details, self.config_options)
 
         return {Ioc.from_channel(channels[0]): pv_details}
 
@@ -329,12 +326,12 @@ class IocReport:
         self,
         pv_names: set[str],
         pv_details: dict[str, PVStats],
-        config_gitlab_repo: Path,
+        config_options: configuration.ConfigOptions,
     ) -> None:
-        not_configured = await get_not_configured(
+        not_configured = await configuration.get_not_configured(
             self.archiver,
             self.channelfinder,
-            config_gitlab_repo,
+            config_options,
             self.ioc_name,
             pv_names,
         )

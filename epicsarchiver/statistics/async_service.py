@@ -55,7 +55,9 @@ class ServiceClient:
         """
         url = urllib.parse.urljoin(self.base_url, endpoint.lstrip("/"))
         LOG.debug("GET url: %s", url)
-        return await self.session.get(url, params=params, raise_for_status=True)
+        return await self.session.get(
+            url, params=params, raise_for_status=True, ssl=False
+        )
 
     async def _get_json(
         self, endpoint: str, params: Mapping[str, str] | None = None
