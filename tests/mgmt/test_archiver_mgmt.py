@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import responses
+from requests import HTTPError
 
 from epicsarchiver.mgmt.archiver_mgmt import ArchiverMgmt, check_result
 
@@ -535,6 +536,40 @@ def test_pause_rename_resume_pv_error_rename(caplog: pytest.LogCaptureFixture) -
     LOG.info(captured_log)
     assert len(responses.calls) == 4
     assert "error during rename" in captured_log
+
+
+@responses.activate
+def test_add_alias_ok(caplog: pytest.LogCaptureFixture) -> None:
+    archiver = ArchiverMgmt("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/addAlias?pv={pv}&aliasname={newname}",
+        json={"status": "ok", "desc": f"Added an alias {newname} for PV {pv}"},
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.add_alias(pv, newname)
+    captured_log = caplog.text
+    assert len(responses.calls) == 1
+    assert f"Added an alias {newname} for PV {pv}" in captured_log
+
+
+@responses.activate
+def test_add_alias_pv_does_not_exist() -> None:
+    archiver = ArchiverMgmt("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/addAlias?pv={pv}&aliasname={newname}",
+        status=500,
+        match_querystring=True,
+    )
+    with pytest.raises(HTTPError):
+        archiver.add_alias(pv, newname)
 
 
 @pytest.mark.parametrize(

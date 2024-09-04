@@ -271,6 +271,23 @@ class ArchiverMgmt(BaseArchiverAppliance):
         r = self._get("/abortArchivingPV", params={"pv": pv})
         return cast(List[str], r.json())
 
+    def add_alias(self, pv: str, alias_name: str) -> None:
+        """Add an alias to a pv.
+
+        Args:
+            pv: PV to add alias.
+            alias_name: name of alias to add to pv.
+
+        Returns:
+            None
+        """
+        r = self._get("/addAlias", params={"pv": pv, "aliasname": alias_name})
+        r_json = r.json()
+        if r_json["status"] != "ok":
+            LOG.error("Failed to add alias, response %s", str(r_json))
+            return
+        LOG.debug(r_json["desc"])
+
     def delete_pv(
         self,
         pv: str,
