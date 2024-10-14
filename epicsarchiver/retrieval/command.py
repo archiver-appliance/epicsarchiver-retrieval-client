@@ -1,5 +1,7 @@
 """Command module."""
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
@@ -10,6 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
+from epicsarchiver.retrieval.archiver_retrieval import Processor, ProcessorName
 
 if TYPE_CHECKING:
     from epicsarchiver.epicsarchiver import ArchiverAppliance
@@ -42,16 +45,32 @@ DATE_FORMATS = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]
     type=click.DateTime(formats=DATE_FORMATS),
     help="End time of query",
 )
+@click.option(
+    "--processor-name",
+    "-p",
+    type=click.Choice(
+        [processor.name for processor in ProcessorName], case_sensitive=False
+    ),
+    help="PreProcessor to use",
+)
+@click.option(
+    "--bin_size",
+    "-b",
+    type=int,
+    help="Bin size (mostly in seconds) for preprocessor.",
+)
 @click.argument(
     "pv",
     type=str,
 )
 @click.pass_context
-def get(
+def get(  # noqa: PLR0917, PLR0913
     ctx: click.core.Context,
     pv: str,
     start: datetime,
     end: datetime,
+    processor_name: str | None,
+    bin_size: int | None,
     debug: bool,  # noqa: FBT001, ARG001
 ) -> None:
     """Print out data from an archiver cluster.
@@ -67,8 +86,18 @@ def get(
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
     console = Console()
-    events = archiver.get_events(pv, start, end)
-    table = Table(title=f"PV {pv} Events from: {start} to: {end}")
+    processor = (
+        Processor(ProcessorName[processor_name.upper()], bin_size)
+        if processor_name
+        else None
+    )
+    events = archiver.get_events(pv, start, end, processor=processor)
+    table_title = f"PV {pv}, Period {start} - {end}"
+    if processor:
+        table_title += f" Processor {processor.processor_name}"
+        if processor.bin_size:
+            table_title += f", {processor.bin_size} seconds"
+    table = Table(title=table_title)
     table.add_column("Time", justify="left")
     table.add_column("Value", justify="right")
     table.add_column("Status", justify="right")

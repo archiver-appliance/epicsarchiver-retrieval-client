@@ -7,7 +7,11 @@ from pytz import UTC
 
 import epicsarchiver.retrieval.EPICSEvent_pb2 as ee
 from epicsarchiver.retrieval.archive_event import ArchiveEvent, year_timestamp
-from epicsarchiver.retrieval.archiver_retrieval import ArchiverRetrieval
+from epicsarchiver.retrieval.archiver_retrieval import (
+    ArchiverRetrieval,
+    Processor,
+    ProcessorName,
+)
 from epicsarchiver.retrieval.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo, ScalarInt
 from epicsarchiver.retrieval.pb import EeEvent, escape_bytes, to_field_value
 
@@ -181,3 +185,9 @@ def test_data_url_with_no_specific_port() -> None:
     data_url = archiver.data_url()
     assert len(responses.calls) == 1
     assert data_url == "http://archiver-01/foo/data/getData.raw"
+
+
+def test_calc_pv_name() -> None:
+    pv = "PVNAME"
+    expected_result = "firstSample_60(PVNAME)"
+    assert Processor(ProcessorName.FIRSTSAMPLE, 60).calc_pv_name(pv) == expected_result
