@@ -21,7 +21,7 @@ version = ".".join(release.split(".")[0:2])
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "myst_parser",
+    "myst_nb",
     "sphinx_click",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
@@ -69,3 +69,4 @@ myst_deflist_enable = True
 myst_enable_extensions = [
     "colon_fence",
 ]
+nb_execution_mode = "off"

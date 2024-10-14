@@ -61,6 +61,7 @@ extra-dependencies = [
   "sphinx-autobuild",
   "sphinx-autoapi==3.0.0",
   "sphinx_rtd_theme",
+  "myst_nb",
 ]
 
 [envs.docs.scripts]
