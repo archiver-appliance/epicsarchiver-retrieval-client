@@ -480,6 +480,125 @@ def test_add_alias_pv_does_not_exist() -> None:
         archiver.add_alias(pv, newname)
 
 
+@responses.activate
+def test_append_and_alias_pv(caplog: pytest.LogCaptureFixture) -> None:
+    archiver = ArchiverMgmtOperations("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": "Paused"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": "Paused"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/appendAndAliasPV?olderpv={pv}&newerpv={newname}&storage=MTS",
+        json={
+            "addAlias": "ok",
+            "deleteOlder": "ok",
+            "deleteNewer": "ok",
+            "status": "ok",
+        },
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.append_and_alias_pv(pv, newname, "MTS")
+    captured_log = caplog.text
+    assert len(responses.calls) == 3
+    assert f"PV {pv} successfully appended and aliased to {newname}\n" in captured_log
+
+
+@responses.activate
+def test_append_and_alias_pv_not_archived_pv(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    archiver = ArchiverMgmtOperations("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": "Not being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.append_and_alias_pv(pv, newname, "MTS")
+    captured_log = caplog.text
+    assert len(responses.calls) == 1
+    assert f"PV {pv} isn't paused. Skipping.\n" in captured_log
+
+
+@responses.activate
+def test_append_and_alias_pv_existing_new(caplog: pytest.LogCaptureFixture) -> None:
+    archiver = ArchiverMgmtOperations("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": "Paused"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": "Not being archived"}],
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.append_and_alias_pv(pv, newname, "MTS")
+    captured_log = caplog.text
+    assert len(responses.calls) == 2
+    assert f"PV {newname} isn't paused. Skipping.\n" in captured_log
+
+
+@responses.activate
+def test_append_and_alias_pv_error_rename(caplog: pytest.LogCaptureFixture) -> None:
+    archiver = ArchiverMgmtOperations("archiver.example.org")
+    pv = "MY:PV"
+    newname = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": "Paused"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": "Paused"}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://archiver.example.org:17665/mgmt/bpl/appendAndAliasPV?olderpv={pv}&newerpv={newname}&storage=MTS",
+        json={"validation": "error during appendAndAliasPV"},
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.append_and_alias_pv(pv, newname, "MTS")
+    captured_log = caplog.text
+    LOG.info(captured_log)
+    assert len(responses.calls) == 3
+    assert "error during appendAndAliasPV" in captured_log
+
+
 @pytest.mark.parametrize(
     ("test_input", "expected"),
     [({"status": "ok"}, True), ({"status": "foo"}, False), ({"hello": "world"}, False)],
