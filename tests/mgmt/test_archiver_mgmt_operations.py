@@ -482,27 +482,27 @@ def test_add_alias_pv_does_not_exist() -> None:
 
 
 @responses.activate
-def test_append_and_alias_pv(caplog: pytest.LogCaptureFixture) -> None:
+def test_rename_and_append_success(caplog: pytest.LogCaptureFixture) -> None:
     archiver = ArchiverMgmtOperations("archiver.example.org")
-    pv = "MY:PV"
-    newname = "NEW:PV"
+    old = "MY:PV"
+    new = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={old}",
         json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={new}",
         json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/appendAndAliasPV?olderpv={pv}&newerpv={newname}&storage=MTS",
+        f"http://archiver.example.org:17665/mgmt/bpl/appendAndAliasPV?olderpv={old}&newerpv={new}&storage=MTS",
         json={
             "addAlias": "ok",
             "deleteOlder": "ok",
@@ -513,87 +513,89 @@ def test_append_and_alias_pv(caplog: pytest.LogCaptureFixture) -> None:
         match_querystring=True,
     )
     with caplog.at_level(logging.DEBUG):
-        archiver.append_and_alias_pv(pv, newname, "MTS")
+        archiver.rename_and_append(old, new, "MTS")
     captured_log = caplog.text
     assert len(responses.calls) == 3
-    assert f"PV {pv} successfully appended and aliased to {newname}\n" in captured_log
+    assert f"PV {old} successfully appended and aliased to {new}\n" in captured_log
 
 
 @responses.activate
-def test_append_and_alias_pv_not_archived_pv(
+def test_rename_and_append_fail_not_archived_pv(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     archiver = ArchiverMgmtOperations("archiver.example.org")
-    pv = "MY:PV"
-    newname = "NEW:PV"
+    old = "MY:PV"
+    new = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={old}",
         json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
     with caplog.at_level(logging.DEBUG):
-        archiver.append_and_alias_pv(pv, newname, "MTS")
+        archiver.rename_and_append(old, new, "MTS")
     captured_log = caplog.text
     assert len(responses.calls) == 1
-    assert f"PV {pv} isn't paused. Skipping.\n" in captured_log
+    assert f"PV {old} isn't paused. Skipping.\n" in captured_log
 
 
 @responses.activate
-def test_append_and_alias_pv_existing_new(caplog: pytest.LogCaptureFixture) -> None:
+def test_rename_and_append_fail_pv_not_paused(caplog: pytest.LogCaptureFixture) -> None:
     archiver = ArchiverMgmtOperations("archiver.example.org")
-    pv = "MY:PV"
-    newname = "NEW:PV"
+    old = "MY:PV"
+    new = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={old}",
         json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={new}",
         json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
     with caplog.at_level(logging.DEBUG):
-        archiver.append_and_alias_pv(pv, newname, "MTS")
+        archiver.rename_and_append(old, new, "MTS")
     captured_log = caplog.text
     assert len(responses.calls) == 2
-    assert f"PV {newname} isn't paused. Skipping.\n" in captured_log
+    assert f"PV {new} isn't paused. Skipping.\n" in captured_log
 
 
 @responses.activate
-def test_append_and_alias_pv_error_rename(caplog: pytest.LogCaptureFixture) -> None:
+def test_rename_and_append_fail_pv_error_response(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     archiver = ArchiverMgmtOperations("archiver.example.org")
-    pv = "MY:PV"
-    newname = "NEW:PV"
+    old = "MY:PV"
+    new = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={old}",
         json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={new}",
         json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/appendAndAliasPV?olderpv={pv}&newerpv={newname}&storage=MTS",
+        f"http://archiver.example.org:17665/mgmt/bpl/appendAndAliasPV?olderpv={old}&newerpv={new}&storage=MTS",
         json={"validation": "error during appendAndAliasPV"},
         status=200,
         match_querystring=True,
     )
     with caplog.at_level(logging.DEBUG):
-        archiver.append_and_alias_pv(pv, newname, "MTS")
+        archiver.rename_and_append(old, new, "MTS")
     captured_log = caplog.text
     LOG.info(captured_log)
     assert len(responses.calls) == 3

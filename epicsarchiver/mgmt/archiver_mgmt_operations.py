@@ -248,23 +248,23 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         for current, new in pvs:
             self.pause_rename_resume_pv(current, new)
 
-    def append_and_alias_pv(self, olderpv: str, newerpv: str, storage: str) -> None:
+    def rename_and_append(self, old: str, new: str, storage: str) -> None:
         """Appends the data for an older PV into a newer PV.
 
         The older PV is deleted and an alias mapping the older PV name to
         the new PV is added.
 
         Args:
-            olderpv (str): The name of the older pv.
+            old (str): The name of the older pv.
                 The data for this PV will be appended to the newer PV and then deleted.
-            newerpv (str): The name of the newer pv.
+            new (str): The name of the newer pv.
             storage (str):  The name of the store to consolidate data before appending.
                 This is typically a string like LTS.
 
         Returns:
             None
         """
-        pvs = [olderpv, newerpv]
+        pvs = [old, new]
         for pv in pvs:
             status = self.get_archiving_status(pv)
             if status != ArchivingStatus.Paused:
@@ -272,15 +272,13 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
                 return
         response = self._get(
             "/appendAndAliasPV",
-            params={"olderpv": olderpv, "newerpv": newerpv, "storage": storage},
+            params={"olderpv": old, "newerpv": new, "storage": storage},
         )
         LOG.debug("append_and_alias_pv response %s", response.json())
         result = cast(List[Dict[str, str]], response.json())
-        if not check_result(
-            result, f"Error while append_and_alias_pv {olderpv}, {newerpv}"
-        ):
+        if not check_result(result, f"Error while append_and_alias_pv {old}, {new}"):
             return
-        LOG.debug("PV %s successfully appended and aliased to %s", olderpv, newerpv)
+        LOG.debug("PV %s successfully appended and aliased to %s", old, new)
 
 
 def check_result(
