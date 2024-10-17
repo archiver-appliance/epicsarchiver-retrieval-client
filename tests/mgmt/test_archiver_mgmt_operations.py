@@ -13,6 +13,7 @@ from requests import HTTPError
 from epicsarchiver.mgmt.archiver_mgmt_info import ArchivingStatus
 from epicsarchiver.mgmt.archiver_mgmt_operations import (
     ArchiverMgmtOperations,
+    Storage,
     check_result,
 )
 
@@ -513,7 +514,7 @@ def test_rename_and_append_success(caplog: pytest.LogCaptureFixture) -> None:
         match_querystring=True,
     )
     with caplog.at_level(logging.DEBUG):
-        archiver.rename_and_append(old, new, "MTS")
+        archiver.rename_and_append(old, new, Storage.MTS)
     captured_log = caplog.text
     assert len(responses.calls) == 3
     assert f"PV {old} successfully appended and aliased to {new}\n" in captured_log
@@ -534,7 +535,7 @@ def test_rename_and_append_fail_not_archived_pv(
         match_querystring=True,
     )
     with caplog.at_level(logging.DEBUG):
-        archiver.rename_and_append(old, new, "MTS")
+        archiver.rename_and_append(old, new, Storage.MTS)
     captured_log = caplog.text
     assert len(responses.calls) == 1
     assert f"PV {old} isn't paused. Skipping.\n" in captured_log
@@ -560,7 +561,7 @@ def test_rename_and_append_fail_pv_not_paused(caplog: pytest.LogCaptureFixture) 
         match_querystring=True,
     )
     with caplog.at_level(logging.DEBUG):
-        archiver.rename_and_append(old, new, "MTS")
+        archiver.rename_and_append(old, new, Storage.MTS)
     captured_log = caplog.text
     assert len(responses.calls) == 2
     assert f"PV {new} isn't paused. Skipping.\n" in captured_log
@@ -595,7 +596,7 @@ def test_rename_and_append_fail_pv_error_response(
         match_querystring=True,
     )
     with caplog.at_level(logging.DEBUG):
-        archiver.rename_and_append(old, new, "MTS")
+        archiver.rename_and_append(old, new, Storage.MTS)
     captured_log = caplog.text
     LOG.info(captured_log)
     assert len(responses.calls) == 3

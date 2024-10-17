@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, cast
 
@@ -10,6 +11,14 @@ from epicsarchiver.mgmt import archive_files
 from epicsarchiver.mgmt.archiver_mgmt_info import ArchiverMgmtInfo, ArchivingStatus
 
 LOG: logging.Logger = logging.getLogger(__name__)
+
+
+class Storage(str, Enum):
+    """Represents the different storage levels of the archiver appliance."""
+
+    STS = "STS"
+    MTS = "MTS"
+    LTS = "LTS"
 
 
 class ArchiverMgmtOperations(ArchiverMgmtInfo):
@@ -248,7 +257,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         for current, new in pvs:
             self.pause_rename_resume_pv(current, new)
 
-    def rename_and_append(self, old: str, new: str, storage: str) -> None:
+    def rename_and_append(self, old: str, new: str, storage: Storage) -> None:
         """Appends the data for an older PV into a newer PV.
 
         The older PV is deleted and an alias mapping the older PV name to
@@ -258,8 +267,8 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
             old (str): The name of the older pv.
                 The data for this PV will be appended to the newer PV and then deleted.
             new (str): The name of the newer pv.
-            storage (str):  The name of the store to consolidate data before appending.
-                This is typically a string like LTS.
+            storage (Storage):  The name of the store to consolidate data
+                before appending.
 
         Returns:
             None
