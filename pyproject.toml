@@ -22,16 +22,16 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-  "numpy",
-  "pandas",
-  "requests",
-  "rich",
+  "numpy>=1.24",
+  "pandas>=2",
+  "requests>=2",
+  "rich>=13",
   "click>=8",
-  "protobuf",
-  "strictly_typed_pandas",
-  "pytz",
-  "asyncio",
-  "aiohttp",
+  "protobuf>=5",
+  "strictly_typed_pandas>=0.3",
+  "pytz>=2024.1",
+  "asyncio>=3.4",
+  "aiohttp>=3",
 ]
 dynamic = ["version"]
 
