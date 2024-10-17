@@ -13,6 +13,10 @@ from epicsarchiver.mgmt import archive_files
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
+InfoResult = Dict[str, str]
+InfoResultList = List[InfoResult]
+
+
 class ArchivingStatus(str, Enum):
     """Enum of archiving status in the archiver."""
 
@@ -100,7 +104,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         r = self._get("/getAllPVs", params=params)
         return cast(List[str], r.json())
 
-    def get_pv_status(self, pv: str | list[str]) -> list[dict[str, str]]:
+    def get_pv_status(self, pv: str | list[str]) -> InfoResultList:
         """Return the status of a PV.
 
         Args:
@@ -113,7 +117,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVStatusAction.html
         r = self._get("/getPVStatus", params={"pv": pv})
-        return cast(List[Dict[str, str]], r.json())
+        return cast(InfoResultList, r.json())
 
     def get_archiving_status(self, pv: str) -> ArchivingStatus | None:
         """Return the status of a PV.
@@ -126,7 +130,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         """
         return ArchivingStatus.from_str(self.get_pv_status(pv)[0]["status"])
 
-    def get_pv_details(self, pv: str | list[str]) -> list[dict[str, str]]:
+    def get_pv_details(self, pv: str | list[str]) -> InfoResultList:
         """Return the details of a PV.
 
         Args:
@@ -139,13 +143,13 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVDetailsAction.html
         r = self._get("/getPVDetails", params={"pv": pv})
-        return cast(List[Dict[str, str]], r.json())
+        return cast(InfoResultList, r.json())
 
     def get_pv_status_from_files(
         self,
         files: list[str],
         appliance: str | None = None,
-    ) -> list[dict[str, str]]:
+    ) -> InfoResultList:
         """Return the status of PVs from a list of files.
 
         Args:
