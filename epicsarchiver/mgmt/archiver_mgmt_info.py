@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from pathlib import Path
 from typing import Dict, List, cast
 
@@ -10,6 +11,29 @@ from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 from epicsarchiver.mgmt import archive_files
 
 LOG: logging.Logger = logging.getLogger(__name__)
+
+
+class ArchivingStatus(str, Enum):
+    """Enum of archiving status in the archiver."""
+
+    Paused = "Paused"
+    BeingArchived = "Being archived"
+    NotBeingArchived = "Not being archived"
+
+    @classmethod
+    def from_str(cls, desc: str) -> ArchivingStatus | None:
+        """Convert from a string to ArchivingStatus.
+
+        Args:
+            desc (str): input string
+
+        Returns:
+            ArchivingStatus | None: An enum representation.
+        """
+        for e in ArchivingStatus:
+            if e.value == desc:
+                return e
+        return None
 
 
 class ArchiverMgmtInfo(BaseArchiverAppliance):
@@ -90,6 +114,17 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVStatusAction.html
         r = self._get("/getPVStatus", params={"pv": pv})
         return cast(List[Dict[str, str]], r.json())
+
+    def get_archiving_status(self, pv: str) -> ArchivingStatus | None:
+        """Return the status of a PV.
+
+        Args:
+            pv: name of the pv.
+
+        Returns:
+            string representing the status
+        """
+        return ArchivingStatus.from_str(self.get_pv_status(pv)[0]["status"])
 
     def get_pv_details(self, pv: str | list[str]) -> list[dict[str, str]]:
         """Return the details of a PV.

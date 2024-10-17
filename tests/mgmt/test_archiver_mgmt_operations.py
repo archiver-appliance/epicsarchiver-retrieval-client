@@ -10,6 +10,7 @@ import pytest
 import responses
 from requests import HTTPError
 
+from epicsarchiver.mgmt.archiver_mgmt_info import ArchivingStatus
 from epicsarchiver.mgmt.archiver_mgmt_operations import (
     ArchiverMgmtOperations,
     check_result,
@@ -319,14 +320,14 @@ def test_pause_rename_resume_pv(caplog: pytest.LogCaptureFixture) -> None:
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Being archived"}],
+        json=[{"status": ArchivingStatus.BeingArchived}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Not being archived"}],
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
@@ -368,7 +369,7 @@ def test_pause_rename_resume_pv_not_archived_pv(
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Not being archived"}],
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
@@ -387,14 +388,14 @@ def test_pause_rename_resume_pv_existing_new(caplog: pytest.LogCaptureFixture) -
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Being archived"}],
+        json=[{"status": ArchivingStatus.BeingArchived}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Being archived"}],
+        json=[{"status": ArchivingStatus.BeingArchived}],
         status=200,
         match_querystring=True,
     )
@@ -413,14 +414,14 @@ def test_pause_rename_resume_pv_error_rename(caplog: pytest.LogCaptureFixture) -
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Being archived"}],
+        json=[{"status": ArchivingStatus.BeingArchived}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Not being archived"}],
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
@@ -488,14 +489,14 @@ def test_append_and_alias_pv(caplog: pytest.LogCaptureFixture) -> None:
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Paused"}],
+        json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Paused"}],
+        json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
@@ -528,7 +529,7 @@ def test_append_and_alias_pv_not_archived_pv(
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Not being archived"}],
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
@@ -547,14 +548,14 @@ def test_append_and_alias_pv_existing_new(caplog: pytest.LogCaptureFixture) -> N
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Paused"}],
+        json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Not being archived"}],
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
@@ -573,14 +574,14 @@ def test_append_and_alias_pv_error_rename(caplog: pytest.LogCaptureFixture) -> N
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Paused"}],
+        json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
         f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Paused"}],
+        json=[{"status": ArchivingStatus.Paused}],
         status=200,
         match_querystring=True,
     )

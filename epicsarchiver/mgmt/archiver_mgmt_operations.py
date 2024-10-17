@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, cast
 
 from epicsarchiver.mgmt import archive_files
-from epicsarchiver.mgmt.archiver_mgmt_info import ArchiverMgmtInfo
+from epicsarchiver.mgmt.archiver_mgmt_info import ArchiverMgmtInfo, ArchivingStatus
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -214,12 +214,12 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             None
         """
-        result = self.get_pv_status(pv)
-        if result[0]["status"] != "Being archived":
+        result = self.get_archiving_status(pv)
+        if result != ArchivingStatus.BeingArchived:
             LOG.error("PV %s isn't being archived. Skipping.\n", pv)
             return
-        result = self.get_pv_status(new)
-        if result[0]["status"] != "Not being archived":
+        result = self.get_archiving_status(new)
+        if result != ArchivingStatus.NotBeingArchived:
             LOG.error("New PV %s already exists. Skipping.\n", new)
             return
         cresult = self.pause_pv(pv)
@@ -264,14 +264,12 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             None
         """
-        result = self.get_pv_status(olderpv)
-        if result[0]["status"] != "Paused":
-            LOG.error("PV %s isn't paused. Skipping.\n", olderpv)
-            return
-        result = self.get_pv_status(newerpv)
-        if result[0]["status"] != "Paused":
-            LOG.error("PV %s isn't paused. Skipping.\n", newerpv)
-            return
+        pvs = [olderpv, newerpv]
+        for pv in pvs:
+            status = self.get_archiving_status(pv)
+            if status != ArchivingStatus.Paused:
+                LOG.error("PV %s isn't paused. Skipping.\n", pv)
+                return
         response = self._get(
             "/appendAndAliasPV",
             params={"olderpv": olderpv, "newerpv": newerpv, "storage": storage},
