@@ -10,14 +10,16 @@ from epicsarchiver.mgmt.archiver_mgmt_info import ArchiverMgmtInfo
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
+TEST_DOMAIN = "archiver.example.org"
+
 
 @responses.activate
 def test_get_all_expanded_pvs() -> None:
-    archiver = ArchiverMgmtInfo("archiver.example.org")
+    archiver = ArchiverMgmtInfo(TEST_DOMAIN)
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllExpandedPVNames",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllExpandedPVNames",
         json=data,
         status=200,
     )
@@ -28,11 +30,11 @@ def test_get_all_expanded_pvs() -> None:
 
 @responses.activate
 def test_get_all_pvs_no_argument() -> None:
-    archiver = ArchiverMgmtInfo("archiver.example.org")
+    archiver = ArchiverMgmtInfo(TEST_DOMAIN)
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=500",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs?limit=500",
         json=data,
         status=200,
         match_querystring=True,
@@ -44,11 +46,11 @@ def test_get_all_pvs_no_argument() -> None:
 
 @responses.activate
 def test_get_all_pvs_with_limit() -> None:
-    archiver = ArchiverMgmtInfo("archiver.example.org")
+    archiver = ArchiverMgmtInfo(TEST_DOMAIN)
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=1200",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs?limit=1200",
         json=data,
         status=200,
         match_querystring=True,
@@ -60,11 +62,11 @@ def test_get_all_pvs_with_limit() -> None:
 
 @responses.activate
 def test_get_all_pvs_with_pv() -> None:
-    archiver = ArchiverMgmtInfo("archiver.example.org")
+    archiver = ArchiverMgmtInfo(TEST_DOMAIN)
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?pv=KLYS*&limit=500",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs?pv=KLYS*&limit=500",
         json=data,
         status=200,
         match_querystring=True,
@@ -76,11 +78,11 @@ def test_get_all_pvs_with_pv() -> None:
 
 @responses.activate
 def test_get_all_pvs_with_regex() -> None:
-    archiver = ArchiverMgmtInfo("archiver.example.org")
+    archiver = ArchiverMgmtInfo(TEST_DOMAIN)
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?regex=foo&limit=500",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs?regex=foo&limit=500",
         json=data,
         status=200,
         match_querystring=True,
@@ -92,11 +94,11 @@ def test_get_all_pvs_with_regex() -> None:
 
 @responses.activate
 def test_get_pv_status() -> None:
-    archiver = ArchiverMgmtInfo("archiver.example.org")
+    archiver = ArchiverMgmtInfo(TEST_DOMAIN)
     data = [{"pvName": "mypv"}]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv=mypv",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv=mypv",
         json=data,
         status=200,
         match_querystring=True,
