@@ -283,7 +283,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
             "/appendAndAliasPV",
             params={"olderpv": old, "newerpv": new, "storage": storage},
         )
-        LOG.debug("append_and_alias_pv response %s", response.json())
+        LOG.debug("/appendAndAliasPV response %s", response.json())
         result = cast(List[Dict[str, str]], response.json())
         if not check_result(result, f"Error while append_and_alias_pv {old}, {new}"):
             return
