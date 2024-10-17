@@ -1,4 +1,4 @@
-"""Tests for `epicsarchiver` package."""
+"""Tests for archiver mgmt operations module."""
 
 from __future__ import annotations
 
@@ -10,118 +10,30 @@ import pytest
 import responses
 from requests import HTTPError
 
-from epicsarchiver.mgmt.archiver_mgmt import ArchiverMgmt, check_result
+from epicsarchiver.mgmt.archiver_mgmt_info import ArchivingStatus
+from epicsarchiver.mgmt.archiver_mgmt_operations import (
+    ArchiverMgmtOperations,
+    Storage,
+    check_result,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
-
-@responses.activate
-def test_get_all_expanded_pvs() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllExpandedPVNames",
-        json=data,
-        status=200,
-    )
-    pvs = archiver.get_all_expanded_pvs()
-    assert len(responses.calls) == 1
-    assert pvs == data
-
-
-@responses.activate
-def test_get_all_pvs_no_argument() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=500",
-        json=data,
-        status=200,
-        match_querystring=True,
-    )
-    pvs = archiver.get_all_pvs()
-    assert len(responses.calls) == 1
-    assert pvs == data
-
-
-@responses.activate
-def test_get_all_pvs_with_limit() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?limit=1200",
-        json=data,
-        status=200,
-        match_querystring=True,
-    )
-    pvs = archiver.get_all_pvs(limit=1200)
-    assert len(responses.calls) == 1
-    assert pvs == data
-
-
-@responses.activate
-def test_get_all_pvs_with_pv() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?pv=KLYS*&limit=500",
-        json=data,
-        status=200,
-        match_querystring=True,
-    )
-    pvs = archiver.get_all_pvs(pv_query="KLYS*")
-    assert len(responses.calls) == 1
-    assert pvs == data
-
-
-@responses.activate
-def test_get_all_pvs_with_regex() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getAllPVs?regex=foo&limit=500",
-        json=data,
-        status=200,
-        match_querystring=True,
-    )
-    pvs = archiver.get_all_pvs(regex="foo")
-    assert len(responses.calls) == 1
-    assert pvs == data
-
-
-@responses.activate
-def test_get_pv_status() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
-    data = [{"pvName": "mypv"}]
-    responses.add(
-        responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv=mypv",
-        json=data,
-        status=200,
-        match_querystring=True,
-    )
-    pvs = archiver.get_pv_status("mypv")
-    assert len(responses.calls) == 1
-    assert pvs == data
+TEST_DOMAIN = "archiver.example.org"
 
 
 @responses.activate
 def test_archive_pv() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = [
         {"pvName": "ISrc-010:HVAC-HT:AmbHumR", "status": "Archive request submitted"},
     ]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/archivePV?pv=ISrc-010%3AHVAC-HT%3AAmbHumR",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/archivePV?pv=ISrc-010%3AHVAC-HT%3AAmbHumR",
         json=data,
         status=200,
         match_querystring=True,
@@ -133,13 +45,13 @@ def test_archive_pv() -> None:
 
 @responses.activate
 def test_archive_pv_with_extra_args() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = [
         {"pvName": "ISrc-010:HVAC-HT:AmbHumR", "status": "Archive request submitted"},
     ]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/archivePV?pv=ISrc-010%3AHVAC-HT%3AAmbHumR&samplingperiod=2.0&samplingmethod=SCAN",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/archivePV?pv=ISrc-010%3AHVAC-HT%3AAmbHumR&samplingperiod=2.0&samplingmethod=SCAN",
         json=data,
         status=200,
         match_querystring=True,
@@ -155,11 +67,11 @@ def test_archive_pv_with_extra_args() -> None:
 
 @responses.activate
 def test_archive_pvs() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = [{"pvName": "MY:PV", "status": "Already submitted"}]
     responses.add(
         responses.POST,
-        "http://archiver.example.org:17665/mgmt/bpl/archivePV",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/archivePV",
         json=data,
         status=200,
     )
@@ -187,7 +99,7 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
     pvs2 = [{"pv": "LEBT-010:PBI-NPM-001:HCAM-COM", "policy": "slow"}]
     file2 = tmp.joinpath("file2")
     file2.open("w").write(pvs2[0]["pv"] + " " + pvs2[0]["policy"] + "\n")
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = [
         {"pvName": "LEBT-010:PBI-NPM-001:HCAM-COM", "status": "Already submitted"},
         {
@@ -201,7 +113,7 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
     ]
     responses.add(
         responses.POST,
-        "http://archiver.example.org:17665/mgmt/bpl/archivePV",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/archivePV",
         json=data,
         status=200,
     )
@@ -229,7 +141,7 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
 
 @responses.activate
 def test_pause_pv_single() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = [
         {
             "pvName": "MY:PV",
@@ -246,7 +158,7 @@ def test_pause_pv_single() -> None:
     pv = "KLYS*"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/pauseArchivingPV?pv={pv}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/pauseArchivingPV?pv={pv}",
         json=data,
         status=200,
         match_querystring=True,
@@ -258,12 +170,12 @@ def test_pause_pv_single() -> None:
 
 @responses.activate
 def test_pause_pv_comma_separated_list() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = [{"validation": "Unable to pause PV MY:PV"}]
     pvs = "mypv1,mypv2"
     responses.add(
         responses.POST,
-        "http://archiver.example.org:17665/mgmt/bpl/pauseArchivingPV",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/pauseArchivingPV",
         json=data,
         status=200,
         match_querystring=True,
@@ -279,12 +191,12 @@ def test_pause_pv_comma_separated_list() -> None:
 
 @responses.activate
 def test_resume_pv_single() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = [{"validation": "Unable to resume PV MY:PV"}]
     pv = "KLYS*"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/resumeArchivingPV?pv={pv}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/resumeArchivingPV?pv={pv}",
         json=data,
         status=200,
         match_querystring=True,
@@ -296,7 +208,7 @@ def test_resume_pv_single() -> None:
 
 @responses.activate
 def test_resume_pv_comma_separated_list() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = [
         {"validation": "Unable to pause PV mypv1"},
         {"validation": "Unable to pause PV mypv2"},
@@ -304,7 +216,7 @@ def test_resume_pv_comma_separated_list() -> None:
     pvs = "mypv1,mypv2"
     responses.add(
         responses.POST,
-        "http://archiver.example.org:17665/mgmt/bpl/resumeArchivingPV",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/resumeArchivingPV",
         json=data,
         status=200,
         match_querystring=True,
@@ -320,12 +232,12 @@ def test_resume_pv_comma_separated_list() -> None:
 
 @responses.activate
 def test_abort_pv() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/abortArchivingPV?pv=LEBT-010%3APBI-NPM-001%3AHCAM-COM",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/abortArchivingPV?pv=LEBT-010%3APBI-NPM-001%3AHCAM-COM",
         json=data,
         status=200,
         match_querystring=True,
@@ -337,12 +249,12 @@ def test_abort_pv() -> None:
 
 @responses.activate
 def test_delete_pv_data_false() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/deletePV?pv=LEBT-010%3APBI-NPM-001%3AHCAM-COM&delete_data=False",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/deletePV?pv=LEBT-010%3APBI-NPM-001%3AHCAM-COM&delete_data=False",
         json=data,
         status=200,
         match_querystring=True,
@@ -354,12 +266,12 @@ def test_delete_pv_data_false() -> None:
 
 @responses.activate
 def test_delete_pv_data_true() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = ["1", "2", "3"]
     pv = "LEBT-010:PBI-NPM-001:HCAM-COM"
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/deletePV?pv=LEBT-010%3APBI-NPM-001%3AHCAM-COM&delete_data=True",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/deletePV?pv=LEBT-010%3APBI-NPM-001%3AHCAM-COM&delete_data=True",
         json=data,
         status=200,
         match_querystring=True,
@@ -371,12 +283,12 @@ def test_delete_pv_data_true() -> None:
 
 @responses.activate
 def test_update_pv() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = ["1", "2", "3"]
     pv = "mypv"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/changeArchivalParameters?pv={pv}&samplingperiod=2.0",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/changeArchivalParameters?pv={pv}&samplingperiod=2.0",
         json=data,
         status=200,
         match_querystring=True,
@@ -388,12 +300,12 @@ def test_update_pv() -> None:
 
 @responses.activate
 def test_update_pv_samplingmethod() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     data = ["1", "2", "3"]
     pv = "mypv"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/changeArchivalParameters?pv={pv}&samplingperiod=2.0&samplingmethod=SCAN",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/changeArchivalParameters?pv={pv}&samplingperiod=2.0&samplingmethod=SCAN",
         json=data,
         status=200,
         match_querystring=True,
@@ -405,40 +317,40 @@ def test_update_pv_samplingmethod() -> None:
 
 @responses.activate
 def test_pause_rename_resume_pv(caplog: pytest.LogCaptureFixture) -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Being archived"}],
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": ArchivingStatus.BeingArchived}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Not being archived"}],
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/pauseArchivingPV?pv={pv}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/pauseArchivingPV?pv={pv}",
         json={"status": "ok"},
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/renamePV?pv={pv}&newname={newname}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/renamePV?pv={pv}&newname={newname}",
         json={"status": "ok"},
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/resumeArchivingPV?pv={newname}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/resumeArchivingPV?pv={newname}",
         json={"status": "ok"},
         status=200,
         match_querystring=True,
@@ -454,13 +366,13 @@ def test_pause_rename_resume_pv(caplog: pytest.LogCaptureFixture) -> None:
 def test_pause_rename_resume_pv_not_archived_pv(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Not being archived"}],
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
@@ -473,20 +385,20 @@ def test_pause_rename_resume_pv_not_archived_pv(
 
 @responses.activate
 def test_pause_rename_resume_pv_existing_new(caplog: pytest.LogCaptureFixture) -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Being archived"}],
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": ArchivingStatus.BeingArchived}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Being archived"}],
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": ArchivingStatus.BeingArchived}],
         status=200,
         match_querystring=True,
     )
@@ -499,33 +411,33 @@ def test_pause_rename_resume_pv_existing_new(caplog: pytest.LogCaptureFixture) -
 
 @responses.activate
 def test_pause_rename_resume_pv_error_rename(caplog: pytest.LogCaptureFixture) -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={pv}",
-        json=[{"status": "Being archived"}],
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={pv}",
+        json=[{"status": ArchivingStatus.BeingArchived}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/getPVStatus?pv={newname}",
-        json=[{"status": "Not being archived"}],
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={newname}",
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/pauseArchivingPV?pv={pv}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/pauseArchivingPV?pv={pv}",
         json={"status": "ok"},
         status=200,
         match_querystring=True,
     )
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/renamePV?pv={pv}&newname={newname}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/renamePV?pv={pv}&newname={newname}",
         json={"validation": "error during rename"},
         status=200,
         match_querystring=True,
@@ -540,12 +452,12 @@ def test_pause_rename_resume_pv_error_rename(caplog: pytest.LogCaptureFixture) -
 
 @responses.activate
 def test_add_alias_ok(caplog: pytest.LogCaptureFixture) -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/addAlias?pv={pv}&aliasname={newname}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/addAlias?pv={pv}&aliasname={newname}",
         json={"status": "ok", "desc": f"Added an alias {newname} for PV {pv}"},
         status=200,
         match_querystring=True,
@@ -559,17 +471,138 @@ def test_add_alias_ok(caplog: pytest.LogCaptureFixture) -> None:
 
 @responses.activate
 def test_add_alias_pv_does_not_exist() -> None:
-    archiver = ArchiverMgmt("archiver.example.org")
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
     pv = "MY:PV"
     newname = "NEW:PV"
     responses.add(
         responses.GET,
-        f"http://archiver.example.org:17665/mgmt/bpl/addAlias?pv={pv}&aliasname={newname}",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/addAlias?pv={pv}&aliasname={newname}",
         status=500,
         match_querystring=True,
     )
     with pytest.raises(HTTPError):
         archiver.add_alias(pv, newname)
+
+
+@responses.activate
+def test_rename_and_append_success(caplog: pytest.LogCaptureFixture) -> None:
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
+    old = "MY:PV"
+    new = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={old}",
+        json=[{"status": ArchivingStatus.Paused}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={new}",
+        json=[{"status": ArchivingStatus.Paused}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/appendAndAliasPV?olderpv={old}&newerpv={new}&storage=MTS",
+        json={
+            "addAlias": "ok",
+            "deleteOlder": "ok",
+            "deleteNewer": "ok",
+            "status": "ok",
+        },
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.rename_and_append(old, new, Storage.MTS)
+    captured_log = caplog.text
+    assert len(responses.calls) == 3
+    assert f"PV {old} successfully appended and aliased to {new}\n" in captured_log
+
+
+@responses.activate
+def test_rename_and_append_fail_not_archived_pv(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
+    old = "MY:PV"
+    new = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={old}",
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.rename_and_append(old, new, Storage.MTS)
+    captured_log = caplog.text
+    assert len(responses.calls) == 1
+    assert f"PV {old} isn't paused. Skipping.\n" in captured_log
+
+
+@responses.activate
+def test_rename_and_append_fail_pv_not_paused(caplog: pytest.LogCaptureFixture) -> None:
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
+    old = "MY:PV"
+    new = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={old}",
+        json=[{"status": ArchivingStatus.Paused}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={new}",
+        json=[{"status": ArchivingStatus.NotBeingArchived}],
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.rename_and_append(old, new, Storage.MTS)
+    captured_log = caplog.text
+    assert len(responses.calls) == 2
+    assert f"PV {new} isn't paused. Skipping.\n" in captured_log
+
+
+@responses.activate
+def test_rename_and_append_fail_pv_error_response(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
+    old = "MY:PV"
+    new = "NEW:PV"
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={old}",
+        json=[{"status": ArchivingStatus.Paused}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv={new}",
+        json=[{"status": ArchivingStatus.Paused}],
+        status=200,
+        match_querystring=True,
+    )
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/appendAndAliasPV?olderpv={old}&newerpv={new}&storage=MTS",
+        json={"validation": "error during appendAndAliasPV"},
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.rename_and_append(old, new, Storage.MTS)
+    captured_log = caplog.text
+    LOG.info(captured_log)
+    assert len(responses.calls) == 3
+    assert "error during appendAndAliasPV" in captured_log
 
 
 @pytest.mark.parametrize(
