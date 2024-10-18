@@ -43,6 +43,13 @@ class ProcessorName(str, enum.Enum):
     POPVARIANCE = "popvariance"
     KURTOSIS = "kurtosis"
     SKEWNESS = "skewness"
+    LINEAR = "linear"
+    LOESS = "loess"
+    OPTIMIZED = "optimized"
+    OPTIMLASTSAMPLE = "optimLastSample"
+    CAPLOTBINNING = "caplotbinning"
+    DEADBAND = "deadBand"
+    ERRORBAR = "errorbar"
 
 
 @dataclass
