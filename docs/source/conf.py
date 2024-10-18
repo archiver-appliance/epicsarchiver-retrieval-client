@@ -69,4 +69,9 @@ myst_deflist_enable = True
 myst_enable_extensions = [
     "colon_fence",
 ]
+
+# Don't execute notebooks in documentation building
 nb_execution_mode = "off"
+
+# Ignore highlighting ansi in notebooks
+supress_warnings = ["misc.highlighting_failure"]
