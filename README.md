@@ -19,7 +19,7 @@ pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/p
 
 ## Quick start
 
-The package also installs a command line tool. Used to fetch data from the archiver and display in the terminal. 
+The package also installs a command line tool. Used to fetch data from the archiver and display in the terminal.
 
 ```console
 $ epicsarchiver get --help
@@ -44,7 +44,7 @@ Options:
                                   End time of query, [default: now]
   -p, --processor-name [FIRSTSAMPLE|LASTSAMPLE|FIRSTFILL|LASTFILL|MEAN|MIN|MAX|COUNT|NCOUNT|NTH|MEDIAN|STD|JITTER|IGNOREFLYERS|FLYERS|VARIANCE|POPVARIANCE|KURTOSIS|SKEWNESS|LINEAR|LOESS|OPTIMIZED|OPTIMLASTSAMPLE|CAPLOTBINNING|DEADBAND|ERRORBAR]
                                   PreProcessor to use
-                                  
+
                                   Docs at https://epicsarchiver.readthedocs.io/en/latest/user/userguide.html#processing-of-data
   -b, --bin_size INTEGER          Bin size (mostly in seconds) for
                                   preprocessor.
@@ -54,7 +54,7 @@ Options:
 Note you can also specify a hostname for the archiver either with an environment variable:
 
 ```console
-export EPICSARCHIVER_HOSTNAME=archiver-01.example.com 
+export EPICSARCHIVER_HOSTNAME=archiver-01.example.com
 ````
 
 To fetch events using the python library:

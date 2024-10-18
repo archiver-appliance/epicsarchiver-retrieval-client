@@ -1347,7 +1347,7 @@ class PayloadInfo(google.protobuf.message.Message):
     year: builtins.int
     elementCount: builtins.int
     unused00: builtins.float
-    """Items from 5 to 14 are no longer to be used. 
+    """Items from 5 to 14 are no longer to be used.
     Stick these into the headers using the field names
     For example, units comes in as EGU in the headers.
     """
