@@ -9,7 +9,7 @@ from importlib.metadata import version as get_version
 # -- Project information -----------------------------------------------------
 
 project = "epicsarchiver"
-copyright = "2023, European Spallation Source ERIC"  # noqa: A001
+copyright = "2024, European Spallation Source ERIC"  # noqa: A001
 authors = ["Benjamin Bertrand", "Sky Brewer"]
 release = get_version("py-epicsarchiver")
 version = ".".join(release.split(".")[0:2])
