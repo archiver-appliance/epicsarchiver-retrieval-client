@@ -20,7 +20,7 @@ LOG: logging.Logger = logging.getLogger(__name__)
 ARCHIVER_ALIASES = ["tn", "nin", "lab"]
 
 
-@click.command()
+@click.command(context_settings={"show_default": True})
 @click.option(
     "--debug",
     is_flag=True,
@@ -175,7 +175,7 @@ def stats(  # noqa: PLR0917, PLR0913
     ctx.exit(0)
 
 
-@click.command()
+@click.command(context_settings={"show_default": True})
 @click.option(
     "--debug",
     is_flag=True,
@@ -193,6 +193,7 @@ def stats(  # noqa: PLR0917, PLR0913
 @click.option(
     "--config-gitlab-repo",
     "-d",
+    default="archiver-appliance/archiver-appliance-config-aa-linac-prod",
     type=click.Path(path_type=Path),
     help="Gitlab repo for files with lists of PVs",
 )

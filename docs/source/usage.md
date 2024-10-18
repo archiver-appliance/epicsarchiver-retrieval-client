@@ -1,4 +1,4 @@
-# Usage
+# Command Line Documentation
 
 ```{eval-rst}
 .. click:: epicsarchiver.command:cli

@@ -10,6 +10,10 @@ default:
   tags:
     - docker
 
+include:
+  - project: "ics-infrastructure/gitlab-ci-yml"
+    file: "PreCommit.gitlab-ci.yml"
+
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
 cache:
@@ -28,11 +32,16 @@ stages:
 before_script:
   - python --version  # For debugging
   - pip install hatch
-  
+
 .parallel:
   parallel:
     matrix:
       - IMAGE: [python:3.8, python:3.9, python:3.10, python:3.11, python:3.12]
+
+run-pre-commit:
+  before_script:
+    - python --version  # For debugging
+    - pip install hatch
 
 test:
   stage: test
@@ -66,9 +75,13 @@ lint:
   script:
     - hatch fmt --check
     - hatch run types:check
-    - hatch run docs:check
   parallel: !reference [.parallel,parallel]
 
+lint-docs:
+  stage: check
+  image: python:3.12
+  script:
+    - hatch run docs:check
 
 build:
   stage: build
@@ -84,7 +97,7 @@ build:
 
 pages:
   stage: deploy
-  image: python:3.10
+  image: python:3.12
   script:
     - hatch run docs:build
     - mv docs/build/html public

@@ -2,20 +2,28 @@
 ```{include} ../../README.md
 ```
 
-[license]: license
-[command-line reference]: usage
-[reference]: autoapi
 
 ```{toctree}
----
-hidden:
-maxdepth: 1
----
+:hidden:
+:caption: Reference
 
-usage
-changelog
 installation
 License <license>
+```
+
+```{toctree}
+:hidden:
+:caption: Terminal Interface
+
+usage
+notebooks/CmdLine
+```
+
+```{toctree}
+:hidden:
+:caption: Python Library
+
+notebooks/Library
 ```
 
 ```{eval-rst}
@@ -23,3 +31,7 @@ License <license>
 * :ref:`modindex`
 * :ref:`search`
 ```
+
+[license]: license
+[command-line reference]: usage
+[reference]: autoapi

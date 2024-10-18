@@ -1,6 +1,5 @@
 # Python EPICS Archiver Appliance library
 
-![black status](https://img.shields.io/badge/code%20style-black-000000.svg)
 ![pipeline status](https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/pipeline.svg)
 ![code coverage](https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/coverage.svg)
 
@@ -23,23 +22,40 @@ pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/p
 The package also installs a command line tool. Used to fetch data from the archiver and display in the terminal.
 
 ```console
-$ epicsarchiver --help
-Usage: epicsarchiver [OPTIONS] COMMAND [ARGS]...
+$ epicsarchiver get --help
+Usage: epicsarchiver get [OPTIONS] PV
 
-  Command line tool for interacting with the archiver.
+  Print out data from an archiver cluster.
+
+  ARGUMENT pv What pv to get data of.
+
+  Example usage:
+
+  .. code-block:: console
+
+      epicsarchiver --hostname archiver-01.example.com get PV_NAME
 
 Options:
-  --version            Show the version and exit.
-  -h, --hostname TEXT  Achiver Appliance hostname or IP [default: localhost]
-  --help               Show this message and exit.
+  --debug                         Turn on debug logging
+  -s, --start [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S|%Y-%m-%dT%H:%M:%S.%f|%Y-%m-%d %H:%M:%S.%f]
+                                  Start time of query [default: 30 seconds
+                                  ago]
+  -e, --end [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S|%Y-%m-%dT%H:%M:%S.%f|%Y-%m-%d %H:%M:%S.%f]
+                                  End time of query, [default: now]
+  -p, --processor-name [FIRSTSAMPLE|LASTSAMPLE|FIRSTFILL|LASTFILL|MEAN|MIN|MAX|COUNT|NCOUNT|NTH|MEDIAN|STD|JITTER|IGNOREFLYERS|FLYERS|VARIANCE|POPVARIANCE|KURTOSIS|SKEWNESS|LINEAR|LOESS|OPTIMIZED|OPTIMLASTSAMPLE|CAPLOTBINNING|DEADBAND|ERRORBAR]
+                                  PreProcessor to use
 
-Commands:
-  archive    Archive all PVs included in the files passed as parameters.
-  get        Print out data from an archiver cluster.
-  ioc-check  Print out statistics of a single IOC from an archiver cluster.
-  rename     Rename all PVs included in the files passed as parameters.
-  stats      Print out statistics from an archiver cluster.
+                                  Docs at https://epicsarchiver.readthedocs.io/en/latest/user/userguide.html#processing-of-data
+  -b, --bin_size INTEGER          Bin size (mostly in seconds) for
+                                  preprocessor.
+  --help                          Show this message and exit.
 ```
+
+Note you can also specify a hostname for the archiver either with an environment variable:
+
+```console
+export EPICSARCHIVER_HOSTNAME=archiver-01.example.com
+````
 
 To fetch events using the python library:
 

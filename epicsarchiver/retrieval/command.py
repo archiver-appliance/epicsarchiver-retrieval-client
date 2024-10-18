@@ -29,7 +29,7 @@ DATE_FORMATS = [
 ]
 
 
-@click.command()
+@click.command(context_settings={"show_default": True})
 @click.option(
     "--debug",
     is_flag=True,
@@ -42,14 +42,16 @@ DATE_FORMATS = [
     "-s",
     default=(datetime.now(tz=UTC) - timedelta(seconds=30)).strftime(DATE_FORMATS[2]),
     type=click.DateTime(formats=DATE_FORMATS),
-    help="Start time of query",
+    show_default=False,
+    help="Start time of query [default: 30 seconds ago]",
 )
 @click.option(
     "--end",
     "-e",
     default=str(datetime.now(tz=UTC).strftime(DATE_FORMATS[2])),
     type=click.DateTime(formats=DATE_FORMATS),
-    help="End time of query",
+    show_default=False,
+    help="End time of query, [default: now]",
 )
 @click.option(
     "--processor-name",
@@ -57,7 +59,11 @@ DATE_FORMATS = [
     type=click.Choice(
         [processor.name for processor in ProcessorName], case_sensitive=False
     ),
-    help="PreProcessor to use",
+    help="""PreProcessor to use
+
+        \b
+        Docs at https://epicsarchiver.readthedocs.io/en/latest/user/userguide.html#processing-of-data
+    """,
 )
 @click.option(
     "--bin_size",
@@ -81,7 +87,7 @@ def get(  # noqa: PLR0917, PLR0913
 ) -> None:
     """Print out data from an archiver cluster.
 
-    ARGUEMENT pv What pv to get data of.
+    ARGUMENT pv What pv to get data of.
 
     Example usage:
 

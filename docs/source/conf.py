@@ -9,7 +9,7 @@ from importlib.metadata import version as get_version
 # -- Project information -----------------------------------------------------
 
 project = "epicsarchiver"
-copyright = "2023, European Spallation Source ERIC"  # noqa: A001
+copyright = "2024, European Spallation Source ERIC"  # noqa: A001
 authors = ["Benjamin Bertrand", "Sky Brewer"]
 release = get_version("py-epicsarchiver")
 version = ".".join(release.split(".")[0:2])
@@ -21,7 +21,7 @@ version = ".".join(release.split(".")[0:2])
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "myst_parser",
+    "myst_nb",
     "sphinx_click",
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
@@ -69,3 +69,9 @@ myst_deflist_enable = True
 myst_enable_extensions = [
     "colon_fence",
 ]
+
+# Don't execute notebooks in documentation building
+nb_execution_mode = "off"
+
+# Ignore highlighting ansi in notebooks
+supress_warnings = ["misc.highlighting_failure"]
