@@ -38,6 +38,11 @@ before_script:
     matrix:
       - IMAGE: [python:3.8, python:3.9, python:3.10, python:3.11, python:3.12]
 
+run-pre-commit:
+  before_script:
+    - python --version  # For debugging
+    - pip install hatch
+
 test:
   stage: test
   image: $IMAGE
