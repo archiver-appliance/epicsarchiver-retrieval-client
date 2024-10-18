@@ -22,7 +22,7 @@ pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/p
 The package also installs a command line tool. Used to fetch data from the archiver and display in the terminal. 
 
 ```console
-$ epicsarchiver get--help
+$ epicsarchiver get --help
 Usage: epicsarchiver get [OPTIONS] PV
 
   Print out data from an archiver cluster.
