@@ -10,6 +10,10 @@ default:
   tags:
     - docker
 
+include:
+  - project: "ics-infrastructure/gitlab-ci-yml"
+    file: "PreCommit.gitlab-ci.yml"
+
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
 cache:
@@ -28,7 +32,7 @@ stages:
 before_script:
   - python --version  # For debugging
   - pip install hatch
-  
+
 .parallel:
   parallel:
     matrix:
