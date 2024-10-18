@@ -20,7 +20,13 @@ if TYPE_CHECKING:
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
-DATE_FORMATS = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]
+DATE_FORMATS = [
+    "%Y-%m-%d",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%dT%H:%M:%S.%f",
+    "%Y-%m-%d %H:%M:%S.%f",
+]
 
 
 @click.command()

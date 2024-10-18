@@ -19,6 +19,7 @@ LOG: logging.Logger = logging.getLogger(__name__)
     "-h",
     default="localhost",
     type=str,
+    envvar="EPICSARCHIVER_HOSTNAME",
     help="Achiver Appliance hostname or IP [default: localhost]",
 )
 @click.pass_context
