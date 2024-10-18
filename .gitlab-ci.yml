@@ -66,9 +66,13 @@ lint:
   script:
     - hatch fmt --check
     - hatch run types:check
-    - hatch run docs:check
   parallel: !reference [.parallel,parallel]
 
+lint-docs:
+  stage: check
+  image: python:3.12
+  script:
+    - hatch run docs:check
 
 build:
   stage: build
@@ -84,7 +88,7 @@ build:
 
 pages:
   stage: deploy
-  image: python:3.10
+  image: python:3.12
   script:
     - hatch run docs:build
     - mv docs/build/html public
