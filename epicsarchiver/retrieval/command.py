@@ -59,7 +59,11 @@ DATE_FORMATS = [
     type=click.Choice(
         [processor.name for processor in ProcessorName], case_sensitive=False
     ),
-    help="PreProcessor to use",
+    help="""PreProcessor to use
+
+        \b
+        Docs at https://epicsarchiver.readthedocs.io/en/latest/user/userguide.html#processing-of-data
+    """,
 )
 @click.option(
     "--bin_size",
@@ -83,7 +87,7 @@ def get(  # noqa: PLR0917, PLR0913
 ) -> None:
     """Print out data from an archiver cluster.
 
-    ARGUEMENT pv What pv to get data of.
+    ARGUMENT pv What pv to get data of.
 
     Example usage:
 

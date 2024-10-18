@@ -4,9 +4,8 @@
 
 
 ```{toctree}
----
 :hidden:
-:maxdepth: 1
+:caption: Reference
 
 installation
 License <license>
@@ -14,7 +13,6 @@ License <license>
 
 ```{toctree}
 :hidden:
-:maxdepth: 
 :caption: Terminal Interface
 
 usage
@@ -23,7 +21,6 @@ notebooks/CmdLine
 
 ```{toctree}
 :hidden:
-:maxdepth: 2
 :caption: Python Library
 
 notebooks/Library
