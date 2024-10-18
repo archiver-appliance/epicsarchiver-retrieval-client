@@ -1,6 +1,5 @@
 # Python EPICS Archiver Appliance library
 
-![black status](https://img.shields.io/badge/code%20style-black-000000.svg)
 ![pipeline status](https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/pipeline.svg)
 ![code coverage](https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/coverage.svg)
 
