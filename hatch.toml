@@ -54,7 +54,6 @@ check = "mypy --install-types --non-interactive {args:./epicsarchiver ./tests}"
 
 [envs.docs]
 extra-dependencies = [
-  "myst-parser",
   "sphinx",
   "sphinx-copybutton>=0.5.1",
   "sphinx-click",
