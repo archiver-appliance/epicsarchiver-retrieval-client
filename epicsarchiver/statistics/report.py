@@ -404,10 +404,10 @@ def _invert_data(data: dict[Stat, dict[str, BaseStatResponse]]) -> dict[str, PVS
         dict[str, PVStats]: Output with Pv name keys.
     """
     dict_data: dict[str, dict[Stat, BaseStatResponse]] = {}
-    for stat in data:
-        for pv in data[stat]:
+    for stat, stat_item in data.items():
+        for pv in stat_item:
             if pv not in dict_data:
                 dict_data[pv] = {}
-            dict_data[pv][stat] = data[stat][pv]
+            dict_data[pv][stat] = stat_item[pv]
     output = {pv: PVStats(pv, dict_data[pv]) for pv in dict_data}
     return dict(sorted(output.items()))
