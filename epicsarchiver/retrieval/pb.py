@@ -117,6 +117,7 @@ def unescape_bytes(byte_seq: bytes) -> bytes:
 
     Args:
         byte_seq: any byte sequence
+
     Returns:
         the byte sequence unescaped according to the AA file format rules
     """
@@ -133,6 +134,7 @@ def escape_bytes(byte_seq: bytes) -> bytes:
 
     Args:
         byte_seq: any byte sequence
+
     Returns:
         the byte sequence escaped according to the AA file format rules
     """

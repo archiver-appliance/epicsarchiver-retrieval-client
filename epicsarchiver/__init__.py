@@ -2,13 +2,7 @@
 
 from epicsarchiver import common, epicsarchiver, mgmt, retrieval, statistics
 
-__all__ = [
-    "common",
-    "epicsarchiver",
-    "mgmt",
-    "retrieval",
-    "statistics"
-]
+__all__ = ["common", "epicsarchiver", "mgmt", "retrieval", "statistics"]
 
 from epicsarchiver.epicsarchiver import (
     ArchiverAppliance,

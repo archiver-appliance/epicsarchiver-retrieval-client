@@ -125,7 +125,15 @@ class ArchiverReport:
         statistic: Stat,
         archiver: ArchiverWrapper,
     ) -> Sequence[BaseStatResponse]:
-        """Produce a list of PVs and stats."""
+        """Produce a list of PVs and stats.
+
+        Args:
+            statistic (Stat): Statistic to fetch
+            archiver (ArchiverWrapper): Archiver to request against
+
+        Returns:
+            Sequence[BaseStatResponse]: Sequence of statistic responses
+        """
         if statistic == Stat.BufferOverflow:
             return [
                 f
@@ -221,7 +229,15 @@ class ArchiverReport:
         statistic: Stat,
         archiver: ArchiverWrapper,
     ) -> dict[str, BaseStatResponse]:
-        """Produce a list of PVs and stats."""
+        """Produce a list of PVs and stats.
+
+        Args:
+            statistic (Stat): Statistic to generate data from
+            archiver (ArchiverWrapper): Archiver to check against
+
+        Returns:
+            dict[str, BaseStatResponse]: dictionary of pvs to statistics
+        """
         responses = await self._get_responses(statistic, archiver)
         LOG.info("Found %s responses for %s", len(responses), statistic)
         return {r.pv_name: r for r in responses}

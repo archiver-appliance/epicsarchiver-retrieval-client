@@ -127,7 +127,14 @@ class DisconnectedPVsResponse(BaseStatResponse):
 
     @classmethod
     def from_json(cls, json: dict[str, str]) -> DisconnectedPVsResponse:
-        """Response from the endpoint in getCurrentlyDisconnectedPVs."""
+        """Response from the endpoint in getCurrentlyDisconnectedPVs.
+
+        Args:
+            json (dict[str, str]): Input json
+
+        Returns:
+            DisconnectedPVsResponse: Output dataclass
+        """
         return DisconnectedPVsResponse(
             json["pvName"],
             json["hostName"],
@@ -171,7 +178,14 @@ class SilentPVsResponse(BaseStatResponse):
 
     @classmethod
     def from_json(cls, json: dict[str, str]) -> SilentPVsResponse:
-        """Response from the endpoint in getSilentPVsReport."""
+        """Response from the endpoint in getSilentPVsReport.
+
+        Args:
+            json (dict[str, str]): Input json
+
+        Returns:
+            SilentPVsResponse: Output dataclass
+        """
         return SilentPVsResponse(
             json["pvName"],
             json["instance"],
@@ -222,7 +236,14 @@ class LostConnectionsResponse(BaseStatResponse):
 
     @classmethod
     def from_json(cls, json: dict[str, str]) -> LostConnectionsResponse:
-        """Response from the endpoint in getLostConnectionsReport."""
+        """Response from the endpoint in getLostConnectionsReport.
+
+        Args:
+            json (dict[str, str]): Input json
+
+        Returns:
+            LostConnectionsResponse: Output dataclass
+        """
         return LostConnectionsResponse(
             json["pvName"],
             ConnectionStatus.CurrentlyConnected
@@ -265,7 +286,14 @@ class StorageRatesResponse(BaseStatResponse):
 
     @classmethod
     def from_json(cls, json: dict[str, str]) -> StorageRatesResponse:
-        """Response from the endpoint in getStorageRateReport."""
+        """Response from the endpoint in getStorageRateReport.
+
+        Args:
+            json (dict[str, str]): _description_
+
+        Returns:
+            StorageRatesResponse: _description_
+        """
         return StorageRatesResponse(
             json["pvName"],
             float(json["storageRate_MBperDay"]),
@@ -307,7 +335,14 @@ class PausedPVResponse(BaseStatResponse):
 
     @classmethod
     def from_json(cls, json: dict[str, str]) -> PausedPVResponse:
-        """Response from the endpoint in getPausedPVsReport."""
+        """Response from the endpoint in getPausedPVsReport.
+
+        Args:
+            json (dict[str, str]): Input json format
+
+        Returns:
+            PausedPVResponse: Output dataclass
+        """
         return PausedPVResponse(
             json["pvName"],
             json["instance"],
@@ -370,7 +405,14 @@ class Ioc:
 
     @classmethod
     def from_channel(cls, channel: Channel) -> Ioc:
-        """Gets IOC info from a channel."""
+        """Gets IOC info from a channel.
+
+        Args:
+            channel (Channel): Input channel
+
+        Returns:
+            Ioc: The Ioc matched to the channel
+        """
         return Ioc(channel.properties["hostName"], channel.properties["iocName"])
 
 

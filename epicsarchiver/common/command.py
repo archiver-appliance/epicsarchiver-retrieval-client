@@ -18,7 +18,17 @@ def handle_debug(
     _param: click.core.Option | click.core.Parameter | None,
     debug: bool | int | str,  # noqa: FBT001
 ) -> bool | int | str:
-    """Turn on DEBUG logs, if asked otherwise INFO default."""
+    """Turn on DEBUG logs, if asked otherwise INFO default.
+
+    Args:
+        _ctx (click.core.Context | None): click context
+        _param (click.core.Option | click.core.Parameter | None): click paramters
+            to pass through
+        debug (bool | int | str): debug note
+
+    Returns:
+        bool | int | str):  debug passed through
+    """
     format_msg = "%(message)s"
 
     if debug:

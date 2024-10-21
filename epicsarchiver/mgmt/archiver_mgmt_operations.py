@@ -145,9 +145,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Args:
             pv: PV to add alias.
             alias_name: name of alias to add to pv.
-
-        Returns:
-            None
         """
         r = self._get("/addAlias", params={"pv": pv, "aliasname": alias_name})
         r_json = r.json()
@@ -223,9 +220,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Args:
             pv: name of the pv
             new: new name of the pv
-
-        Returns:
-            None
         """
         result = self.get_archiving_status(pv)
         if result != ArchivingStatus.BeingArchived:
@@ -253,9 +247,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
 
         Args:
             files: list of files in CSV format with PVs to rename.
-
-        Returns:
-            None
         """
         pvs = archive_files.get_rename_pvs_from_files(files)
         for current, new in pvs:
@@ -273,9 +264,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
             new (str): The name of the newer pv.
             storage (Storage):  The name of the store to consolidate data
                 before appending.
-
-        Returns:
-            None
         """
         pvs = [old, new]
         for pv in pvs:
@@ -300,8 +288,14 @@ def check_result(
 ) -> bool:
     """Check a result returned by the Archiver Appliance.
 
-    Return True if the status is ok
-    Return False otherwise and print the default_message or validation value
+    Args:
+        result (OperationResult | OperationResultList): Input result type
+        default_message (str | None, optional): Message for the user. Defaults to None.
+
+    Returns:
+        bool: Return True if the status is ok
+            Return False otherwise and print the default_message or validation value
+
     """
     if isinstance(result, list):
         LOG.error(
