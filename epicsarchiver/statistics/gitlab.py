@@ -47,8 +47,8 @@ class Gitlab(ServiceClient):
             content_bytes = await result.content.read()
             LOG.debug("Result tar size from %s", len(content_bytes))
 
-            tar = tarfile.open(fileobj=io.BytesIO(content_bytes), mode="r|gz")
-            temp_dir = tempfile.gettempdir()
-            LOG.debug("Extracting files to %s", temp_dir)
-            tar.extractall(path=temp_dir, filter="data")
-            return Path(temp_dir) / repo_name / "files"
+            with tarfile.open(fileobj=io.BytesIO(content_bytes), mode="r|gz") as tar:
+                temp_dir = tempfile.gettempdir()
+                LOG.debug("Extracting files to %s", temp_dir)
+                tar.extractall(path=temp_dir, filter="data")
+                return Path(temp_dir) / repo_name / "files"

@@ -38,7 +38,11 @@ class ArchiverStatistics(ServiceClient):
         reason: DroppedReason,
         limit: int | None = 1000,
     ) -> list[DroppedPVResponse]:
-        """Gets the pvs ordered by dropped events."""
+        """Gets the pvs ordered by dropped events.
+
+        Returns:
+            list[DroppedPVResponse]: List of responses
+        """
         params = None
         if limit:
             params = {"limit": str(limit)}
@@ -46,12 +50,20 @@ class ArchiverStatistics(ServiceClient):
         return [DroppedPVResponse.from_json(rs, reason) for rs in r]
 
     async def get_disconnected_pvs(self) -> list[DisconnectedPVsResponse]:
-        """Gets the list of disconnected pvs."""
+        """Gets the list of disconnected pvs.
+
+        Returns:
+            list[DisconnectedPVsResponse]: List of responses
+        """
         r = await self._get_json("/getCurrentlyDisconnectedPVs")
         return [DisconnectedPVsResponse.from_json(rs) for rs in r]
 
     async def get_silent_pvs(self, limit: int | None = 1000) -> list[SilentPVsResponse]:
-        """Gets the list of pvs with no events."""
+        """Gets the list of pvs with no events.
+
+        Returns:
+            list[SilentPVsResponse]: List of responses
+        """
         params = None
         if limit:
             params = {"limit": str(limit)}
@@ -62,7 +74,11 @@ class ArchiverStatistics(ServiceClient):
         self,
         limit: int | None = 1000,
     ) -> list[LostConnectionsResponse]:
-        """Gets the list of pvs with no events."""
+        """Gets the list of pvs with no events.
+
+        Returns:
+            list[LostConnectionsResponse]: List of responses
+        """
         params = None
         if limit:
             params = {"limit": str(limit)}
@@ -72,7 +88,11 @@ class ArchiverStatistics(ServiceClient):
     async def get_storage_rates(
         self, limit: int | None = 1000
     ) -> list[StorageRatesResponse]:
-        """Gets the list of pvs with no events."""
+        """Gets the list of pvs with no events.
+
+        Returns:
+            list[StorageRatesResponse]: List of responses
+        """
         params = None
         if limit:
             params = {"limit": str(limit)}
@@ -80,7 +100,11 @@ class ArchiverStatistics(ServiceClient):
         return [StorageRatesResponse.from_json(rs) for rs in r]
 
     async def get_paused_pvs(self) -> list[PausedPVResponse]:
-        """Gets the list of paused pvs."""
+        """Gets the list of paused pvs.
+
+        Returns:
+            list[PausedPVResponse]: List of responses
+        """
         r = await self._get_json("/getPausedPVsReport")
         return [PausedPVResponse.from_json(rs) for rs in r]
 

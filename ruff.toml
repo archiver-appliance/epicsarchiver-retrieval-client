@@ -4,6 +4,7 @@ exclude = [
   "epicsarchiver/retrieval/EPICSEvent_pb2.py",
   "epicsarchiver/retrieval/EPICSEvent_pb2.pyi",
   "docs/source/conf.py",
+  "*.ipynb"
 ]
 preview = true
 

@@ -125,7 +125,15 @@ class ArchiverReport:
         statistic: Stat,
         archiver: ArchiverWrapper,
     ) -> Sequence[BaseStatResponse]:
-        """Produce a list of PVs and stats."""
+        """Produce a list of PVs and stats.
+
+        Args:
+            statistic (Stat): Statistic to fetch
+            archiver (ArchiverWrapper): Archiver to request against
+
+        Returns:
+            Sequence[BaseStatResponse]: Sequence of statistic responses
+        """
         if statistic == Stat.BufferOverflow:
             return [
                 f
@@ -221,7 +229,15 @@ class ArchiverReport:
         statistic: Stat,
         archiver: ArchiverWrapper,
     ) -> dict[str, BaseStatResponse]:
-        """Produce a list of PVs and stats."""
+        """Produce a list of PVs and stats.
+
+        Args:
+            statistic (Stat): Statistic to generate data from
+            archiver (ArchiverWrapper): Archiver to check against
+
+        Returns:
+            dict[str, BaseStatResponse]: dictionary of pvs to statistics
+        """
         responses = await self._get_responses(statistic, archiver)
         LOG.info("Found %s responses for %s", len(responses), statistic)
         return {r.pv_name: r for r in responses}
@@ -404,10 +420,10 @@ def _invert_data(data: dict[Stat, dict[str, BaseStatResponse]]) -> dict[str, PVS
         dict[str, PVStats]: Output with Pv name keys.
     """
     dict_data: dict[str, dict[Stat, BaseStatResponse]] = {}
-    for stat in data:
-        for pv in data[stat]:
+    for stat, stat_item in data.items():
+        for pv in stat_item:
             if pv not in dict_data:
                 dict_data[pv] = {}
-            dict_data[pv][stat] = data[stat][pv]
+            dict_data[pv][stat] = stat_item[pv]
     output = {pv: PVStats(pv, dict_data[pv]) for pv in dict_data}
     return dict(sorted(output.items()))
