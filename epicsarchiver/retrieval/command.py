@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import click
+from dateutil import tz
 from pytz import UTC
 from rich.console import Console
 from rich.table import Table
@@ -115,6 +116,11 @@ def get(  # noqa: PLR0917, PLR0913
     table.add_column("Status", justify="right")
     table.add_column("Severity", justify="right")
     for e in events:
-        table.add_row(str(e.pd_timestamp), str(e.val), str(e.status), str(e.severity))
+        table.add_row(
+            str(e.pd_timestamp.tz_convert(tz.tzlocal())),
+            str(e.val),
+            str(e.status),
+            str(e.severity),
+        )
     console.print(table)
     ctx.exit(0)
