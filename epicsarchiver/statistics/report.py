@@ -21,14 +21,17 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import dataclasses
 import datetime
 import enum
+import json
 import logging
 import operator
+import re
 import sys
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import IO, TYPE_CHECKING
+from typing import IO, TYPE_CHECKING, Any
 
 import pytz
 from rich.console import Console
@@ -92,6 +95,42 @@ CSV_HEADINGS = [
     "Statistic",
     "Statistic Note",
 ]
+
+PV_NAME_REGEX = r"(?P<system>[a-zA-Z0-9\-]+):(?P<device>[a-zA-Z\-]+)\-[0-9a-zA-Z]+:*"
+PV_NAME_PARTS = ["system", "device"]
+
+
+def _get_pv_parts(pv: str) -> list[str]:
+    regex_find = re.findall(PV_NAME_REGEX, pv)
+    if len(regex_find) != 1:
+        LOG.debug("pv %s does not match regex", pv)
+        return []
+    return list(regex_find[0])
+
+
+def _get_pv_parts_stats(pvs: set[str]) -> dict[str, list[tuple[str, int]]]:
+    """Generate json summary of input based on system.
+
+    Args:
+        pvs (set[str]): Set of pvs
+
+    Returns:
+        count of each pv with specific part
+    """
+    all_parts: dict[str, set[str]] = {name: set() for name in PV_NAME_PARTS}
+    for pv in pvs:
+        for part_index, pv_part in enumerate(_get_pv_parts(pv)):
+            all_parts[PV_NAME_PARTS[part_index]].add(pv_part)
+
+    out = {
+        named_part_key: [
+            (part, sum(1 for pv in pvs if part in pv)) for part in named_part_value
+        ]
+        for named_part_key, named_part_value in all_parts.items()
+    }
+    for named_part, named_part_value in out.items():
+        out[named_part] = sorted(named_part_value, key=operator.itemgetter(1))
+    return out
 
 
 @dataclass
@@ -259,6 +298,12 @@ class ArchiverReport:
             self.generate_stats(stat, archiver) for stat in Stat
         ])
         inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats)))
+        pvs = set(inverted_data.keys())
+        pv_parts_stats = _get_pv_parts_stats(pvs)
+        for pv_parts_stats_key, pv_parts_stats_value in pv_parts_stats.items():
+            LOG.info(
+                "PV Stats %s - %s", pv_parts_stats_key, json.dumps(pv_parts_stats_value)
+            )
         if self.channelfinder:
             return await _organise_by_ioc(
                 inverted_data,
@@ -274,7 +319,7 @@ class ArchiverReport:
         *,
         verbose: bool = False,
     ) -> None:
-        """Prints a report about the statitics of PVs in the archiver.
+        """Prints a report about the statistics of PVs in the archiver.
 
         Args:
             archiver (ArchiverWrapper): Archiver to get statistics
@@ -286,6 +331,7 @@ class ArchiverReport:
             console = Console(file=file)
             console.print(report)
             return
+
         sum_report = csv_output(report)
         csvwriter = csv.writer(file)
         csvwriter.writerow(CSV_HEADINGS)
@@ -313,10 +359,10 @@ class IocReport:
     def print_report(self) -> None:
         """Print report about the statistics of connections from IOC to archiver."""
         report = asyncio.run(self.generate())
-        sum_report = csv_output(report)
+        csv_sum_report = csv_output(report)
         csvwriter = csv.writer(sys.stdout)
         csvwriter.writerow(CSV_HEADINGS)
-        for row in sum_report:
+        for row in csv_sum_report:
             csvwriter.writerow(row)
 
     async def generate(self) -> dict[Ioc, dict[str, PVStats]]:
@@ -364,6 +410,13 @@ class IocReport:
         )
 
 
+class _EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, o: Any) -> Any:
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)  # type: ignore[arg-type]
+        return super().default(o)
+
+
 async def _organise_by_ioc(
     inverted_report: dict[str, PVStats],
     channelfinder: ChannelFinder,
@@ -377,14 +430,13 @@ async def _organise_by_ioc(
         )
     else:
         iocs = await get_iocs(channelfinder, list(inverted_report.keys()))
-    LOG.info("IOCS: %s", str(_iocs_summary(iocs)))
+    LOG.info("IOCS: %s", json.dumps(_iocs_summary(iocs), cls=_EnhancedJSONEncoder))
     return {ioc: {pv: inverted_report[pv] for pv in iocs[ioc]} for ioc in iocs}
 
 
-def _iocs_summary(iocs: dict[Ioc, list[str]]) -> list[str]:
+def _iocs_summary(iocs: dict[Ioc, list[str]]) -> list[tuple[Ioc, int]]:
     sorted_iocs = [(ioc, len(pvs)) for ioc, pvs in iocs.items()]
-    sorted_iocs = sorted(sorted_iocs, key=operator.itemgetter(1))
-    return [f"{ioc_pair[0]}:{ioc_pair[1]} PVs" for ioc_pair in sorted_iocs]
+    return sorted(sorted_iocs, key=operator.itemgetter(1))
 
 
 def csv_output(
