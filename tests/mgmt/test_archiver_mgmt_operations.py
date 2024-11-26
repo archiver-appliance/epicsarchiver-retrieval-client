@@ -125,7 +125,7 @@ def test_archive_pvs_from_files(tmp_path: Path) -> None:
     assert body == pvs1 + pvs2
     assert r == data
     # With appliance as parameter
-    r = archiver.archive_pvs_from_files(
+    archiver.archive_pvs_from_files(
         [str(file1), str(file2)],
         appliance="appliance0",
     )  # ignore for https://github.com/getsentry/responses/pull/690
