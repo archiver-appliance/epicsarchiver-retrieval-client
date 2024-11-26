@@ -1,4 +1,4 @@
-"""Command module."""
+"""Command module for Archiver Statistics."""
 
 from __future__ import annotations
 
@@ -11,9 +11,10 @@ import click
 
 from epicsarchiver.common.command import handle_debug
 from epicsarchiver.statistics import configuration
-from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
-from epicsarchiver.statistics.channelfinder import ChannelFinder
-from epicsarchiver.statistics.report import ArchiverReport, IocReport
+from epicsarchiver.statistics.reports.archiver_report import ArchiverReport
+from epicsarchiver.statistics.reports.ioc_report import IocReport
+from epicsarchiver.statistics.services.archiver_statistics import ArchiverWrapper
+from epicsarchiver.statistics.services.channelfinder import ChannelFinder
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ ARCHIVER_ALIASES = ["tn", "nin", "lab"]
     "--other_hostname",
     "-o",
     type=str,
-    help="Other Achiver Appliance hostname or IP [default: localhost]",
+    help="Other Archiver Appliance hostname or IP [default: localhost]",
 )
 @click.option(
     "--channelfinder",
@@ -126,7 +127,7 @@ def stats(  # noqa: PLR0917, PLR0913
 ) -> None:
     """Print out statistics from an archiver cluster.
 
-    ARGUEMENT output Where to print output detailed statistics.
+    ARGUMENT output Where to print output detailed statistics.
 
     Includes PVs that are often dropping events, long disconnected, producing no events
     and not configured. Example usage:

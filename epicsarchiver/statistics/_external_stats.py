@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from numpy import mean
 
-from epicsarchiver.statistics.stat_responses import (
+from epicsarchiver.statistics.models.stat_responses import (
     UNKNOWN_IOC,
     BothArchiversResponse,
     Ioc,
@@ -14,8 +14,8 @@ from epicsarchiver.statistics.stat_responses import (
 )
 
 if TYPE_CHECKING:
-    from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
-    from epicsarchiver.statistics.channelfinder import ChannelFinder
+    from epicsarchiver.statistics.services.archiver_statistics import ArchiverWrapper
+    from epicsarchiver.statistics.services.channelfinder import ChannelFinder
 
 LOG: logging.Logger = logging.getLogger(__name__)
 

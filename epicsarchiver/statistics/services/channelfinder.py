@@ -10,7 +10,7 @@ from typing import Any
 
 import urllib3
 
-from epicsarchiver.statistics.async_service import ServiceClient
+from epicsarchiver.statistics.services.async_service import ServiceClient
 
 LOG: logging.Logger = logging.getLogger(__name__)
 

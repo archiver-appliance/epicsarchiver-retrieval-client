@@ -5,7 +5,7 @@ import pytest
 from aioresponses import aioresponses
 from rich.logging import RichHandler
 
-from epicsarchiver.statistics.channelfinder import (
+from epicsarchiver.statistics.services.channelfinder import (
     Channel,
     ChannelFinder,
 )

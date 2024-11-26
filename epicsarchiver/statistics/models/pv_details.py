@@ -5,8 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Dict
 
-from epicsarchiver.statistics.report import Stat
-from epicsarchiver.statistics.stat_responses import (
+from epicsarchiver.statistics.models.stat_responses import (
     BaseStatResponse,
     ConnectionStatus,
     DisconnectedPVsResponse,
@@ -17,6 +16,7 @@ from epicsarchiver.statistics.stat_responses import (
     StorageRatesResponse,
     parse_archiver_datetime,
 )
+from epicsarchiver.statistics.models.stats import Stat
 
 
 class DetailEnum(str, Enum):

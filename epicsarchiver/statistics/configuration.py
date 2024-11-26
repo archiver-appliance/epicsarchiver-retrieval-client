@@ -15,14 +15,17 @@ from attr import dataclass
 
 from epicsarchiver.mgmt.archive_files import get_pvs_from_files
 from epicsarchiver.statistics import _external_stats
-from epicsarchiver.statistics.gitlab import Gitlab
-from epicsarchiver.statistics.stat_responses import ConfiguredStatus, NoConfigResponse
+from epicsarchiver.statistics.models.stat_responses import (
+    ConfiguredStatus,
+    NoConfigResponse,
+)
+from epicsarchiver.statistics.services.gitlab import Gitlab
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
-    from epicsarchiver.statistics.channelfinder import ChannelFinder
+    from epicsarchiver.statistics.services.archiver_statistics import ArchiverWrapper
+    from epicsarchiver.statistics.services.channelfinder import ChannelFinder
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
