@@ -24,8 +24,6 @@ from epicsarchiver.statistics.models.stat_responses import (
 from epicsarchiver.statistics.models.stats import PVStats, Stat
 from epicsarchiver.statistics.reports.archiver_report import (
     ArchiverReport,
-    _get_pv_parts,
-    _get_pv_parts_stats,
 )
 from epicsarchiver.statistics.services.archiver_statistics import ArchiverWrapper
 from epicsarchiver.statistics.services.channelfinder import Channel, ChannelFinder
@@ -180,18 +178,3 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
     assert ioc in actual
     assert "MY:PV" in actual[ioc]
     assert PVStats("MY:PV", expected_all_stats) == actual[ioc]["MY:PV"]
-
-
-def test_get_pv_parts() -> None:
-    assert _get_pv_parts("DTL-030:EMR-SM-003:Axis.URIP") == ["DTL-030", "EMR-SM"]
-
-
-def test_get_pv_parts_stats() -> None:
-    assert _get_pv_parts_stats({
-        "DTL-030:EMR-SM-003:Axis.URIP",
-        "DTL-030:EMR-SG-003:Axis.URIQ",
-        "DTL-030:EMR-SG-002:Axis.URIQ",
-    }) == {
-        "device": [("EMR-SM", 1), ("EMR-SG", 2)],
-        "system": [("DTL-030", 3)],
-    }

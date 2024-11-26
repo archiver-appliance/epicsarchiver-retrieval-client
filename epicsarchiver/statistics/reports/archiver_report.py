@@ -29,7 +29,6 @@ import datetime
 import json
 import logging
 import operator
-import re
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import IO, TYPE_CHECKING, Any
@@ -41,7 +40,6 @@ from epicsarchiver.statistics import configuration
 from epicsarchiver.statistics._external_stats import (
     filter_by_ioc,
     get_double_archived,
-    get_invalid_names,
     get_iocs,
 )
 from epicsarchiver.statistics.models.stat_responses import (
@@ -51,6 +49,7 @@ from epicsarchiver.statistics.models.stat_responses import (
     Ioc,
 )
 from epicsarchiver.statistics.models.stats import PVStats, Stat
+from epicsarchiver.statistics.pv_names import get_invalid_names, log_pv_parts_stats
 from epicsarchiver.statistics.reports import REPORT_CSV_HEADINGS
 
 if TYPE_CHECKING:
@@ -69,43 +68,6 @@ def _is_greater_than_time_minimum(
     now = datetime.datetime.now(tz=pytz.utc)
     diff = now - (in_time or datetime.datetime.fromtimestamp(0, tz=pytz.utc))
     return diff > time_minimum
-
-
-PV_NAME_REGEX = r"(?P<system>[a-zA-Z0-9\-]+):(?P<device>[a-zA-Z\-]+)\-[0-9a-zA-Z]+:*"
-PV_NAME_PARTS = ["system", "device"]
-
-
-def _get_pv_parts(pv: str) -> list[str]:
-    regex_find = re.findall(PV_NAME_REGEX, pv)
-    if len(regex_find) != 1:
-        LOG.debug("pv %s does not match regex", pv)
-        return []
-    return list(regex_find[0])
-
-
-def _get_pv_parts_stats(pvs: set[str]) -> dict[str, list[tuple[str, int]]]:
-    """Generate json summary of input based on system.
-
-    Args:
-        pvs (set[str]): Set of pvs
-
-    Returns:
-        count of each pv with specific part
-    """
-    all_parts: dict[str, set[str]] = {name: set() for name in PV_NAME_PARTS}
-    for pv in pvs:
-        for part_index, pv_part in enumerate(_get_pv_parts(pv)):
-            all_parts[PV_NAME_PARTS[part_index]].add(pv_part)
-
-    out = {
-        named_part_key: [
-            (part, sum(1 for pv in pvs if part in pv)) for part in named_part_value
-        ]
-        for named_part_key, named_part_value in all_parts.items()
-    }
-    for named_part, named_part_value in out.items():
-        out[named_part] = sorted(named_part_value, key=operator.itemgetter(1))
-    return out
 
 
 @dataclass
@@ -260,13 +222,12 @@ class ArchiverReport:
         gather_all_stats = await asyncio.gather(*[
             self.generate_stats(stat, archiver) for stat in Stat
         ])
+
+        # Invert the data from being per stat to per PV
         inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats)))
-        pvs = set(inverted_data.keys())
-        pv_parts_stats = _get_pv_parts_stats(pvs)
-        for pv_parts_stats_key, pv_parts_stats_value in pv_parts_stats.items():
-            LOG.info(
-                "PV Stats %s - %s", pv_parts_stats_key, json.dumps(pv_parts_stats_value)
-            )
+
+        log_pv_parts_stats(set(inverted_data.keys()))
+
         if self.channelfinder:
             return await _organise_by_ioc(
                 inverted_data,
