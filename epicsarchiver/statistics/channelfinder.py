@@ -186,7 +186,6 @@ class ChannelFinder(ServiceClient):
         """Get the list of channels matching the pv name from channelfinder.
 
         Args:
-            session (aiohttp.ClientSession | None): aiohttp shared session
             pvs (list[str]): pv names
             properties (dict[str, str]): Properties to filter by
 

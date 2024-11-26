@@ -259,7 +259,6 @@ async def get_invalid_names(archiver: ArchiverWrapper) -> list[NameCheckResponse
 
     Args:
         archiver (ArchiverWrapper): Archiver to check
-        pvs (list[str]): List of pv names
 
     Returns:
         list[NameCheckResponse]: Response to check

@@ -344,10 +344,11 @@ class IocReport:
     """Data for generating a report about an ioc connection to archiver.
 
     Args:
-        ioc (str): Name of ioc
+        ioc_name (str): Name of ioc
         channelfinder (ChannelFinder): Channelfinder to get pv info of ioc
         archiver (ArchiverWrapper): Archiver to check
-        config_gitlab_repo: Path | None
+        mb_per_day_minimum (float): Minimum mb per day to filter on storage statistics
+        config_options (configuration.ConfigOptions | None): configuration options
     """
 
     ioc_name: str

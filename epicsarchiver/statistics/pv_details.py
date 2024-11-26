@@ -124,7 +124,6 @@ class Details(Dict[DetailEnum, str]):
         """Convert a single detail to a Stat and BaseStatResponse.
 
         Args:
-            pv_name (str): Name of pv detail is about.
             detail_enum (DetailEnum): Detail
             value (str): String value of the detail
             mb_per_day_min (float): Minimum MB per day to filter by
