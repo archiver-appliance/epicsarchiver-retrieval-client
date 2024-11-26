@@ -39,7 +39,7 @@ async def test_request_raise_exception() -> None:
 
 
 @pytest.mark.parametrize(
-    ("endpoint"),
+    "endpoint",
     ["endpoint", "/endpoint"],
 )
 @pytest.mark.asyncio
@@ -87,7 +87,7 @@ async def test_post_return_response() -> None:
 
 
 @pytest.mark.parametrize(
-    ("endpoint"),
+    "endpoint",
     ["endpoint", "/endpoint"],
 )
 @pytest.mark.asyncio
