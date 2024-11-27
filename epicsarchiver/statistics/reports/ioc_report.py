@@ -4,16 +4,14 @@ Examples:
     .. highlight:: python
     .. code-block:: python
 
-        ReportConfig(
-            query_limit=1000,
-            time_minimum=timedelta(days=100),
-            connection_drops_minimum=30,
-            config_options=configuration.ConfigOptions("/config_repo", "tn"),
-            other_archiver=ArchiverAppliance("other_archiver.example.org"),
-            mb_per_day_minimum=1000,
+        ioc_report = IocReport(
+            "IOC_NAME",
+            ChannelFinder("channelfinder.example.org"),
+            ArchiverWrapper("archiver.example.org"),
+            100,  # mb_per_day_minimum
+            configuration.ConfigOptions("/config_repo", "tn"),
         )
-        report = generate_all_stats(ArchiverAppliance("archiver.example.org"), config)
-
+        ioc_report.print_report()
 
 """
 
