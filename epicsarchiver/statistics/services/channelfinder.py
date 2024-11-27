@@ -10,7 +10,7 @@ from typing import Any
 
 import urllib3
 
-from epicsarchiver.statistics.async_service import ServiceClient
+from epicsarchiver.statistics.services.async_service import ServiceClient
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -186,7 +186,6 @@ class ChannelFinder(ServiceClient):
         """Get the list of channels matching the pv name from channelfinder.
 
         Args:
-            session (aiohttp.ClientSession | None): aiohttp shared session
             pvs (list[str]): pv names
             properties (dict[str, str]): Properties to filter by
 

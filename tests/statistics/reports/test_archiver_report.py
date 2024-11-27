@@ -8,17 +8,8 @@ from unittest.mock import AsyncMock
 import pytest
 import pytz
 
-from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
-from epicsarchiver.statistics.channelfinder import Channel, ChannelFinder
 from epicsarchiver.statistics.configuration import ConfigOptions
-from epicsarchiver.statistics.report import (
-    ArchiverReport,
-    PVStats,
-    Stat,
-    _get_pv_parts,
-    _get_pv_parts_stats,
-)
-from epicsarchiver.statistics.stat_responses import (
+from epicsarchiver.statistics.models.stat_responses import (
     BaseStatResponse,
     BothArchiversResponse,
     ConnectionStatus,
@@ -30,6 +21,12 @@ from epicsarchiver.statistics.stat_responses import (
     SilentPVsResponse,
     StorageRatesResponse,
 )
+from epicsarchiver.statistics.models.stats import PVStats, Stat
+from epicsarchiver.statistics.reports.archiver_report import (
+    ArchiverReport,
+)
+from epicsarchiver.statistics.services.archiver_statistics import ArchiverWrapper
+from epicsarchiver.statistics.services.channelfinder import Channel, ChannelFinder
 
 if TYPE_CHECKING:
     from pytest_mock import MockFixture
@@ -86,7 +83,7 @@ expected_all_stats: dict[Stat, BaseStatResponse] = {
 @pytest.mark.asyncio
 async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
     mocker.patch(
-        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_pvs_dropped",
+        "epicsarchiver.statistics.services.archiver_statistics.ArchiverStatistics.get_pvs_dropped",
         return_value=[expected_all_stats[Stat.BufferOverflow]],
     )
     archiver = ArchiverWrapper("archiver.example.org")
@@ -128,23 +125,23 @@ def mock_get_pvs_dropped(
 async def test_generate_all_stats(mocker: MockFixture) -> None:
     channel = Channel("MY:PV", {"iocName": "IOCNAME", "hostName": "IOCHOSTNAME"}, [])
     mocker.patch(
-        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_pvs_dropped",
+        "epicsarchiver.statistics.services.archiver_statistics.ArchiverStatistics.get_pvs_dropped",
         wraps=mock_get_pvs_dropped,
     )
     mocker.patch(
-        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_disconnected_pvs",
+        "epicsarchiver.statistics.services.archiver_statistics.ArchiverStatistics.get_disconnected_pvs",
         return_value=[expected_all_stats[Stat.DisconnectedPVs]],
     )
     mocker.patch(
-        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_silent_pvs",
+        "epicsarchiver.statistics.services.archiver_statistics.ArchiverStatistics.get_silent_pvs",
         return_value=[expected_all_stats[Stat.SilentPVs]],
     )
     mocker.patch(
-        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_lost_connections_pvs",
+        "epicsarchiver.statistics.services.archiver_statistics.ArchiverStatistics.get_lost_connections_pvs",
         return_value=[expected_all_stats[Stat.LostConnection]],
     )
     mocker.patch(
-        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_storage_rates",
+        "epicsarchiver.statistics.services.archiver_statistics.ArchiverStatistics.get_storage_rates",
         return_value=[expected_all_stats[Stat.StorageRates]],
     )
     mocker.patch(
@@ -152,15 +149,15 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
         return_value=["MY:PV"],
     )
     mocker.patch(
-        "epicsarchiver.statistics.archiver_statistics.ArchiverStatistics.get_paused_pvs",
+        "epicsarchiver.statistics.services.archiver_statistics.ArchiverStatistics.get_paused_pvs",
         return_value=[],
     )
     mocker.patch(
-        "epicsarchiver.statistics.channelfinder.ChannelFinder.get_channels_chunked",
+        "epicsarchiver.statistics.services.channelfinder.ChannelFinder.get_channels_chunked",
         side_effect=AsyncMock(return_value={"MY:PV": channel}),
     )
     mocker.patch(
-        "epicsarchiver.statistics.channelfinder.ChannelFinder.get_all_alias_channels",
+        "epicsarchiver.statistics.services.channelfinder.ChannelFinder.get_all_alias_channels",
         side_effect=AsyncMock(return_value={"MY:PV": []}),
     )
     archiver = ArchiverWrapper("archiver.example.org")
@@ -181,18 +178,3 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
     assert ioc in actual
     assert "MY:PV" in actual[ioc]
     assert PVStats("MY:PV", expected_all_stats) == actual[ioc]["MY:PV"]
-
-
-def test_get_pv_parts() -> None:
-    assert _get_pv_parts("DTL-030:EMR-SM-003:Axis.URIP") == ["DTL-030", "EMR-SM"]
-
-
-def test_get_pv_parts_stats() -> None:
-    assert _get_pv_parts_stats({
-        "DTL-030:EMR-SM-003:Axis.URIP",
-        "DTL-030:EMR-SG-003:Axis.URIQ",
-        "DTL-030:EMR-SG-002:Axis.URIQ",
-    }) == {
-        "device": [("EMR-SM", 1), ("EMR-SG", 2)],
-        "system": [("DTL-030", 3)],
-    }

@@ -5,8 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Dict
 
-from epicsarchiver.statistics.report import Stat
-from epicsarchiver.statistics.stat_responses import (
+from epicsarchiver.statistics.models.stat_responses import (
     BaseStatResponse,
     ConnectionStatus,
     DisconnectedPVsResponse,
@@ -17,6 +16,7 @@ from epicsarchiver.statistics.stat_responses import (
     StorageRatesResponse,
     parse_archiver_datetime,
 )
+from epicsarchiver.statistics.models.stats import Stat
 
 
 class DetailEnum(str, Enum):
@@ -124,7 +124,6 @@ class Details(Dict[DetailEnum, str]):
         """Convert a single detail to a Stat and BaseStatResponse.
 
         Args:
-            pv_name (str): Name of pv detail is about.
             detail_enum (DetailEnum): Detail
             value (str): String value of the detail
             mb_per_day_min (float): Minimum MB per day to filter by

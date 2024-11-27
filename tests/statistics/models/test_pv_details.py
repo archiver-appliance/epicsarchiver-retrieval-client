@@ -4,7 +4,7 @@ from pathlib import Path
 
 from rich.logging import RichHandler
 
-from epicsarchiver.statistics.pv_details import DetailEnum, Details
+from epicsarchiver.statistics.models.pv_details import DetailEnum, Details
 
 logging.basicConfig(
     level=logging.DEBUG,

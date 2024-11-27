@@ -12,11 +12,7 @@ from aioresponses import aioresponses
 from epicsarchiver.statistics._external_stats import (
     get_double_archived,
 )
-from epicsarchiver.statistics.archiver_statistics import (
-    ArchiverStatistics,
-    ArchiverWrapper,
-)
-from epicsarchiver.statistics.stat_responses import (
+from epicsarchiver.statistics.models.stat_responses import (
     BothArchiversResponse,
     ConnectionStatus,
     DisconnectedPVsResponse,
@@ -27,6 +23,10 @@ from epicsarchiver.statistics.stat_responses import (
     SilentPVsResponse,
     StorageRatesResponse,
     parse_archiver_datetime,
+)
+from epicsarchiver.statistics.services.archiver_statistics import (
+    ArchiverStatistics,
+    ArchiverWrapper,
 )
 
 SAMPLES_PATH = Path(__file__).parent.resolve() / "samples"

@@ -8,7 +8,7 @@ from aiohttp import ClientResponseError
 from aioresponses import aioresponses
 from rich.logging import RichHandler
 
-from epicsarchiver.statistics.async_service import ServiceClient
+from epicsarchiver.statistics.services.async_service import ServiceClient
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -39,7 +39,7 @@ async def test_request_raise_exception() -> None:
 
 
 @pytest.mark.parametrize(
-    ("endpoint"),
+    "endpoint",
     ["endpoint", "/endpoint"],
 )
 @pytest.mark.asyncio
@@ -87,7 +87,7 @@ async def test_post_return_response() -> None:
 
 
 @pytest.mark.parametrize(
-    ("endpoint"),
+    "endpoint",
     ["endpoint", "/endpoint"],
 )
 @pytest.mark.asyncio

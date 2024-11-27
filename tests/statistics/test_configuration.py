@@ -6,15 +6,15 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_mock import MockFixture
 
-from epicsarchiver.statistics.archiver_statistics import (
-    ArchiverWrapper,
-)
-from epicsarchiver.statistics.channelfinder import ChannelFinder
 from epicsarchiver.statistics.configuration import ConfigOptions, get_not_configured
-from epicsarchiver.statistics.stat_responses import (
+from epicsarchiver.statistics.models.stat_responses import (
     ConfiguredStatus,
     NoConfigResponse,
 )
+from epicsarchiver.statistics.services.archiver_statistics import (
+    ArchiverWrapper,
+)
+from epicsarchiver.statistics.services.channelfinder import ChannelFinder
 
 SAMPLES_PATH = Path(__file__).parent.resolve() / "samples"
 
@@ -36,7 +36,7 @@ async def test_get_not_configured(mocker: MockFixture) -> None:
         side_effect=AsyncMock(return_value={"MY:PV": [], "MY:PV3": ["MY:PV"]}),
     )
     mocker.patch(
-        "epicsarchiver.statistics.gitlab.Gitlab.get_tar_ball",
+        "epicsarchiver.statistics.services.gitlab.Gitlab.get_tar_ball",
         return_value=SAMPLES_PATH,
     )
     pvs_response = await get_not_configured(

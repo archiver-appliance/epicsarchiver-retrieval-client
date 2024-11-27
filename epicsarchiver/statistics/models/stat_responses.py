@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 import pytz
 
 if TYPE_CHECKING:
-    from epicsarchiver.statistics.channelfinder import Channel
+    from epicsarchiver.statistics.services.channelfinder import Channel
 
 
 class DroppedReason(str, enum.Enum):

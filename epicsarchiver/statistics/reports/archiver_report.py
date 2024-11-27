@@ -4,16 +4,19 @@ Examples:
     .. highlight:: python
     .. code-block:: python
 
-        ReportConfig(
+        report = ArchiverReport(
             query_limit=1000,
             time_minimum=timedelta(days=100),
             connection_drops_minimum=30,
             config_options=configuration.ConfigOptions("/config_repo", "tn"),
             other_archiver=ArchiverAppliance("other_archiver.example.org"),
             mb_per_day_minimum=1000,
+            events_dropped_minimum=1000,
+            channelfinder=ChannelFinder("channelfinder.tn.ess.lu.se"),
+            ioc_name="AN_IOC_NAME",
         )
-        report = generate_all_stats(ArchiverAppliance("archiver.example.org"), config)
 
+        report.print_report(archiver, out_file, verbose=True)
 
 """
 
@@ -23,12 +26,9 @@ import asyncio
 import csv
 import dataclasses
 import datetime
-import enum
 import json
 import logging
 import operator
-import re
-import sys
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import IO, TYPE_CHECKING, Any
@@ -40,21 +40,23 @@ from epicsarchiver.statistics import configuration
 from epicsarchiver.statistics._external_stats import (
     filter_by_ioc,
     get_double_archived,
-    get_invalid_names,
     get_iocs,
 )
-from epicsarchiver.statistics.stat_responses import (
+from epicsarchiver.statistics.models.stat_responses import (
     UNKNOWN_IOC,
     BaseStatResponse,
     DroppedReason,
     Ioc,
 )
+from epicsarchiver.statistics.models.stats import PVStats, Stat
+from epicsarchiver.statistics.pv_names import get_invalid_names, log_pv_parts_stats
+from epicsarchiver.statistics.reports import REPORT_CSV_HEADINGS
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from epicsarchiver.statistics.archiver_statistics import ArchiverWrapper
-    from epicsarchiver.statistics.channelfinder import ChannelFinder
+    from epicsarchiver.statistics.services.archiver_statistics import ArchiverWrapper
+    from epicsarchiver.statistics.services.channelfinder import ChannelFinder
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -66,83 +68,6 @@ def _is_greater_than_time_minimum(
     now = datetime.datetime.now(tz=pytz.utc)
     diff = now - (in_time or datetime.datetime.fromtimestamp(0, tz=pytz.utc))
     return diff > time_minimum
-
-
-class Stat(str, enum.Enum):
-    """List of statistics from the archiver.
-
-    Args:
-        enum (Stat): A statistic on pvs in archiver
-    """
-
-    BufferOverflow = "PV updating faster than the sampling period."
-    TypeChange = "PV changed type, which archiver hasn't been updated for."
-    IncorrectTimestamp = "PV loses events due to incorrect timestamps."
-    SlowChanging = "More events lost than stored."
-    DisconnectedPVs = "PV disconnected for a long time."
-    SilentPVs = "Never received a valid event."
-    DoubleArchived = "Archived in both clusters."
-    StorageRates = "In the top storage rates."
-    LostConnection = "In the top dropped connections."
-    NotConfigured = "PV archived, but not in config."
-    InvalidName = "PV has name that should not be archived"
-
-
-CSV_HEADINGS = [
-    "IOC Name",
-    "IOC hostname",
-    "PV name",
-    "Statistic",
-    "Statistic Note",
-]
-
-PV_NAME_REGEX = r"(?P<system>[a-zA-Z0-9\-]+):(?P<device>[a-zA-Z\-]+)\-[0-9a-zA-Z]+:*"
-PV_NAME_PARTS = ["system", "device"]
-
-
-def _get_pv_parts(pv: str) -> list[str]:
-    regex_find = re.findall(PV_NAME_REGEX, pv)
-    if len(regex_find) != 1:
-        LOG.debug("pv %s does not match regex", pv)
-        return []
-    return list(regex_find[0])
-
-
-def _get_pv_parts_stats(pvs: set[str]) -> dict[str, list[tuple[str, int]]]:
-    """Generate json summary of input based on system.
-
-    Args:
-        pvs (set[str]): Set of pvs
-
-    Returns:
-        count of each pv with specific part
-    """
-    all_parts: dict[str, set[str]] = {name: set() for name in PV_NAME_PARTS}
-    for pv in pvs:
-        for part_index, pv_part in enumerate(_get_pv_parts(pv)):
-            all_parts[PV_NAME_PARTS[part_index]].add(pv_part)
-
-    out = {
-        named_part_key: [
-            (part, sum(1 for pv in pvs if part in pv)) for part in named_part_value
-        ]
-        for named_part_key, named_part_value in all_parts.items()
-    }
-    for named_part, named_part_value in out.items():
-        out[named_part] = sorted(named_part_value, key=operator.itemgetter(1))
-    return out
-
-
-@dataclass
-class PVStats:
-    """Statistics of a PV.
-
-    name: PV Name
-    stats: Dictionary of Statistic type to BaseStatResponse with more details.
-    """
-
-    name: str
-    stats: dict[Stat, BaseStatResponse]
 
 
 @dataclass
@@ -297,13 +222,12 @@ class ArchiverReport:
         gather_all_stats = await asyncio.gather(*[
             self.generate_stats(stat, archiver) for stat in Stat
         ])
+
+        # Invert the data from being per stat to per PV
         inverted_data = _invert_data(dict(zip(list(Stat), gather_all_stats)))
-        pvs = set(inverted_data.keys())
-        pv_parts_stats = _get_pv_parts_stats(pvs)
-        for pv_parts_stats_key, pv_parts_stats_value in pv_parts_stats.items():
-            LOG.info(
-                "PV Stats %s - %s", pv_parts_stats_key, json.dumps(pv_parts_stats_value)
-            )
+
+        log_pv_parts_stats(set(inverted_data.keys()))
+
         if self.channelfinder:
             return await _organise_by_ioc(
                 inverted_data,
@@ -334,80 +258,9 @@ class ArchiverReport:
 
         sum_report = csv_output(report)
         csvwriter = csv.writer(file)
-        csvwriter.writerow(CSV_HEADINGS)
+        csvwriter.writerow(REPORT_CSV_HEADINGS)
         for row in sum_report:
             csvwriter.writerow(row)
-
-
-@dataclass
-class IocReport:
-    """Data for generating a report about an ioc connection to archiver.
-
-    Args:
-        ioc (str): Name of ioc
-        channelfinder (ChannelFinder): Channelfinder to get pv info of ioc
-        archiver (ArchiverWrapper): Archiver to check
-        config_gitlab_repo: Path | None
-    """
-
-    ioc_name: str
-    channelfinder: ChannelFinder
-    archiver: ArchiverWrapper
-    mb_per_day_minimum: float
-    config_options: configuration.ConfigOptions | None
-
-    def print_report(self) -> None:
-        """Print report about the statistics of connections from IOC to archiver."""
-        report = asyncio.run(self.generate())
-        csv_sum_report = csv_output(report)
-        csvwriter = csv.writer(sys.stdout)
-        csvwriter.writerow(CSV_HEADINGS)
-        for row in csv_sum_report:
-            csvwriter.writerow(row)
-
-    async def generate(self) -> dict[Ioc, dict[str, PVStats]]:
-        """Generate all the statistics data for an ioc.
-
-        Returns:
-            dict[Ioc, dict[str, _PVStats]]: statistics list
-        """
-        # Get all pvs on IOC
-        channels = await self.channelfinder.get_ioc_channels(self.ioc_name)
-        LOG.info("Found %s PVs in ChannelFinder", len(channels))
-        if len(channels) < 0:
-            return {}
-
-        pv_names = {pv.name for pv in channels}
-        pv_details = await self._get_archived_pvs_details(pv_names)
-        if self.config_options:
-            await self._check_not_configured(pv_names, pv_details, self.config_options)
-
-        return {Ioc.from_channel(channels[0]): pv_details}
-
-    async def _check_not_configured(
-        self,
-        pv_names: set[str],
-        pv_details: dict[str, PVStats],
-        config_options: configuration.ConfigOptions,
-    ) -> None:
-        not_configured = await configuration.get_not_configured(
-            self.archiver,
-            self.channelfinder,
-            config_options,
-            self.ioc_name,
-            pv_names,
-        )
-        for pv_not in not_configured:
-            if pv_not.pv_name not in pv_details:
-                pv_details[pv_not.pv_name] = PVStats(pv_not.pv_name, {})
-            pv_details[pv_not.pv_name].stats[Stat.NotConfigured] = pv_not
-
-    async def _get_archived_pvs_details(self, pv_names: set[str]) -> dict[str, PVStats]:
-        all_archived = self.archiver.mgmt.get_archived_pvs(list(pv_names))
-        archived_pvs = set(all_archived).intersection(pv_names)
-        return await self.archiver.stats.get_pv_details(
-            list(archived_pvs), self.mb_per_day_minimum
-        )
 
 
 class _EnhancedJSONEncoder(json.JSONEncoder):
