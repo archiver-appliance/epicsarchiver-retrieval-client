@@ -47,11 +47,18 @@ test:
   stage: test
   image: $IMAGE
   script:
-    - hatch run test --junitxml=report.xml
+    - hatch test --junitxml=report.xml
   artifacts:
     when: always
     reports:
       junit: report.xml
+  parallel: !reference [.parallel,parallel]
+
+jupyter-check:
+  stage: test
+  image: $IMAGE
+  script:
+    - hatch run jupyter-check
   parallel: !reference [.parallel,parallel]
 
 
@@ -59,7 +66,7 @@ cov:
   stage: analyse
   image: $IMAGE
   script:
-    - hatch run cov
+    - hatch test -c
   coverage: /(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
   artifacts:
     reports:
@@ -74,6 +81,12 @@ lint:
   image: $IMAGE
   script:
     - hatch fmt --check
+  parallel: !reference [.parallel,parallel]
+
+link-types:
+  stage: check
+  image: $IMAGE
+  script:
     - hatch run types:check
   parallel: !reference [.parallel,parallel]
 

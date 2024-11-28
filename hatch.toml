@@ -13,40 +13,45 @@ include = ["/epicsarchiver", "/tests"]
 [build.targets.wheel]
 packages = ["epicsarchiver"]
 
-[envs.default]
-dependencies = [
-  "coverage[toml]>=6.5",
-  "pytest>=7.2.0",
+[envs.default.scripts]
+protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/EPICSEvent.proto"
+docs-check = "hatch run docs:check"
+type-check = "hatch run types:check"
+jupyter-check = "hatch run jupyter:check"
+all = ["hatch fmt --check", "type-check", "jupyter-check", "docs-check", "hatch test"]
+
+[[envs.hatch-test.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+
+[envs.hatch-test]
+extra-dependencies = [
   "pytest-asyncio",
-  "sybil",
-  "typing-extensions",
   "responses",
   "aioresponses",
   "pytest-mock",
   "pytest-aiohttp",
-  "types-requests", # Types in test dependancies for IDE integration of mypy
-  "types-python-dateutil",
-  "types-protobuf",
 ]
 
-[envs.default.scripts]
-protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/EPICSEvent.proto"
-test = "pytest {args:tests}"
-test-cov = "coverage run -m pytest {args:tests}"
-cov-report = ["- coverage combine", "coverage report", "coverage xml"]
-cov = ["test-cov", "cov-report"]
-docs-check = "hatch run docs:check"
-type-check = "hatch run types:check"
-jupyter-check = "hatch run jupyter:check"
-all = ["hatch fmt --check", "type-check", "cov", "jupyter-check", "docs-check"]
-
-[[envs.test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+[envs.hatch-test.scripts]
+run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
+cov-combine = "coverage combine"
+cov-report = "coverage report --format=xml"
 
 [envs.types]
 extra-dependencies = [
   "mypy",
   "mypy-protobuf",
+  "pytest",
+  "pytest-asyncio",
+  "responses",
+  "aioresponses",
+  "pytest-mock",
+  "pytest-aiohttp",
+  "typing-extensions",
+  "types-requests",
+  "types-python-dateutil",
+  "types-protobuf",
 ]
 
 [envs.types.scripts]
