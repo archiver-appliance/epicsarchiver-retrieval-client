@@ -281,6 +281,20 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
             return
         LOG.debug("PV %s successfully appended and aliased to %s", old, new)
 
+    def change_type(self, pv: str, new_type: str) -> None:
+        """Change the type of a pv to a new type.
+
+        Args:
+            pv (str): Name of the PV
+            new_type (str): New DBR_TYPE
+        """
+        LOG.info("Change type of pv %s to %s", pv, new_type)
+        response = self._get("/changeTypeForPV", params={"pv": pv, "newtype": new_type})
+        result = cast(OperationResultList, response.json())
+        if not check_result(result, f"Error while change_type {pv}"):
+            return
+        LOG.debug("PV %s successfully changed type to %s", pv, new_type)
+
 
 def check_result(
     result: OperationResult | OperationResultList,

@@ -605,6 +605,28 @@ def test_rename_and_append_fail_pv_error_response(
     assert "error during appendAndAliasPV" in captured_log
 
 
+@responses.activate
+def test_change_type(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
+    pv = "MY:PV"
+    new_type = "DBR_SCALAR_DOUBLE"
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/changeTypeForPV?pv={pv}&newtype={new_type}",
+        json={"status": "ok"},
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.change_type(pv, new_type)
+    captured_log = caplog.text
+    LOG.info(captured_log)
+    assert len(responses.calls) == 1
+    assert "successfully changed type" in captured_log
+
+
 @pytest.mark.parametrize(
     ("test_input", "expected"),
     [({"status": "ok"}, True), ({"status": "foo"}, False), ({"hello": "world"}, False)],
