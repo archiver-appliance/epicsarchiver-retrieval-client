@@ -5,10 +5,13 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 from epicsarchiver.mgmt import archive_files
 from epicsarchiver.mgmt.archiver_mgmt_info import ArchiverMgmtInfo, ArchivingStatus
+
+if TYPE_CHECKING:
+    from epicsarchiver.common import ArchDbrType
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -281,15 +284,17 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
             return
         LOG.debug("PV %s successfully appended and aliased to %s", old, new)
 
-    def change_type(self, pv: str, new_type: str) -> None:
+    def change_type(self, pv: str, new_type: ArchDbrType) -> None:
         """Change the type of a pv to a new type.
 
         Args:
             pv (str): Name of the PV
-            new_type (str): New DBR_TYPE
+            new_type (ArchDbrType): New DBR_TYPE
         """
         LOG.info("Change type of pv %s to %s", pv, new_type)
-        response = self._get("/changeTypeForPV", params={"pv": pv, "newtype": new_type})
+        response = self._get(
+            "/changeTypeForPV", params={"pv": pv, "newtype": new_type.name}
+        )
         result = cast(OperationResultList, response.json())
         if not check_result(result, f"Error while change_type {pv}"):
             return
