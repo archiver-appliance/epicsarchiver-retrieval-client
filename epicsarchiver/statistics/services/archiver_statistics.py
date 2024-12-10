@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
+from epicsarchiver.common.async_service import ServiceClient
 from epicsarchiver.common.base_archiver import mgmt_url
 from epicsarchiver.mgmt.archiver_mgmt import ArchiverMgmt
 from epicsarchiver.statistics.models.pv_details import DetailEnum, Details
@@ -17,7 +18,6 @@ from epicsarchiver.statistics.models.stat_responses import (
     StorageRatesResponse,
 )
 from epicsarchiver.statistics.models.stats import PVStats
-from epicsarchiver.statistics.services.async_service import ServiceClient
 
 
 class ArchiverStatistics(ServiceClient):

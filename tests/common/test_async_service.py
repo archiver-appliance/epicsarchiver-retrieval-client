@@ -8,7 +8,7 @@ from aiohttp import ClientResponseError
 from aioresponses import aioresponses
 from rich.logging import RichHandler
 
-from epicsarchiver.statistics.services.async_service import ServiceClient
+from epicsarchiver.common.async_service import ServiceClient
 
 logging.basicConfig(
     level=logging.DEBUG,
