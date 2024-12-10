@@ -13,7 +13,10 @@ from rich.console import Console
 from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
-from epicsarchiver.retrieval.archiver_retrieval import Processor, ProcessorName
+from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
+    Processor,
+    ProcessorName,
+)
 
 if TYPE_CHECKING:
     from epicsarchiver.epicsarchiver import ArchiverAppliance

@@ -7,7 +7,7 @@ from pytz import UTC
 
 import epicsarchiver.retrieval.EPICSEvent_pb2 as ee
 from epicsarchiver.retrieval.archive_event import ArchiveEvent, year_timestamp
-from epicsarchiver.retrieval.archiver_retrieval import (
+from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
     ArchiverRetrieval,
     Processor,
     ProcessorName,

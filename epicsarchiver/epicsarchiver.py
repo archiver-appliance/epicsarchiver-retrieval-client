@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from epicsarchiver.mgmt.archiver_mgmt import ArchiverMgmt
-from epicsarchiver.retrieval.archiver_retrieval import ArchiverRetrieval
+from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
+    ArchiverRetrieval,
+)
 
 
 class ArchiverAppliance(ArchiverMgmt, ArchiverRetrieval):
