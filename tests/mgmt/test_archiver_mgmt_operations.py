@@ -10,6 +10,7 @@ import pytest
 import responses
 from requests import HTTPError
 
+from epicsarchiver.common import ArchDbrType
 from epicsarchiver.mgmt.archiver_mgmt_info import ArchivingStatus
 from epicsarchiver.mgmt.archiver_mgmt_operations import (
     ArchiverMgmtOperations,
@@ -603,6 +604,28 @@ def test_rename_and_append_fail_pv_error_response(
     LOG.info(captured_log)
     assert len(responses.calls) == 3
     assert "error during appendAndAliasPV" in captured_log
+
+
+@responses.activate
+def test_change_type(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
+    pv = "MY:PV"
+    new_type = ArchDbrType.DBR_SCALAR_DOUBLE
+    responses.add(
+        responses.GET,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/changeTypeForPV?pv={pv}&newtype=DBR_SCALAR_DOUBLE",
+        json={"status": "ok"},
+        status=200,
+        match_querystring=True,
+    )
+    with caplog.at_level(logging.DEBUG):
+        archiver.change_type(pv, new_type)
+    captured_log = caplog.text
+    LOG.info(captured_log)
+    assert len(responses.calls) == 1
+    assert "successfully changed type" in captured_log
 
 
 @pytest.mark.parametrize(
