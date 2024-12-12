@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
-from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
+from epicsarchiver.retrieval.archiver_retrieval.processor import (
     Processor,
     ProcessorName,
 )

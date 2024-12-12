@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import logging
 import urllib.parse
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from aiohttp import ClientResponse, ClientSession
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from types import TracebackType
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -40,6 +41,23 @@ class ServiceClient:
         """Close the Service (closes the session)."""
         if self._session is not None:
             await self._session.close()
+
+    async def __aenter__(self) -> Self:
+        """Asynchronous enter.
+
+        Returns:
+            Self: self
+        """
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Asynchronous exit, closes any sessions."""
+        await self.close()
 
     async def _get(
         self, endpoint: str, params: Mapping[str, str] | None = None
