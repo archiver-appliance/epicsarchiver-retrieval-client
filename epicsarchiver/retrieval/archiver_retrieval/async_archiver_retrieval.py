@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 from pytz import UTC
@@ -133,3 +134,33 @@ class AsyncArchiverRetrieval(ServiceClient):
         r = await self._get_data_raw(pv_request, start, end)
         pb_data = await r.content.read()
         return parse_pb_data(pb_data)
+
+    async def get_all_events(
+        self,
+        pvs: set[str],
+        start: datetime.datetime,
+        end: datetime.datetime,
+        processor: Processor | None = None,
+    ) -> dict[str, list[ArchiveEvent]]:
+        """Retrieve archived data.
+
+        Args:
+            pvs: list of pvs
+            start: start time. Can be a string or `datetime.datetime`
+                object.
+            end: end time. Can be a string or `datetime.datetime`
+                object.
+            processor (Processor | None, optional): Preprocessor
+                to use. Defaults to None.
+
+
+        Returns:
+            dict[str, list[ArchiveEvent]]: requested events from the archiver.
+        """
+
+        async def get_pv_and_events(pv: str) -> tuple[str, list[ArchiveEvent]]:
+            return (pv, await self.get_events(pv, start, end, processor=processor))
+
+        requests = [get_pv_and_events(pv) for pv in pvs]
+        responses = await asyncio.gather(*requests)
+        return dict(responses)
