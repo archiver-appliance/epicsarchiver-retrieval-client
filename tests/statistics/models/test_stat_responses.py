@@ -48,6 +48,7 @@ async def test_get_pvs_dropped() -> None:
         pvs_dropped = await archiver.get_pvs_dropped(reason)
         mocked.assert_any_call(url)
         assert [DroppedPVResponse("MY:PV", 30, reason)] == pvs_dropped
+        await archiver.close()
 
 
 @pytest.mark.asyncio
@@ -86,6 +87,7 @@ async def test_get_disconnected_pvs() -> None:
                 ),
             ),
         ] == pvs_disconnected
+        await archiver.close()
 
 
 @pytest.mark.asyncio
@@ -114,6 +116,7 @@ async def test_get_silent_pvs() -> None:
                 ),
             ),
         ] == pvs_response
+        await archiver.close()
 
 
 @pytest.mark.asyncio
@@ -142,6 +145,7 @@ async def test_get_lost_connections_pvs() -> None:
                 2586,
             ),
         ] == pvs_response
+        await archiver.close()
 
 
 @pytest.mark.asyncio
@@ -164,6 +168,7 @@ async def test_get_paused_pvs() -> None:
         assert [
             PausedPVResponse("MY:PV", "archiver", "Sep/12/2023 16:38:56 +02:00"),
         ] == pvs_response
+        await archiver.close()
 
 
 @pytest.mark.asyncio
@@ -194,6 +199,7 @@ async def test_get_storage_rates() -> None:
                 391.8365877881653,
             ),
         ] == pvs_response
+        await archiver.close()
 
 
 @responses.activate
@@ -241,6 +247,8 @@ async def test_get_double_archived() -> None:
                 "MY:PV", archiver.mgmt.hostname, other_archiver.mgmt.hostname
             ),
         ] == pvs_response
+        await archiver.close()
+        await other_archiver.close()
 
 
 @pytest.mark.parametrize(

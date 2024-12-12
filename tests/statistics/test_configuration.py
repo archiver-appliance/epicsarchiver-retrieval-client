@@ -48,3 +48,5 @@ async def test_get_not_configured(mocker: MockFixture) -> None:
             "MY:PV3", ConfiguredStatus.ConfiguredGitlab, ["MY:PV"], ["MY:PV"]
         ),
     } == set(pvs_response)
+    await archiver.close()
+    await channelfinder.close()

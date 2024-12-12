@@ -104,6 +104,7 @@ async def test_generate_buffer_overflow_stat(mocker: MockFixture) -> None:
             Stat.BufferOverflow
         ],
     }
+    await archiver.close()
 
 
 def mock_get_pvs_dropped(
@@ -178,3 +179,5 @@ async def test_generate_all_stats(mocker: MockFixture) -> None:
     assert ioc in actual
     assert "MY:PV" in actual[ioc]
     assert PVStats("MY:PV", expected_all_stats) == actual[ioc]["MY:PV"]
+    await other_archiver.close()
+    await archiver.close()
