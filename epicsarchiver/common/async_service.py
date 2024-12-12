@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 import urllib.parse
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any
 
 from aiohttp import ClientResponse, ClientSession
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

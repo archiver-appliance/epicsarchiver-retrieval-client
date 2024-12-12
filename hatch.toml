@@ -30,6 +30,7 @@ extra-dependencies = [
   "aioresponses",
   "pytest-mock",
   "pytest-aiohttp",
+  "typing-extensions"
 ]
 
 [envs.hatch-test.scripts]
@@ -52,6 +53,7 @@ extra-dependencies = [
   "types-requests",
   "types-python-dateutil",
   "types-protobuf",
+  "typing-extensions"
 ]
 
 [envs.types.scripts]
