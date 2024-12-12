@@ -36,7 +36,7 @@ extra-dependencies = [
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"
 run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
 cov-combine = "coverage combine"
-cov-report = "coverage report --format=xml"
+cov-report = "coverage xml"
 
 [envs.types]
 extra-dependencies = [
