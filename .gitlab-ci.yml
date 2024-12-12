@@ -56,10 +56,9 @@ test:
 
 jupyter-check:
   stage: test
-  image: $IMAGE
+  image: python:3.10
   script:
     - hatch run jupyter-check
-  parallel: !reference [.parallel,parallel]
 
 
 cov:
