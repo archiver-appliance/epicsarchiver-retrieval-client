@@ -81,7 +81,7 @@ lint:
     - hatch fmt --check
   parallel: !reference [.parallel,parallel]
 
-link-types:
+lint-types:
   stage: check
   image: $IMAGE
   script:
