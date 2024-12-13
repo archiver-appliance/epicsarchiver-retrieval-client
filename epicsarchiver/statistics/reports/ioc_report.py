@@ -1,7 +1,7 @@
 """Generate a report detailing a list of statistics of Archiver pvs from an IOC.
 
 Examples:
-    .. highlight:: python
+
     .. code-block:: python
 
         ioc_report = IocReport(

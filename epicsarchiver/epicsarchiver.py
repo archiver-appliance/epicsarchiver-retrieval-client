@@ -18,6 +18,7 @@ class ArchiverAppliance(ArchiverMgmt, ArchiverRetrieval):
         port: EPICS Archiver Appliance management port [default: 17665]
 
     Examples:
+
     .. code-block:: python
 
         from epicsarchiver import ArchiverAppliance

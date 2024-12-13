@@ -35,16 +35,17 @@ class AsyncArchiverRetrieval(ServiceClient):
         port: EPICS Archiver Appliance management port [default: 17665]
 
     Examples:
+
     .. code-block:: python
 
         from epicsarchiver.archiver.retrieval import AsyncArchiverRetrieval
 
-        archappl = AsyncArchiverRetrieval("archiver-01.tn.esss.lu.se")
-        df = await archappl.get_events(
-            "my:pv",
-            start=datetime.now(tz=UTC) - timedelta(seconds=1),
-            end=datetime.utcnow(),
-        )
+        async with AsyncArchiverRetrieval("archiver-01.tn.esss.lu.se") as archappl:
+            events = await archappl.get_events(
+                "my:pv",
+                start=datetime.now(tz=UTC) - timedelta(seconds=1),
+                end=datetime.utcnow(),
+            )
     """
 
     def __init__(self, hostname: str = "localhost", port: int = 17665):
