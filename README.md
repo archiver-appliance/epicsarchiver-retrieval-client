@@ -85,7 +85,7 @@ hatch run all
 Run tests:
 
 ```console
-hatch run test
+hatch test
 ```
 
 Run formatting and check:
