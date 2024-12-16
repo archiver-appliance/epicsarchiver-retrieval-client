@@ -9,7 +9,7 @@ def create_pb_bytes(
     events: Sequence[EeEvent],
     info: ee.PayloadInfo,
 ) -> bytes:
-    """Mostly used for testing, converts list of events to escaped protobuf bytes.
+    """Converts list of events to escaped protobuf bytes.
 
     Args:
         events (list[EeEvent]): list of events

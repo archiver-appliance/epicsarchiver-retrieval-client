@@ -26,9 +26,9 @@ def _format_date(at: datetime.datetime) -> str:
 
 
 class AsyncArchiverRetrieval(ServiceClient):
-    """Async Retrieval EPICS Archiver Appliance client.
+    """Async retrieval client for the EPICS archiver appliance.
 
-    Hold a session to the Retrieval Archiver Appliance web application.
+    Hold a session to the Archiver Appliance server to make retrieval requests.
 
     Args:
         hostname: EPICS Archiver Appliance hostname [default: localhost]
@@ -49,7 +49,7 @@ class AsyncArchiverRetrieval(ServiceClient):
     """
 
     def __init__(self, hostname: str = "localhost", port: int = 17665):
-        """Create Async Retrieval object.
+        """Create Async archiver retrieval client.
 
         Args:
             hostname (str, optional): hostname of archiver.
@@ -61,13 +61,13 @@ class AsyncArchiverRetrieval(ServiceClient):
         super().__init__(f"https://{hostname}")
 
     async def data_url(self) -> str:
-        """EPICS Archiver Appliance data retrieval url.
+        """EPICS Archiver Appliance data retrieval URL.
 
         Raises:
             ConnectionError: Raises if archiver not available
 
         Returns:
-            str: url of retrieval engine
+            str: URL of retrieval engine
         """
         if self._data_url is None:
             app_info = await self._get_json(
@@ -85,17 +85,15 @@ class AsyncArchiverRetrieval(ServiceClient):
         start: datetime.datetime,
         end: datetime.datetime,
     ) -> ClientResponse:
-        """Retrieve archived data.
+        """Fetch raw response from archiver data retrieval URL.
 
         Args:
-            pv: name of the pv.
-            start: start time. Can be a string or `datetime.datetime`
-                object.
-            end: end time. Can be a string or `datetime.datetime`
-                object.
+            pv (str): PV data requested for.
+            start (datetime.datetime): Start time of period.
+            end (datetime.datetime): End time of period.
 
         Returns:
-            `Response`
+            ClientResponse: Raw response from the archiver.
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         params = {
@@ -115,20 +113,17 @@ class AsyncArchiverRetrieval(ServiceClient):
         end: datetime.datetime,
         processor: Processor | None = None,
     ) -> list[ArchiveEvent]:
-        """Retrieve archived data.
+        """Get a list of events from the archiver for specified pv and time period.
 
         Args:
-            pv: name of the pv.
-            start: start time. Can be a string or `datetime.datetime`
-                object.
-            end: end time. Can be a string or `datetime.datetime`
-                object.
-            processor (Processor | None, optional): Preprocessor
-                to use. Defaults to None.
-
+            pv (str): PV data requested for.
+            start (datetime.datetime): Start time of the time period.
+            end (datetime.datetime): End time fo the time period.
+            processor (Processor | None, optional): Optional Preprocessor to use.
+                Defaults to None.
 
         Returns:
-            list[ArchiveEvent]: requested events from the archiver.
+            list[ArchiveEvent]: List of events in time period.
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         pv_request = processor.calc_pv_name(pv) if processor else pv
@@ -143,20 +138,20 @@ class AsyncArchiverRetrieval(ServiceClient):
         end: datetime.datetime,
         processor: Processor | None = None,
     ) -> dict[str, list[ArchiveEvent]]:
-        """Retrieve archived data.
+        """Get a list of events for every pv requested.
+
+        Makes all the calls to the archiver asynchronously, so some maybe made in
+        parallel.
 
         Args:
-            pvs: list of pvs
-            start: start time. Can be a string or `datetime.datetime`
-                object.
-            end: end time. Can be a string or `datetime.datetime`
-                object.
-            processor (Processor | None, optional): Preprocessor
-                to use. Defaults to None.
-
+            pvs (set[str]): Set of pvs data wanted for.
+            start (datetime.datetime): Start time of period.
+            end (datetime.datetime): End time of period.
+            processor (Processor | None, optional): Optional choice of Preprocessor.
+                Defaults to None.
 
         Returns:
-            dict[str, list[ArchiveEvent]]: requested events from the archiver.
+            dict[str, list[ArchiveEvent]]: Dictionary of pvs (keys) and events (values).
         """
 
         async def get_pv_and_events(pv: str) -> tuple[str, list[ArchiveEvent]]:

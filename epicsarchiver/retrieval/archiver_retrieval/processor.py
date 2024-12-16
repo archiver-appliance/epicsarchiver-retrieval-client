@@ -1,4 +1,4 @@
-"""Module for the Retrieval Processors."""
+"""Module for the retrieval processors."""
 
 from __future__ import annotations
 
