@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from pytz import UTC
 
 from epicsarchiver.common.async_service import ServiceClient
+from epicsarchiver.common.errors import ArchiverResponseError
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
@@ -64,7 +65,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         """EPICS Archiver Appliance data retrieval URL.
 
         Raises:
-            ConnectionError: Raises if archiver not available
+            ArchiverResponseError: Raises if archiver not available
 
         Returns:
             str: URL of retrieval engine
@@ -75,7 +76,8 @@ class AsyncArchiverRetrieval(ServiceClient):
             )
             data_url_base = app_info.get("dataRetrievalURL")
             if data_url_base is None:
-                raise ConnectionError
+                msg = "Missing dataRetrievalURL in response from getApplianceInfo."
+                raise ArchiverResponseError(msg)
             self._data_url = data_url_base + "/data/getData.raw"
         return self._data_url
 
