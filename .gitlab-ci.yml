@@ -76,10 +76,9 @@ cov:
 
 lint:
   stage: check
-  image: $IMAGE
+  image: python:3.8 # keep in sync with ruff.toml
   script:
     - hatch fmt --check
-  parallel: !reference [.parallel,parallel]
 
 lint-types:
   stage: check
