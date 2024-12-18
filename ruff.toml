@@ -16,7 +16,7 @@ docstring-code-line-length = 80
 select = ["ALL"
 ]
 ignore = [
-  "ANN101", "ANN102", "ANN204", "ANN401", "COM812", "CPY001", "D412", "ISC001",
+  "ANN204", "ANN401", "COM812", "CPY001", "D412", "ISC001",
 ]
 
 [lint.per-file-ignores]

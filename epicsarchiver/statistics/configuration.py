@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from os import listdir
 from typing import TYPE_CHECKING
 
 from attr import dataclass
@@ -69,8 +68,8 @@ async def _fetch_configured_pvs_gitlab(config_gitlab_repo: Path) -> set[str]:
     await gitlab.close()
     onlyfiles = [
         config_files / f
-        for f in listdir(config_files)
-        if (config_files / f).is_file() and f.endswith(".archive")
+        for f in config_files.iterdir()
+        if (config_files / f).is_file() and f.name.endswith(".archive")
     ]
     return {ar["pv"] for ar in get_pvs_from_files(onlyfiles)}
 

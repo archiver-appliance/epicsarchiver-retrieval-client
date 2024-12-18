@@ -64,7 +64,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         params = {"pv": pv}
         params.update(kwargs)
         r = self._get("/archivePV", params=params)
-        return cast(OperationResultList, r.json())
+        return cast("OperationResultList", r.json())
 
     def archive_pvs(self, pvs: OperationResultList) -> OperationResultList:
         """Archive a list of PVs.
@@ -77,7 +77,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivePVAction.html
         r = self._post("/archivePV", json=pvs)
-        return cast(OperationResultList, r.json())
+        return cast("OperationResultList", r.json())
 
     def archive_pvs_from_files(
         self,
@@ -110,8 +110,8 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/PauseArchivingPV.html
         response = self._get_or_post("/pauseArchivingPV", pv)
         if "," not in pv:
-            return cast(OperationResult, response)
-        return cast(OperationResultList, response)
+            return cast("OperationResult", response)
+        return cast("OperationResultList", response)
 
     def resume_pv(self, pv: str) -> OperationResultList | OperationResult:
         """Resume the archiving of a PV(s).
@@ -126,8 +126,8 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ResumeArchivingPV.html
         response = self._get_or_post("/resumeArchivingPV", pv)
         if "," not in pv:
-            return cast(OperationResult, response)
-        return cast(OperationResultList, response)
+            return cast("OperationResult", response)
+        return cast("OperationResultList", response)
 
     def abort_pv(self, pv: str) -> list[str]:
         """Abort any pending requests for archiving this PV.
@@ -140,7 +140,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/AbortArchiveRequest.html
         r = self._get("/abortArchivingPV", params={"pv": pv})
-        return cast(List[str], r.json())
+        return cast("List[str]", r.json())
 
     def add_alias(self, pv: str, alias_name: str) -> None:
         """Add an alias to a pv.
@@ -175,7 +175,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/DeletePV.html
         r = self._get("/deletePV", params={"pv": pv, "delete_data": delete_data})
-        return cast(List[str], r.json())
+        return cast("List[str]", r.json())
 
     def rename_pv(self, pv: str, newname: str) -> OperationResult:
         """Rename this pv to a new name.
@@ -192,7 +192,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         """
         # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/RenamePVAction.html
         r = self._get("/renamePV", params={"pv": pv, "newname": newname})
-        return cast(OperationResult, r.json())
+        return cast("OperationResult", r.json())
 
     def update_pv(
         self,
@@ -215,7 +215,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         if samplingmethod:
             params["samplingmethod"] = samplingmethod
         r = self._get("/changeArchivalParameters", params=params)
-        return cast(List[str], r.json())
+        return cast("List[str]", r.json())
 
     def pause_rename_resume_pv(self, pv: str, new: str) -> None:
         """Pause, rename and resume a PV.
@@ -279,7 +279,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
             params={"olderpv": old, "newerpv": new, "storage": storage},
         )
         LOG.debug("/appendAndAliasPV response %s", response.json())
-        result = cast(OperationResultList, response.json())
+        result = cast("OperationResultList", response.json())
         if not check_result(result, f"Error while append_and_alias_pv {old}, {new}"):
             return
         LOG.debug("PV %s successfully appended and aliased to %s", old, new)
@@ -295,7 +295,7 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         response = self._get(
             "/changeTypeForPV", params={"pv": pv, "newtype": new_type.name}
         )
-        result = cast(OperationResultList, response.json())
+        result = cast("OperationResultList", response.json())
         if not check_result(result, f"Error while change_type {pv}"):
             return
         LOG.debug("PV %s successfully changed type to %s", pv, new_type)
