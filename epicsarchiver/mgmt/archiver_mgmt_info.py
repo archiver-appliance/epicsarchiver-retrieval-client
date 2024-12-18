@@ -72,7 +72,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetAllExpandedPVNames.html
         r = self._get("/getAllExpandedPVNames")
-        return cast(List[str], r.json())
+        return cast("List[str]", r.json())
 
     def get_all_pvs(
         self,
@@ -102,7 +102,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         if regex is not None:
             params["regex"] = regex
         r = self._get("/getAllPVs", params=params)
-        return cast(List[str], r.json())
+        return cast("List[str]", r.json())
 
     def get_pv_status(self, pv: str | list[str]) -> InfoResultList:
         """Return the status of a PV.
@@ -117,7 +117,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVStatusAction.html
         r = self._get("/getPVStatus", params={"pv": pv})
-        return cast(InfoResultList, r.json())
+        return cast("InfoResultList", r.json())
 
     def get_archiving_status(self, pv: str) -> ArchivingStatus | None:
         """Return the status of a PV.
@@ -143,7 +143,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVDetailsAction.html
         r = self._get("/getPVDetails", params={"pv": pv})
-        return cast(InfoResultList, r.json())
+        return cast("InfoResultList", r.json())
 
     def get_pv_status_from_files(
         self,
@@ -178,7 +178,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         if isinstance(pvs, list):
             pvs = ",".join(pvs)
         r = self._post("/unarchivedPVs", data={"pv": pvs})
-        return cast(List[str], r.json())
+        return cast("List[str]", r.json())
 
     def get_archived_pvs(self, pvs: str | list[str]) -> list[str]:
         """Return the list of unarchived PVs out of PVs specified in pvs.
@@ -194,7 +194,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         if isinstance(pvs, list):
             pvs = ",".join(pvs)
         r = self._post("/archivedPVs", data={"pv": pvs})
-        return cast(List[str], r.json())
+        return cast("List[str]", r.json())
 
     def get_unarchived_pvs_from_files(
         self,
