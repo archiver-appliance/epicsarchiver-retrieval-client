@@ -1,20 +1,22 @@
 [build-system]
-requires = ["hatchling>=1.24.2", "hatch-vcs>=0.3.0"]
 build-backend = "hatchling.build"
+
+requires = [ "hatch-vcs>=0.3", "hatchling>=1.24.2" ]
 
 [project]
 name = "py-epicsarchiver"
 description = "A python script for managing and pulling data from the Archiver Appliance"
 readme = "README.md"
-requires-python = ">=3.8"
-keywords = []
+keywords = [  ]
 authors = [
   { name = "Sky Brewer", email = "sky.brewer@ess.eu" },
   { name = "Benjamin Bertrand" },
 ]
+requires-python = ">=3.8"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -22,46 +24,43 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
+dynamic = [ "version" ]
+
 dependencies = [
+  "aiohttp>=3",
+  "asyncio>=3.4",
+  "click>=8",
   "numpy>=1.24",
   "pandas>=2",
+  "protobuf>=5",
+  "pytz>=2024.1",
   "requests>=2",
   "rich>=13",
-  "click>=8",
-  "protobuf>=5",
-  "strictly_typed_pandas>=0.3",
-  "pytz>=2024.1",
-  "asyncio>=3.4",
-  "aiohttp>=3",
+  "strictly-typed-pandas>=0.3",
 ]
-dynamic = ["version"]
-
-[project.scripts]
-epicsarchiver = "epicsarchiver.command:cli"
-
-[project.urls]
-Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
+urls.Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
+scripts.epicsarchiver = "epicsarchiver.command:cli"
 
 [tool.ruff]
 extend = "ruff.toml"
 
-[tool.mypy]
-strict = true
-
-[tool.coverage.run]
-source_pkgs = ["epicsarchiver", "tests"]
-branch = true
-parallel = true
-omit = ["epicsarchiver/__about__.py"]
-
-[tool.coverage.paths]
-epicsarchiver = ["epicsarchiver", "*/py-epicsarchiver/epicsarchiver"]
-tests = ["tests", "*/epicsarchiver/tests"]
-
-[tool.coverage.report]
-exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
-show_missing = true
-
 [tool.pytest.ini_options]
 log_cli = true
 log_cli_level = "DEBUG"
+
+[tool.coverage.run]
+source_pkgs = [ "epicsarchiver", "tests" ]
+branch = true
+parallel = true
+omit = [ "epicsarchiver/__about__.py" ]
+
+[tool.coverage.paths]
+epicsarchiver = [ "epicsarchiver", "*/py-epicsarchiver/epicsarchiver" ]
+tests = [ "tests", "*/epicsarchiver/tests" ]
+
+[tool.coverage.report]
+exclude_lines = [ "no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:" ]
+show_missing = true
+
+[tool.mypy]
+strict = true
