@@ -69,7 +69,7 @@ async def _fetch_configured_pvs_gitlab(config_gitlab_repo: Path) -> set[str]:
     onlyfiles = [
         config_files / f
         for f in config_files.iterdir()
-        if (config_files / f).is_file() and f.name.endswith(".archive")
+        if (config_files / f).is_file() and f.suffix == ".archive"
     ]
     return {ar["pv"] for ar in get_pvs_from_files(onlyfiles)}
 
