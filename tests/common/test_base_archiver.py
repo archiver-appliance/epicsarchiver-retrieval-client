@@ -10,7 +10,7 @@ from pytz import utc as UTC  # noqa: N812
 from rich.logging import RichHandler
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
-from epicsarchiver.retrieval.archiver_retrieval import format_date
+from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import format_date
 
 logging.basicConfig(
     level=logging.DEBUG,

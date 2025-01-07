@@ -1,73 +1,15 @@
-from typing import Sequence
-
 import pandas as pd
 import pytest
 import responses
 from pytz import UTC
 
-import epicsarchiver.retrieval.EPICSEvent_pb2 as ee
 from epicsarchiver.retrieval.archive_event import ArchiveEvent, year_timestamp
-from epicsarchiver.retrieval.archiver_retrieval import (
+from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
     ArchiverRetrieval,
-    Processor,
-    ProcessorName,
 )
-from epicsarchiver.retrieval.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo, ScalarInt
-from epicsarchiver.retrieval.pb import EeEvent, escape_bytes, to_field_value
-
-
-def create_pb_bytes(
-    events: Sequence[EeEvent],
-    info: ee.PayloadInfo,
-) -> bytes:
-    """Mostly used for testing, converts list of events to escaped protobuf bytes.
-
-    Args:
-        events (list[EeEvent]): list of events
-        info (ee.PayloadInfo): payload data
-
-    Returns:
-        bytes: escaped bytes
-    """
-    info_bytes = escape_bytes(info.SerializeToString())
-    events_bytes = b"\n".join(escape_bytes(e.SerializeToString()) for e in events)
-    return info_bytes + b"\n" + events_bytes
-
-
-TEST_EVENTS = [
-    ScalarInt(
-        secondsintoyear=22537583,
-        val=1,
-        nano=931598267,
-        severity=0,
-        status=0,
-        fieldvalues=[ee.FieldValue(name="hey", val="ho")],
-    ),
-    ScalarInt(
-        secondsintoyear=22537584,
-        val=2,
-        nano=907631989,
-        severity=0,
-        status=0,
-        fieldvalues=[ee.FieldValue(name="hey", val="ho")],
-    ),
-    ScalarInt(
-        secondsintoyear=22537585,
-        val=3,
-        nano=931598267,
-        severity=0,
-        status=0,
-        fieldvalues=[ee.FieldValue(name="hey", val="ho")],
-    ),
-    ScalarInt(
-        secondsintoyear=22537586,
-        val=4,
-        nano=911606448,
-        severity=0,
-        status=0,
-        fieldvalues=[ee.FieldValue(name="hey", val="ho")],
-    ),
-]
+from epicsarchiver.retrieval.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo
+from epicsarchiver.retrieval.pb import to_field_value
+from tests.retrieval.fake_data import TEST_EVENTS, create_pb_bytes
 
 
 @responses.activate
@@ -185,9 +127,3 @@ def test_data_url_with_no_specific_port() -> None:
     data_url = archiver.data_url()
     assert len(responses.calls) == 1
     assert data_url == "http://archiver-01/foo/data/getData.raw"
-
-
-def test_calc_pv_name() -> None:
-    pv = "PVNAME"
-    expected_result = "firstSample_60(PVNAME)"
-    assert Processor(ProcessorName.FIRSTSAMPLE, 60).calc_pv_name(pv) == expected_result

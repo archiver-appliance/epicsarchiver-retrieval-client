@@ -55,7 +55,9 @@ extra-dependencies = [
 ]
 
 [envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:./epicsarchiver ./tests}"
+check-src = "mypy --install-types --non-interactive {args:./epicsarchiver}"
+check-tests = "mypy --install-types --non-interactive --explicit-package-bases {args:./tests}"
+check = ["check-src", "check-tests"]
 
 [envs.docs]
 extra-dependencies = [

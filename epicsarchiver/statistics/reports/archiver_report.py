@@ -1,7 +1,7 @@
 """Generate a report detailing a list of statistics of Archiver pvs.
 
 Examples:
-    .. highlight:: python
+
     .. code-block:: python
 
         report = ArchiverReport(

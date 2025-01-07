@@ -37,6 +37,7 @@ dependencies = [
   "requests>=2",
   "rich>=13",
   "strictly-typed-pandas>=0.3",
+  "typing-extensions>=4.12",
 ]
 urls.Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
 scripts.epicsarchiver = "epicsarchiver.command:cli"
