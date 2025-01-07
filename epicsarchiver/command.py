@@ -5,7 +5,6 @@ import logging
 import click
 
 from epicsarchiver.epicsarchiver import ArchiverAppliance
-from epicsarchiver.mgmt import command as mgmt
 from epicsarchiver.retrieval import command as retrieval
 from epicsarchiver.statistics import command as stats
 
@@ -28,8 +27,6 @@ def cli(ctx: click.core.Context, hostname: str) -> None:
     ctx.obj = {"archiver": ArchiverAppliance(hostname)}
 
 
-cli.add_command(mgmt.archive)
-cli.add_command(mgmt.rename)
 cli.add_command(retrieval.get)
 cli.add_command(stats.stats)
 cli.add_command(stats.ioc_check)
