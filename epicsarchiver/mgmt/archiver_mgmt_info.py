@@ -62,6 +62,9 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         archappl.get_pv_status(pv="BPM*")
     """
 
+    # EPICS Archiver Appliance documentation of mgmt endpoints:
+    # https://epicsarchiver.readthedocs.io/en/latest/developer/mgmt_scriptables.html
+
     def get_all_expanded_pvs(self) -> list[str]:
         """Return all expanded PV names in the cluster.
 
@@ -73,7 +76,6 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         Returns:
             list of expanded PV names
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetAllExpandedPVNames.html
         r = self._get("/getAllExpandedPVNames")
         return cast("List[str]", r.json())
 
@@ -98,7 +100,6 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         Returns:
             list[str]: list of PV names
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetAllPVs.html
         params: dict[str, str] = {"limit": str(limit)}
         if pv_query is not None:
             params["pv"] = pv_query
@@ -118,7 +119,6 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         Returns:
             list of dict with the status of the matching PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVStatusAction.html
         r = self._get("/getPVStatus", params={"pv": pv})
         return cast("InfoResultList", r.json())
 
@@ -144,7 +144,6 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         Returns:
             list of dict with the details of the matching PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVDetailsAction.html
         r = self._get("/getPVDetails", params={"pv": pv})
         return cast("InfoResultList", r.json())
 
@@ -177,7 +176,6 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         Returns:
             list of unarchived PV names
         """
-        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/UnarchivedPVsAction.html
         if isinstance(pvs, list):
             pvs = ",".join(pvs)
         r = self._post("/unarchivedPVs", data={"pv": pvs})
@@ -193,7 +191,6 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         Returns:
             list of unarchived PV names
         """
-        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivedPVsAction.html
         if isinstance(pvs, list):
             pvs = ",".join(pvs)
         r = self._post("/archivedPVs", data={"pv": pvs})
@@ -227,6 +224,5 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         Returns:
             dict with the type info of the matching PVs.
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVTypeInfoAction.html
         r = self._get("/getPVTypeInfo", params={"pv": pv})
         return cast("TypeInfo", r.json())

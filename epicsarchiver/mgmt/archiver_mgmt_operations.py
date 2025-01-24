@@ -59,6 +59,9 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         archappl.archive_pv("PVNAME")
     """
 
+    # EPICS Archiver Appliance documentation of mgmt endpoints:
+    # https://epicsarchiver.readthedocs.io/en/latest/developer/mgmt_scriptables.html
+
     def archive_pv(self, pv: str, **kwargs: Any) -> OperationResultList:
         r"""Archive a PV.
 
@@ -72,7 +75,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivePVAction.html
         params = {"pv": pv}
         params.update(kwargs)
         r = self._get("/archivePV", params=params)
@@ -87,7 +89,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivePVAction.html
         r = self._post("/archivePV", json=pvs)
         return cast("OperationResultList", r.json())
 
@@ -119,7 +120,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/PauseArchivingPV.html
         response = self._get_or_post("/pauseArchivingPV", pv)
         if "," not in pv:
             return cast("OperationResult", response)
@@ -135,7 +135,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ResumeArchivingPV.html
         response = self._get_or_post("/resumeArchivingPV", pv)
         if "," not in pv:
             return cast("OperationResult", response)
@@ -150,7 +149,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/AbortArchiveRequest.html
         r = self._get("/abortArchivingPV", params={"pv": pv})
         return cast("List[str]", r.json())
 
@@ -185,7 +183,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/DeletePV.html
         r = self._get("/deletePV", params={"pv": pv, "delete_data": delete_data})
         return cast("List[str]", r.json())
 
@@ -202,7 +199,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
             OperationResult: Status of action and description. Example:
                 {"status":"ok","desc":"Successfully renamed PV PV1 to PV2"}
         """
-        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/RenamePVAction.html
         r = self._get("/renamePV", params={"pv": pv, "newname": newname})
         return cast("OperationResult", r.json())
 
@@ -222,7 +218,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PV
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ChangeArchivalParamsAction.html
         params = {"pv": pv, "samplingperiod": samplingperiod}
         if samplingmethod:
             params["samplingmethod"] = samplingmethod
