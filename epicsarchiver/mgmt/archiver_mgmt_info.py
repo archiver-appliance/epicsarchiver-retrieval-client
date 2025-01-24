@@ -5,10 +5,13 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, cast
+from typing import TYPE_CHECKING, Dict, List, cast
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 from epicsarchiver.mgmt import archive_files
+
+if TYPE_CHECKING:
+    from epicsarchiver.mgmt.archiver_mgmt_operations import TypeInfo
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -214,3 +217,16 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         pvs = archive_files.get_pvs_from_files([Path(f) for f in files], appliance)
         lpvs = ",".join(pv["pv"] for pv in pvs)
         return self.get_unarchived_pvs(lpvs)
+
+    def get_pv_type_info(self, pv: str) -> TypeInfo:
+        """Return the type info of a PV.
+
+        Args:
+            pv: name of the pv.
+
+        Returns:
+            dict with the type info of the matching PVs.
+        """
+        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetPVTypeInfoAction.html
+        r = self._get("/getPVTypeInfo", params={"pv": pv})
+        return cast("TypeInfo", r.json())
