@@ -38,6 +38,9 @@ run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
 cov-combine = "coverage combine"
 cov-report = "coverage xml"
 
+[[envs.types.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+
 [envs.types]
 extra-dependencies = [
   "mypy",

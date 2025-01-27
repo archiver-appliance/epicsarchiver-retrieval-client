@@ -14,6 +14,7 @@ from epicsarchiver.common import ArchDbrType
 from epicsarchiver.mgmt.archiver_mgmt_info import ArchivingStatus
 from epicsarchiver.mgmt.archiver_mgmt_operations import (
     ArchiverMgmtOperations,
+    PutInfoType,
     Storage,
     check_result,
 )
@@ -658,3 +659,67 @@ def test_check_result_message(
         check_result(test_input, default_message)
     captured_log = caplog.text
     assert output in captured_log
+
+
+@responses.activate
+def test_put_pv_type_info_ok(caplog: pytest.LogCaptureFixture) -> None:
+    archiver = ArchiverMgmtOperations(TEST_DOMAIN)
+    pv = "MY:PV"
+    newtypeinfo = {
+        "hostName": "idmz-ro-epics-gw-tn.esss.lu.se",
+        "paused": "false",
+        "creationTime": "2025-01-23T12:04:58.973Z",
+        "lowerAlarmLimit": "NaN",
+        "precision": "0.0",
+        "lowerCtrlLimit": "10.0",
+        "units": "degC",
+        "computedBytesPerEvent": "18",
+        "computedEventRate": "18.366667",
+        "usePVAccess": "false",
+        "computedStorageRate": "345.35",
+        "modificationTime": "2025-01-23T12:04:58.973Z",
+        "upperDisplayLimit": "150.0",
+        "upperWarningLimit": "30.0",
+        "DBRType": "DBR_SCALAR_DOUBLE",
+        "dataStores": [
+            "pb://localhost?name=STS&rootFolder=${ARCHAPPL_SHORT_TERM_FOLDER}&partitionGranularity=PARTITION_HOUR&consolidateOnShutdown=true",
+            "pb://localhost?name=MTS&rootFolder=${ARCHAPPL_MEDIUM_TERM_FOLDER}&partitionGranularity=PARTITION_DAY&hold=2&gather=1",
+            "pb://localhost?name=LTS&rootFolder=${ARCHAPPL_LONG_TERM_FOLDER}&partitionGranularity=PARTITION_YEAR",
+        ],
+        "upperAlarmLimit": "50.0",
+        "userSpecifiedEventRate": "0.0",
+        "policyName": "2HzPVs",
+        "useDBEProperties": "false",
+        "hasReducedDataSet": "false",
+        "lowerWarningLimit": "NaN",
+        "applianceIdentity": "localhost",
+        "scalar": "true",
+        "pvName": "DTL-020:EMR-TT-002:Temp",
+        "upperCtrlLimit": "150.0",
+        "lowerDisplayLimit": "10.0",
+        "samplingPeriod": "1.0",
+        "elementCount": "1",
+        "samplingMethod": "MONITOR",
+        "archiveFields": ["HIHI", "HIGH", "LOW", "LOLO", "LOPR", "HOPR"],
+        "extraFields": {
+            "ADEL": "0.0",
+            "MDEL": "0.0",
+            "SCAN": "Passive",
+            "NAME": "DTL-020:EMR-TT-002:Temp",
+            "RTYP": "ai",
+        },
+    }
+    responses.add(
+        responses.POST,
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/putPVTypeInfo?pv={pv}&createnew=true&override=false",
+        json=newtypeinfo,
+        status=200,
+        match_querystring=True,
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        archiver.put_pv_type_info(pv, newtypeinfo, PutInfoType.CreateNew)
+    captured_log = caplog.text
+
+    assert len(responses.calls) == 1
+    assert "Put type info" in captured_log

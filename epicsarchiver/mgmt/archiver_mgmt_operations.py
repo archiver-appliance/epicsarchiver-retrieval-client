@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
+from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, cast
+from typing import TYPE_CHECKING, Any, Collection, Dict, List, cast
 
 from epicsarchiver.mgmt import archive_files
-from epicsarchiver.mgmt.archiver_mgmt_info import ArchiverMgmtInfo, ArchivingStatus
+from epicsarchiver.mgmt.archiver_mgmt_info import (
+    ArchiverMgmtInfo,
+    ArchivingStatus,
+)
 
 if TYPE_CHECKING:
     from epicsarchiver.common import ArchDbrType
@@ -24,6 +27,14 @@ class Storage(str, Enum):
     LTS = "LTS"
 
 
+class PutInfoType(Enum):
+    """Represents the different types of put type info."""
+
+    Override = auto()
+    CreateNew = auto()
+
+
+TypeInfo = Dict[str, Collection[str]]
 OperationResult = Dict[str, str]
 OperationResultList = List[OperationResult]
 
@@ -48,6 +59,9 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         archappl.archive_pv("PVNAME")
     """
 
+    # EPICS Archiver Appliance documentation of mgmt endpoints:
+    # https://epicsarchiver.readthedocs.io/en/latest/developer/mgmt_scriptables.html
+
     def archive_pv(self, pv: str, **kwargs: Any) -> OperationResultList:
         r"""Archive a PV.
 
@@ -61,7 +75,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivePVAction.html
         params = {"pv": pv}
         params.update(kwargs)
         r = self._get("/archivePV", params=params)
@@ -76,7 +89,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ArchivePVAction.html
         r = self._post("/archivePV", json=pvs)
         return cast("OperationResultList", r.json())
 
@@ -108,7 +120,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/PauseArchivingPV.html
         response = self._get_or_post("/pauseArchivingPV", pv)
         if "," not in pv:
             return cast("OperationResult", response)
@@ -124,7 +135,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ResumeArchivingPV.html
         response = self._get_or_post("/resumeArchivingPV", pv)
         if "," not in pv:
             return cast("OperationResult", response)
@@ -139,7 +149,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/AbortArchiveRequest.html
         r = self._get("/abortArchivingPV", params={"pv": pv})
         return cast("List[str]", r.json())
 
@@ -174,7 +183,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PVs
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/DeletePV.html
         r = self._get("/deletePV", params={"pv": pv, "delete_data": delete_data})
         return cast("List[str]", r.json())
 
@@ -191,7 +199,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
             OperationResult: Status of action and description. Example:
                 {"status":"ok","desc":"Successfully renamed PV PV1 to PV2"}
         """
-        # https://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/RenamePVAction.html
         r = self._get("/renamePV", params={"pv": pv, "newname": newname})
         return cast("OperationResult", r.json())
 
@@ -211,7 +218,6 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         Returns:
             list of submitted PV
         """
-        # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/ChangeArchivalParamsAction.html
         params = {"pv": pv, "samplingperiod": samplingperiod}
         if samplingmethod:
             params["samplingmethod"] = samplingmethod
@@ -300,6 +306,36 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         if not check_result(result, f"Error while change_type {pv}"):
             return
         LOG.debug("PV %s successfully changed type to %s", pv, new_type)
+
+    def put_pv_type_info(
+        self, pv: str, type_info: TypeInfo, put_info_type: PutInfoType
+    ) -> TypeInfo:
+        """Put the type info for a PV.
+
+        Args:
+            pv (str): Name of the PV
+            type_info (InfoResult): Type info
+            put_info_type (PutInfoType): Whether override or create new
+
+        Returns:
+            OperationResult: The updated type info
+        """
+        LOG.info("Put type info for pv %s", pv)
+        params = {"pv": pv}
+        if put_info_type == PutInfoType.CreateNew:
+            params["createnew"] = "true"
+            params["override"] = "false"
+        elif put_info_type == PutInfoType.Override:
+            params["createnew"] = "false"
+            params["override"] = "true"
+        response = self._post(
+            "/putPVTypeInfo",
+            params=params,
+            json=type_info,
+        )
+        result = cast("TypeInfo", response.json())
+        LOG.debug("Put type info %s for pv %s", result, pv)
+        return cast("TypeInfo", response.json())
 
 
 def check_result(
