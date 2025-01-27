@@ -322,13 +322,12 @@ class ArchiverMgmtOperations(ArchiverMgmtInfo):
         """
         LOG.info("Put type info for pv %s", pv)
         params = {"pv": pv}
-        match put_info_type:
-            case PutInfoType.CreateNew:
-                params["createnew"] = "true"
-                params["override"] = "false"
-            case PutInfoType.Override:
-                params["createnew"] = "false"
-                params["override"] = "true"
+        if put_info_type == PutInfoType.CreateNew:
+            params["createnew"] = "true"
+            params["override"] = "false"
+        elif put_info_type == PutInfoType.Override:
+            params["createnew"] = "false"
+            params["override"] = "true"
         response = self._post(
             "/putPVTypeInfo",
             params=params,
