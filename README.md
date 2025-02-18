@@ -23,17 +23,17 @@ The package also installs a command line tool. Used to fetch data from the archi
 
 ```console
 $ epicsarchiver get --help
-Usage: epicsarchiver get [OPTIONS] PV
+Usage: epicsarchiver get [OPTIONS] PVS...
 
   Print out data from an archiver cluster.
 
-  ARGUMENT pv What pv to get data of.
+  ARGUMENT pvs What pvs to get data of.
 
   Example usage:
 
   .. code-block:: console
 
-      epicsarchiver --hostname archiver-01.example.com get PV_NAME
+      epicsarchiver --hostname archiver-01.example.com get PV_NAME1 PV_NAME2
 
 Options:
   --debug                         Turn on debug logging
