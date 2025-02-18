@@ -97,7 +97,7 @@ def get(  # noqa: PLR0917, PLR0913
 ) -> None:
     """Print out data from an archiver cluster.
 
-    ARGUMENT pv What pv to get data of.
+    ARGUMENT pvs What pvs to get data of.
 
     Example usage:
 
