@@ -34,7 +34,7 @@ async def test_get_events_pb() -> None:
             app_info_url,
             body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
         )
-        data_request_url = f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z"
+        data_request_url = f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z&fetchLatestMetadata=true"
         mocked.get(
             data_request_url,
             body=create_pb_bytes(
@@ -78,7 +78,7 @@ async def test_get_all_events_pb() -> None:
             app_info_url,
             body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
         )
-        data_request_url = "http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z"
+        data_request_url = "http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z&fetchLatestMetadata=true"
         for pv in pvs:
             mocked.get(
                 data_request_url.format(pv=pv),

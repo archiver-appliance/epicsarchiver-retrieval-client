@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
@@ -16,6 +17,9 @@ if TYPE_CHECKING:
     from requests import Response
 
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
+
+
+LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def format_date(date_or_str: datetime.datetime | str) -> str:
@@ -155,7 +159,9 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         pv_request = processor.calc_pv_name(pv) if processor else pv
         r = self._get_data_raw(pv_request, start, end)
         pb_data = r.content
-        return parse_pb_data(pb_data)
+        metadata, events = parse_pb_data(pb_data)
+        LOG.debug("Metadata: %s", metadata)
+        return events
 
     def get_data(
         self,

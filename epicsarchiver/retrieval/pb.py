@@ -27,9 +27,10 @@ import collections
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 import pandas as pd
+from attr import dataclass
 from pandas import Timestamp
 
 from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
@@ -271,7 +272,23 @@ def _event_from_line(line: bytes, pv: str, year: int, event_type: int) -> Archiv
     )
 
 
-def parse_pb_data(raw_data: bytes) -> list[ArchiveEvent]:
+@dataclass
+class ArchiveEventsMeta:
+    """Metadata about the events."""
+
+    pv_name: str
+    pv_type: str
+    element_count: int
+    headers: list[FieldValue]
+    year: int
+
+
+ArchiveEventsData = Tuple[Dict[int, ArchiveEventsMeta], List[ArchiveEvent]]
+
+
+def parse_pb_data(
+    raw_data: bytes,
+) -> ArchiveEventsData:
     """Turn raw PB data into an ArchiveData object.
 
     Args:
@@ -281,6 +298,7 @@ def parse_pb_data(raw_data: bytes) -> list[ArchiveEvent]:
         An ArchiveData object
     """
     year_chunks = _break_up_chunks(raw_data)
+    metadata: dict[int, ArchiveEventsMeta] = {}
     events: list[ArchiveEvent] = []
     # Iterate over years
     for year, (chunk_info, lines) in year_chunks.items():
@@ -288,8 +306,30 @@ def parse_pb_data(raw_data: bytes) -> list[ArchiveEvent]:
             _event_from_line(line, chunk_info.pvname, year, chunk_info.type)
             for line in lines
         ]
+        metadata[year] = metadata_from_chunk_info(year, chunk_info)
 
-    return events
+    return metadata, events
+
+
+def metadata_from_chunk_info(
+    year: int, chunk_info: ee.PayloadInfo
+) -> ArchiveEventsMeta:
+    """Convert a chunk info into metadata.
+
+    Args:
+        year (int): Year of interest
+        chunk_info (ee.PayloadInfo): Input chunk info
+
+    Returns:
+        ArchiveEventsMeta: Output metadata
+    """
+    return ArchiveEventsMeta(
+        pv_name=chunk_info.pvname,
+        pv_type=str(TYPE_MAPPINGS[chunk_info.type]),
+        element_count=chunk_info.elementCount,
+        headers=[to_field_value(field_value) for field_value in chunk_info.headers],
+        year=year,
+    )
 
 
 def get_iso_timestamp_for_event(
@@ -300,7 +340,7 @@ def get_iso_timestamp_for_event(
     return pd.Timestamp(event_timestamp(year, event)).isoformat()
 
 
-def read_pb_file(filename: str) -> list[ArchiveEvent]:
+def read_pb_file(filename: str) -> ArchiveEventsData:
     """Read an unescaped protobuf file and produce a list of events from file.
 
     Args:

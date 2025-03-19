@@ -56,6 +56,19 @@ class ArchiveEvent:
         """
         return ysn_timestamp(self.year, self.secondsintoyear, self.nanos)
 
+    @property
+    def field_values_dict(self) -> dict[str, str]:
+        """Provides a dict of field values.
+
+        Returns:
+            dict[str, str]: dict of field names and values
+        """
+        if not self.field_values:
+            return {}
+        return {
+            field.name: field.value or "" for field in self.field_values if field.name
+        }
+
 
 def year_timestamp(year: int) -> int:
     """Generates int timestamp for number of seconds from unix epoch at start of year.

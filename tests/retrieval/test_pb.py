@@ -57,7 +57,7 @@ def test_parse_scalardouble() -> None:
 
 
 def test_parse_pb_data() -> None:
-    result = pb.parse_pb_data(PB_CHUNK)
+    _meta, result = pb.parse_pb_data(PB_CHUNK)
     event = result[0]
     assert event == EVENT
 
@@ -110,7 +110,7 @@ def test_event_timestamp_gives_correct_answer_2001() -> None:
 
 
 def test_read_pb_file() -> None:
-    data = pb.read_pb_file("tests/retrieval/samples/string_event.pb")
+    _meta, data = pb.read_pb_file("tests/retrieval/samples/string_event.pb")
     assert data[0].val == "2015-01-08 19:47:01 UTC"
     assert data[0].timestamp.timestamp() == 1507712433.235971
 
@@ -125,7 +125,7 @@ def test_get_iso_timestamp_for_event_has_expected_output() -> None:
 
 
 def test_read_sigma_file() -> None:
-    data = pb.read_pb_file("tests/retrieval/samples/sigma_test_pb.pb")
+    _meta, data = pb.read_pb_file("tests/retrieval/samples/sigma_test_pb.pb")
     assert "Sigma" in data[0].pv
     assert 0.11091079832009144 in np.array(data[0].val)
     assert data[0].year == 2023
