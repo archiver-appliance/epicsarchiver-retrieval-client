@@ -26,6 +26,7 @@ from epicsarchiver.retrieval.archiver_retrieval.processor import (
 
 if TYPE_CHECKING:
     from epicsarchiver.epicsarchiver import ArchiverAppliance
+    from epicsarchiver.retrieval.pb import ArchiveEventsMeta
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -114,21 +115,55 @@ def get(  # noqa: PLR0917, PLR0913
         else None
     )
     LOG.debug("pvs %s", pvs)
+    events: AlignedPVEvents = []
+    if len(pvs) == 1:
+        meta, events = asyncio.run(
+            _single_fetch_events(archiver, pvs[0], start, end, processor=processor)
+        )
     events = asyncio.run(
-        _fetch_events(archiver, list(pvs), start, end, processor=processor)
+        _multi_fetch_events(archiver, list(pvs), start, end, processor=processor)
     )
     table_title = _table_title(pvs, start, end, processor)
+    table_caption = _table_caption(_meta_field_values(meta) if meta else None)
     table = (
         _create_multi_table(pvs, table_title, events)
         if len(pvs) > 1
-        else _create_singular_table(pvs[0], table_title, events)
+        else _create_singular_table(pvs[0], table_title, table_caption, events)
     )
     console.print(table)
     ctx.exit(0)
 
 
+def _meta_field_values(meta: dict[int, ArchiveEventsMeta]) -> dict[int, dict[str, str]]:
+    return {
+        year: {
+            field.name: field.value or ""
+            for field in field_values_dict.headers
+            if field.name
+        }
+        for year, field_values_dict in meta.items()
+    }
+
+
+def _table_caption(
+    field_values: dict[int, dict[str, str]] | None,
+) -> str | None:
+    if field_values:
+        caption = ""
+        for year, field_values_dict in field_values.items():
+            caption += f"Field Values {year}\n"
+            caption += "\n".join(
+                f"{key}: {value}" for key, value in field_values_dict.items()
+            )
+        return caption
+    return None
+
+
 def _table_title(
-    pvs: tuple[str], start: datetime, end: datetime, processor: Processor | None
+    pvs: tuple[str],
+    start: datetime,
+    end: datetime,
+    processor: Processor | None,
 ) -> str:
     table_title = f"Period {start} - {end}"
     if len(pvs) == 1:
@@ -170,9 +205,10 @@ def _val_to_str(event: ArchiveEvent | None) -> str:
 def _create_singular_table(
     pv: str,
     title: str,
+    caption: str | None,
     events: AlignedPVEvents,
 ) -> Table:
-    table = Table(title=title)
+    table = Table(title=title, caption=caption, caption_justify="left")
     table.add_column("Time", justify="left")
     table.add_column("Value", justify="right")
     table.add_column("Status", justify="right")
@@ -187,6 +223,20 @@ def _create_singular_table(
                 str(event.severity),
             )
     return table
+
+
+def filtered_event_field_values(fields: list[str], event: ArchiveEvent) -> list[str]:
+    """Provide a list of field values for the given event.
+
+    Args:
+        fields (list[str]): Input field names to filter
+        event (ArchiveEvent): Event to filter
+
+    Returns:
+        list[str]: Field values for the given event
+    """
+    LOG.debug("fields %s", event.field_values_dict)
+    return [str(event.field_values_dict.get(field, "")) for field in fields]
 
 
 def _align_events(
@@ -210,7 +260,7 @@ def _align_events(
     return [(timestamp, data[timestamp]) for timestamp in sorted(data.keys())]
 
 
-async def _fetch_events(
+async def _multi_fetch_events(
     archiver: ArchiverAppliance,
     pvs: list[str],
     start: datetime,
@@ -222,3 +272,17 @@ async def _fetch_events(
             set(pvs), start, end, processor=processor
         )
         return _align_events(all_events)
+
+
+async def _single_fetch_events(
+    archiver: ArchiverAppliance,
+    pv: str,
+    start: datetime,
+    end: datetime,
+    processor: Processor | None,
+) -> tuple[dict[int, ArchiveEventsMeta], AlignedPVEvents]:
+    async with AsyncArchiverRetrieval(archiver.hostname, archiver.port) as a_retrieval:
+        meta, events = await a_retrieval.get_archive_data(
+            pv, start, end, processor=processor
+        )
+        return meta, _align_events({pv: events})

@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import TYPE_CHECKING
 
 from pytz import UTC
 
 from epicsarchiver.common.async_service import ServiceClient
 from epicsarchiver.common.errors import ArchiverResponseError
-from epicsarchiver.retrieval.pb import parse_pb_data
+from epicsarchiver.retrieval.pb import ArchiveEventsData, parse_pb_data
 
 if TYPE_CHECKING:
     import datetime
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
 
     from epicsarchiver.retrieval.archive_event import ArchiveEvent
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
+
+LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def _format_date(at: datetime.datetime) -> str:
@@ -102,6 +105,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             "pv": pv,
             "from": _format_date(start),
             "to": _format_date(end),
+            "fetchLatestMetadata": "true",
         }
         return await self._get(
             await self.data_url(),
@@ -120,12 +124,36 @@ class AsyncArchiverRetrieval(ServiceClient):
         Args:
             pv (str): PV data requested for.
             start (datetime.datetime): Start time of the time period.
-            end (datetime.datetime): End time fo the time period.
+            end (datetime.datetime): End time of the time period.
             processor (Processor | None, optional): Optional Preprocessor to use.
                 Defaults to None.
 
         Returns:
             list[ArchiveEvent]: List of events in time period.
+        """
+        # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
+        metadata, events = await self.get_archive_data(pv, start, end, processor)
+        LOG.debug("Metadata: %s", metadata)
+        return events
+
+    async def get_archive_data(
+        self,
+        pv: str,
+        start: datetime.datetime,
+        end: datetime.datetime,
+        processor: Processor | None = None,
+    ) -> ArchiveEventsData:
+        """Get events from the archiver for specified pv and time period with metadata.
+
+        Args:
+            pv (str): PV data requested for.
+            start (datetime.datetime): Start time of the time period.
+            end (datetime.datetime): End time of the time period.
+            processor (Processor | None, optional): Optional Preprocessor to use.
+                Defaults to None.
+
+        Returns:
+            ArchiveEventsData: Metadata per year, list of events in time period.
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         pv_request = processor.calc_pv_name(pv) if processor else pv
