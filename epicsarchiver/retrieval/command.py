@@ -120,9 +120,10 @@ def get(  # noqa: PLR0917, PLR0913
         meta, events = asyncio.run(
             _single_fetch_events(archiver, pvs[0], start, end, processor=processor)
         )
-    events = asyncio.run(
-        _multi_fetch_events(archiver, list(pvs), start, end, processor=processor)
-    )
+    else:
+        events = asyncio.run(
+            _multi_fetch_events(archiver, list(pvs), start, end, processor=processor)
+        )
     table_title = _table_title(pvs, start, end, processor)
     table_caption = _table_caption(_meta_field_values(meta) if meta else None)
     table = (

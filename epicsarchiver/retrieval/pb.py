@@ -16,9 +16,6 @@ binary file using tools such as wc.
 The unescape_bytes() method handles unescaping these characters before
 handing the interpretation over to the Google Protobuf library.
 
-Note: due to the way the protobuf objects are constructed, pylint can't
-correctly deduce some properties, so I have manually disabled some warnings.
-
 """
 
 from __future__ import annotations
@@ -31,6 +28,7 @@ from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 import pandas as pd
 from attr import dataclass
+from google.protobuf.message import DecodeError
 from pandas import Timestamp
 
 from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
@@ -217,21 +215,28 @@ def _break_up_chunks(
     year_chunks: OrderedDict[int, tuple[ee.PayloadInfo, list[bytes]]] = (
         collections.OrderedDict()
     )
-    for chunk in chunks:
+    for chunk_index, chunk in enumerate(chunks):
         lines = chunk.split(b"\n")
         chunk_info = ee.PayloadInfo()
         chunk_info.ParseFromString(unescape_bytes(lines[0]))
         chunk_year = chunk_info.year  # pylint: disable=no-member
-        LOG.debug("Year %s: %s events in chunk", chunk_year, len(lines) - 1)
-        try:
+        LOG.debug(
+            "Year %s, Chunk Index %s: %s events in chunk",
+            chunk_year,
+            chunk_index,
+            len(lines) - 1,
+        )
+        if chunk_year in year_chunks:
             _, ls = year_chunks[chunk_year]
             ls.extend(lines[1:])
-        except KeyError:
+        else:
             year_chunks[chunk_year] = chunk_info, lines[1:]
     return year_chunks
 
 
-def _event_from_line(line: bytes, pv: str, year: int, event_type: int) -> ArchiveEvent:
+def _event_from_line(
+    line: bytes, pv: str, year: int, event_type: int
+) -> ArchiveEvent | None:
     """Get an ArchiveEvent from this line.
 
     Args:
@@ -241,11 +246,15 @@ def _event_from_line(line: bytes, pv: str, year: int, event_type: int) -> Archiv
         event_type: Need to know the type of the event as key of TYPE_MAPPINGS
 
     Returns:
-        ArchiveEvent
+        ArchiveEvent: The event
     """
     unescaped = unescape_bytes(line)
     event = TYPE_MAPPINGS[event_type]()
-    event.ParseFromString(unescaped)
+    try:
+        event.ParseFromString(unescaped)
+    except DecodeError:
+        LOG.exception("Error parsing event with unescaped bytes: %s", unescaped)
+        return None
     val = event.val
     if isinstance(
         event,
@@ -302,10 +311,10 @@ def parse_pb_data(
     events: list[ArchiveEvent] = []
     # Iterate over years
     for year, (chunk_info, lines) in year_chunks.items():
-        events += [
-            _event_from_line(line, chunk_info.pvname, year, chunk_info.type)
-            for line in lines
-        ]
+        for line in lines:
+            event = _event_from_line(line, chunk_info.pvname, year, chunk_info.type)
+            if event is not None:
+                events.append(event)
         metadata[year] = metadata_from_chunk_info(year, chunk_info)
 
     return metadata, events
