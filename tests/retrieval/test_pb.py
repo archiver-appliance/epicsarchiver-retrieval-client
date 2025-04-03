@@ -1,8 +1,11 @@
+import logging
 from datetime import datetime
 from unittest import mock
 
 import numpy as np
+import pytest
 from pytz import utc as UTC  # noqa: N812
+from rich.logging import RichHandler
 
 from epicsarchiver import ArchiveEvent
 from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
@@ -34,6 +37,12 @@ EVENT = ArchiveEvent(
     0,
     [],
 )
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
+LOG: logging.Logger = logging.getLogger(__name__)
 
 
 def test_parse_payloadinfo() -> None:
@@ -130,3 +139,14 @@ def test_read_sigma_file() -> None:
     assert 0.11091079832009144 in np.array(data[0].val)
     assert data[0].year == 2023
     assert isinstance(data[0].val, list)
+
+
+def test_read_faulty_file(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.DEBUG):
+        _meta, data = pb.read_pb_file("tests/retrieval/samples/faulty_file.pb")
+    assert "MEBT-010:PwrC-PSCV-004:Cur-R" in data[0].pv
+    assert data[0].year == 2025
+    assert len(data) == 6
+    assert isinstance(data[0].val, float)
+    captured_log = caplog.text
+    assert "Error parsing line 3" in captured_log

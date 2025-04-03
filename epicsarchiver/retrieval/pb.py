@@ -219,6 +219,7 @@ def _break_up_chunks(
         lines = chunk.split(b"\n")
         chunk_info = ee.PayloadInfo()
         chunk_info.ParseFromString(unescape_bytes(lines[0]))
+        LOG.debug("line 0 bytes: %s", lines[0])
         chunk_year = chunk_info.year  # pylint: disable=no-member
         LOG.debug(
             "Year %s, Chunk Index %s: %s events in chunk",
@@ -235,7 +236,7 @@ def _break_up_chunks(
 
 
 def _event_from_line(
-    line: bytes, pv: str, year: int, event_type: int
+    line: bytes, pv: str, year: int, event_type: int, line_number: int = 0
 ) -> ArchiveEvent | None:
     """Get an ArchiveEvent from this line.
 
@@ -244,6 +245,7 @@ def _event_from_line(
         pv: Name of the PV
         year: Year of interest
         event_type: Need to know the type of the event as key of TYPE_MAPPINGS
+        line_number: Line number in the file
 
     Returns:
         ArchiveEvent: The event
@@ -253,7 +255,9 @@ def _event_from_line(
     try:
         event.ParseFromString(unescaped)
     except DecodeError:
-        LOG.exception("Error parsing event with unescaped bytes: %s", unescaped)
+        LOG.exception(
+            "Error parsing line %s with unescaped bytes: %s", line_number, unescaped
+        )
         return None
     val = event.val
     if isinstance(
@@ -311,8 +315,10 @@ def parse_pb_data(
     events: list[ArchiveEvent] = []
     # Iterate over years
     for year, (chunk_info, lines) in year_chunks.items():
-        for line in lines:
-            event = _event_from_line(line, chunk_info.pvname, year, chunk_info.type)
+        for line_number, line in enumerate(lines):
+            event = _event_from_line(
+                line, chunk_info.pvname, year, chunk_info.type, line_number
+            )
             if event is not None:
                 events.append(event)
         metadata[year] = metadata_from_chunk_info(year, chunk_info)
