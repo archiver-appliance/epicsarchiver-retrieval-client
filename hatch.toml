@@ -14,7 +14,7 @@ include = ["/epicsarchiver", "/tests"]
 packages = ["epicsarchiver"]
 
 [envs.default.scripts]
-protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/EPICSEvent.proto"
+protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/retrieval/EPICSEvent.proto"
 docs-check = "hatch run docs:check"
 type-check = "hatch run types:check"
 jupyter-check = "hatch run jupyter:check"
