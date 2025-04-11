@@ -6,7 +6,6 @@ import click
 
 from epicsarchiver.epicsarchiver import ArchiverAppliance
 from epicsarchiver.retrieval import command as retrieval
-from epicsarchiver.statistics import command as stats
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -28,5 +27,3 @@ def cli(ctx: click.core.Context, hostname: str) -> None:
 
 
 cli.add_command(retrieval.get)
-cli.add_command(stats.stats)
-cli.add_command(stats.ioc_check)
