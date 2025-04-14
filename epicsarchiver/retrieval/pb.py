@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import collections
 import logging
+import re
 from collections import OrderedDict
 from pathlib import Path
 from typing import TYPE_CHECKING, Union
@@ -109,6 +110,11 @@ EeVectorEvent = Union[
 ]
 EeEvent = Union[EeScalarEvent, EeVectorEvent]
 
+# Create a regex pattern that matches any of the keys
+RE_ESCAPE_PATTERN = re.compile(
+    b"|".join(map(re.escape, PB_REPLACEMENTS_UNESCAPING.keys()))
+)
+
 
 def unescape_bytes(byte_seq: bytes) -> bytes:
     """Replace specific sub-sequences in a bytes sequence.
@@ -122,9 +128,10 @@ def unescape_bytes(byte_seq: bytes) -> bytes:
     Returns:
         the byte sequence unescaped according to the AA file format rules
     """
-    for key, value in PB_REPLACEMENTS_UNESCAPING.items():
-        byte_seq = byte_seq.replace(key, value)
-    return bytes(byte_seq)
+    # Use re.sub to replace all occurrences in a single pass
+    return RE_ESCAPE_PATTERN.sub(
+        lambda match: PB_REPLACEMENTS_UNESCAPING[match.group(0)], byte_seq
+    )
 
 
 def escape_bytes(byte_seq: bytes) -> bytes:
