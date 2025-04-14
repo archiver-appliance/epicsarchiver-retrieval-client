@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import TYPE_CHECKING
 
 import click
 from dateutil import tz
@@ -40,7 +40,7 @@ DATE_FORMATS = [
 ]
 
 
-AlignedPVEvents = List[Tuple[Timestamp, Dict[str, ArchiveEvent]]]
+AlignedPVEvents = list[tuple[Timestamp, dict[str, ArchiveEvent]]]
 
 
 @click.command(context_settings={"show_default": True})

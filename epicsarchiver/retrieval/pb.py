@@ -24,7 +24,7 @@ import collections
 import logging
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Union
 
 import pandas as pd
 from attr import dataclass
@@ -296,7 +296,7 @@ class ArchiveEventsMeta:
     year: int
 
 
-ArchiveEventsData = Tuple[Dict[int, ArchiveEventsMeta], List[ArchiveEvent]]
+ArchiveEventsData = tuple[dict[int, ArchiveEventsMeta], list[ArchiveEvent]]
 
 
 def parse_pb_data(
