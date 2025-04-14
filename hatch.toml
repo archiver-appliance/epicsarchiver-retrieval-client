@@ -21,7 +21,7 @@ jupyter-check = "hatch run jupyter:check"
 all = ["hatch fmt --check", "type-check", "jupyter-check", "docs-check", "hatch test"]
 
 [[envs.hatch-test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 [envs.hatch-test]
 extra-dependencies = [
@@ -39,7 +39,7 @@ cov-combine = "coverage combine"
 cov-report = "coverage xml"
 
 [[envs.types.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
 [envs.types]
 extra-dependencies = [
