@@ -4,18 +4,14 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, cast
+from typing import Collection, Dict, List, cast
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
-from epicsarchiver.mgmt import archive_files
-
-if TYPE_CHECKING:
-    from epicsarchiver.mgmt.archiver_mgmt_operations import TypeInfo
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
+TypeInfo = Dict[str, Collection[str]]
 InfoResult = Dict[str, str]
 InfoResultList = List[InfoResult]
 
@@ -147,25 +143,6 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         r = self._get("/getPVDetails", params={"pv": pv})
         return cast("InfoResultList", r.json())
 
-    def get_pv_status_from_files(
-        self,
-        files: list[str],
-        appliance: str | None = None,
-    ) -> InfoResultList:
-        """Return the status of PVs from a list of files.
-
-        Args:
-            files: list of files in CSV format with PVs to archive.
-            appliance: optional appliance to use to archive PVs (in a
-                cluster)
-
-        Returns:
-            list of dict with the status of the matching PVs
-        """
-        pvs = archive_files.get_pvs_from_files([Path(f) for f in files], appliance)
-        lpvs = ",".join(pv["pv"] for pv in pvs)
-        return self.get_pv_status(lpvs)
-
     def get_unarchived_pvs(self, pvs: str | list[str]) -> list[str]:
         """Return the list of unarchived PVs out of PVs specified in pvs.
 
@@ -195,25 +172,6 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
             pvs = ",".join(pvs)
         r = self._post("/archivedPVs", data={"pv": pvs})
         return cast("List[str]", r.json())
-
-    def get_unarchived_pvs_from_files(
-        self,
-        files: list[str],
-        appliance: str | None = None,
-    ) -> list[str]:
-        """Return the list of unarchived PVs from a list of files.
-
-        Args:
-            files: list of files in CSV format with PVs to archive.
-            appliance: optional appliance to use to archive PVs (in a
-                cluster)
-
-        Returns:
-            list of unarchived PV names
-        """
-        pvs = archive_files.get_pvs_from_files([Path(f) for f in files], appliance)
-        lpvs = ",".join(pv["pv"] for pv in pvs)
-        return self.get_unarchived_pvs(lpvs)
 
     def get_pv_type_info(self, pv: str) -> TypeInfo:
         """Return the type info of a PV.
