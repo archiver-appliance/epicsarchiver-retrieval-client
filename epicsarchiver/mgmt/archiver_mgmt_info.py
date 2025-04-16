@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Collection
 from enum import Enum
-from typing import Collection, Dict, List, cast
+from typing import cast
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
-
-TypeInfo = Dict[str, Collection[str]]
-InfoResult = Dict[str, str]
-InfoResultList = List[InfoResult]
+TypeInfo = dict[str, Collection[str]]
+InfoResult = dict[str, str]
+InfoResultList = list[InfoResult]
 
 
 class ArchivingStatus(str, Enum):
@@ -73,7 +73,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
             list of expanded PV names
         """
         r = self._get("/getAllExpandedPVNames")
-        return cast("List[str]", r.json())
+        return cast("list[str]", r.json())
 
     def get_all_pvs(
         self,
@@ -102,7 +102,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         if regex is not None:
             params["regex"] = regex
         r = self._get("/getAllPVs", params=params)
-        return cast("List[str]", r.json())
+        return cast("list[str]", r.json())
 
     def get_pv_status(self, pv: str | list[str]) -> InfoResultList:
         """Return the status of a PV.
@@ -156,7 +156,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         if isinstance(pvs, list):
             pvs = ",".join(pvs)
         r = self._post("/unarchivedPVs", data={"pv": pvs})
-        return cast("List[str]", r.json())
+        return cast("list[str]", r.json())
 
     def get_archived_pvs(self, pvs: str | list[str]) -> list[str]:
         """Return the list of unarchived PVs out of PVs specified in pvs.
@@ -171,7 +171,7 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
         if isinstance(pvs, list):
             pvs = ",".join(pvs)
         r = self._post("/archivedPVs", data={"pv": pvs})
-        return cast("List[str]", r.json())
+        return cast("list[str]", r.json())
 
     def get_pv_type_info(self, pv: str) -> TypeInfo:
         """Return the type info of a PV.

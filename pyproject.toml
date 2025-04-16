@@ -12,12 +12,11 @@ authors = [
   { name = "Sky Brewer", email = "sky.brewer@ess.eu" },
   { name = "Benjamin Bertrand" },
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -32,7 +31,7 @@ dependencies = [
   "click>=8",
   "numpy>=1.24",
   "pandas>=2",
-  "protobuf>=5",
+  "protobuf>=6",
   "pytz>=2024.1",
   "requests>=2",
   "rich>=13",

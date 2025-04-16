@@ -22,9 +22,10 @@ from __future__ import annotations
 
 import collections
 import logging
+import re
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Union
 
 import pandas as pd
 from attr import dataclass
@@ -109,6 +110,11 @@ EeVectorEvent = Union[
 ]
 EeEvent = Union[EeScalarEvent, EeVectorEvent]
 
+# Create a regex pattern that matches any of the keys
+RE_ESCAPE_PATTERN = re.compile(
+    b"|".join(re.escape(k) for k in PB_REPLACEMENTS_UNESCAPING)
+)
+
 
 def unescape_bytes(byte_seq: bytes) -> bytes:
     """Replace specific sub-sequences in a bytes sequence.
@@ -122,9 +128,10 @@ def unescape_bytes(byte_seq: bytes) -> bytes:
     Returns:
         the byte sequence unescaped according to the AA file format rules
     """
-    for key, value in PB_REPLACEMENTS_UNESCAPING.items():
-        byte_seq = byte_seq.replace(key, value)
-    return bytes(byte_seq)
+    # Use re.sub to replace all occurrences in a single pass
+    return RE_ESCAPE_PATTERN.sub(
+        lambda match: PB_REPLACEMENTS_UNESCAPING[match.group(0)], byte_seq
+    )
 
 
 def escape_bytes(byte_seq: bytes) -> bytes:
@@ -219,6 +226,7 @@ def _break_up_chunks(
         lines = chunk.split(b"\n")
         chunk_info = ee.PayloadInfo()
         chunk_info.ParseFromString(unescape_bytes(lines[0]))
+        LOG.debug("line 0 bytes: %s", lines[0])
         chunk_year = chunk_info.year  # pylint: disable=no-member
         LOG.debug(
             "Year %s, Chunk Index %s: %s events in chunk",
@@ -235,7 +243,7 @@ def _break_up_chunks(
 
 
 def _event_from_line(
-    line: bytes, pv: str, year: int, event_type: int
+    line: bytes, pv: str, year: int, event_type: int, line_number: int = 0
 ) -> ArchiveEvent | None:
     """Get an ArchiveEvent from this line.
 
@@ -244,6 +252,7 @@ def _event_from_line(
         pv: Name of the PV
         year: Year of interest
         event_type: Need to know the type of the event as key of TYPE_MAPPINGS
+        line_number: Line number in the file
 
     Returns:
         ArchiveEvent: The event
@@ -253,7 +262,9 @@ def _event_from_line(
     try:
         event.ParseFromString(unescaped)
     except DecodeError:
-        LOG.exception("Error parsing event with unescaped bytes: %s", unescaped)
+        LOG.exception(
+            "Error parsing line %s with unescaped bytes: %s", line_number, unescaped
+        )
         return None
     val = event.val
     if isinstance(
@@ -292,7 +303,7 @@ class ArchiveEventsMeta:
     year: int
 
 
-ArchiveEventsData = Tuple[Dict[int, ArchiveEventsMeta], List[ArchiveEvent]]
+ArchiveEventsData = tuple[dict[int, ArchiveEventsMeta], list[ArchiveEvent]]
 
 
 def parse_pb_data(
@@ -311,8 +322,10 @@ def parse_pb_data(
     events: list[ArchiveEvent] = []
     # Iterate over years
     for year, (chunk_info, lines) in year_chunks.items():
-        for line in lines:
-            event = _event_from_line(line, chunk_info.pvname, year, chunk_info.type)
+        for line_number, line in enumerate(lines):
+            event = _event_from_line(
+                line, chunk_info.pvname, year, chunk_info.type, line_number
+            )
             if event is not None:
                 events.append(event)
         metadata[year] = metadata_from_chunk_info(year, chunk_info)

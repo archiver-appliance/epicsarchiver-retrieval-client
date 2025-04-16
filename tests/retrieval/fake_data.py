@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import epicsarchiver.retrieval.EPICSEvent_pb2 as ee
 from epicsarchiver.retrieval.EPICSEvent_pb2 import ScalarInt

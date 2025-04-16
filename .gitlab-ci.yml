@@ -6,9 +6,6 @@ variables:
   TWINE_PASSWORD: secret
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
-default:
-  tags:
-    - docker
 
 include:
   - project: "ics-infrastructure/gitlab-ci-yml"
@@ -36,7 +33,11 @@ before_script:
 .parallel:
   parallel:
     matrix:
-      - IMAGE: [python:3.8, python:3.9, python:3.10, python:3.11, python:3.12, python:3.13]
+      - PY_VERSION: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+
+default:
+  tags:
+    - docker
 
 run-pre-commit:
   before_script:
@@ -45,14 +46,14 @@ run-pre-commit:
 
 test:
   stage: test
-  image: $IMAGE
+  image: python:$PY_VERSION
   script:
-    - hatch test --junitxml=report.xml
+    - hatch test -i py=$PY_VERSION --junitxml=report.xml
   artifacts:
     when: always
     reports:
       junit: report.xml
-  parallel: !reference [.parallel,parallel]
+  parallel: !reference [.parallel, parallel]
 
 jupyter-check:
   stage: test
@@ -82,9 +83,9 @@ lint:
 
 lint-types:
   stage: check
-  image: $IMAGE
+  image: python:$PY_VERSION
   script:
-    - hatch run types:check
+    - hatch run +py=$PY_VERSION types:check
   parallel: !reference [.parallel,parallel]
 
 lint-docs:
@@ -95,7 +96,7 @@ lint-docs:
 
 build:
   stage: build
-  image: $IMAGE
+  image: python:$PY_VERSION
   script:
     - hatch build
   artifacts:
@@ -120,7 +121,7 @@ pages:
 
 release-pypi-package:
   stage: release
-  image: $IMAGE
+  image: python:$PY_VERSION
   before_script:
     - pip install twine
   script:
