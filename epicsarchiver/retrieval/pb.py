@@ -112,7 +112,7 @@ EeEvent = Union[EeScalarEvent, EeVectorEvent]
 
 # Create a regex pattern that matches any of the keys
 RE_ESCAPE_PATTERN = re.compile(
-    b"|".join(map(re.escape, PB_REPLACEMENTS_UNESCAPING.keys()))
+    b"|".join(re.escape(k) for k in PB_REPLACEMENTS_UNESCAPING)
 )
 
 
