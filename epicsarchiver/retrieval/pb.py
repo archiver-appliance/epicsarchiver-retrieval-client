@@ -371,10 +371,7 @@ def read_pb_file(filename: str) -> ArchiveEventsData:
     Returns:
         list[ArchiveEvent]: list of events in file
     """
-    raw_data = bytearray()
-    raw_data.extend(Path(filename).read_bytes())
-
-    return parse_pb_data(raw_data)
+    return parse_pb_data(Path(filename).read_bytes())
 
 
 def to_field_value(f: ee.FieldValue) -> FieldValue:
