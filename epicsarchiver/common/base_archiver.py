@@ -9,6 +9,11 @@ from typing import Any
 import requests
 from requests import Response
 
+from epicsarchiver.common.errors import (
+    ArchiverConnectionError,
+    ArchiverResponseError,
+)
+
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
@@ -67,10 +72,26 @@ class BaseArchiverAppliance:
 
         Returns:
             :class:`requests.Response <Response>` object
+
+        Raises:
+            ArchiverConnectionError: If there is a connection error.
+            ArchiverResponseError: If the response is not successful.
         """
-        r = self.session.request(method, *args, **kwargs)
-        r.raise_for_status()
-        return r
+        try:
+            r = self.session.request(method, *args, **kwargs)
+            r.raise_for_status()
+        except requests.ConnectionError as e:
+            raise ArchiverConnectionError(
+                base_url=self.mgmt_url,
+            ) from e
+        except requests.HTTPError as e:
+            raise ArchiverResponseError(
+                base_url=self.mgmt_url,
+                url=args[0] if args else None,
+                response=e.response.text if e.response else None,
+            ) from e
+        else:
+            return r
 
     def _get(self, endpoint: str, **kwargs: Any) -> Response:
         r"""Send a GET request to the given endpoint.

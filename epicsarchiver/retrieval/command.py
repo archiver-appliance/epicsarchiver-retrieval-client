@@ -15,6 +15,7 @@ from rich.console import Console
 from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
+from epicsarchiver.common.errors import ArchiverError
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
 from epicsarchiver.retrieval.archiver_retrieval.async_archiver_retrieval import (
     AsyncArchiverRetrieval,
@@ -108,22 +109,33 @@ def get(  # noqa: PLR0917, PLR0913
 
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
-    console = Console()
     processor = (
         Processor(ProcessorName[processor_name.upper()], bin_size)
         if processor_name
         else None
     )
-    LOG.debug("pvs %s", pvs)
+    LOG.debug("PVs to fetch data from %s", pvs)
     events: AlignedPVEvents = []
-    if len(pvs) == 1:
-        meta, events = asyncio.run(
-            _single_fetch_events(archiver, pvs[0], start, end, processor=processor)
-        )
-    else:
-        events = asyncio.run(
-            _multi_fetch_events(archiver, list(pvs), start, end, processor=processor)
-        )
+    try:
+        if len(pvs) == 1:
+            meta, events = asyncio.run(
+                _single_fetch_events(archiver, pvs[0], start, end, processor=processor)
+            )
+        else:
+            events = asyncio.run(
+                _multi_fetch_events(
+                    archiver, list(pvs), start, end, processor=processor
+                )
+            )
+    except ArchiverError as exc:
+        LOG.error("Error fetching data from archiver: %s", str(exc))  # noqa: TRY400
+        LOG.debug("Exception traceback", exc_info=exc)
+        ctx.exit(1)
+
+    if not events:
+        LOG.info("No events found for the given time period and PVs.")
+        ctx.exit(0)
+
     table_title = _table_title(pvs, start, end, processor)
     table_caption = _table_caption(_meta_field_values(meta) if meta else None)
     table = (
@@ -131,6 +143,7 @@ def get(  # noqa: PLR0917, PLR0913
         if len(pvs) > 1
         else _create_singular_table(pvs[0], table_title, table_caption, events)
     )
+    console = Console()
     console.print(table)
     ctx.exit(0)
 
@@ -214,11 +227,11 @@ def _create_singular_table(
     table.add_column("Value", justify="right")
     table.add_column("Status", justify="right")
     table.add_column("Severity", justify="right")
-    for e in events:
-        event = e[1].get(pv)
+    for time_event in events:
+        event = time_event[1].get(pv)
         if event:
             table.add_row(
-                _to_local_timestamp_str(e[0]),
+                _to_local_timestamp_str(time_event[0]),
                 str(event.val),
                 str(event.status),
                 str(event.severity),

@@ -6,8 +6,18 @@ import logging
 import urllib.parse
 from typing import TYPE_CHECKING, Any
 
-from aiohttp import ClientResponse, ClientSession
+from aiohttp import (
+    ClientConnectionError,
+    ClientResponse,
+    ClientResponseError,
+    ClientSession,
+)
 from typing_extensions import Self
+
+from epicsarchiver.common.errors import (
+    ArchiverConnectionError,
+    ArchiverResponseError,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -71,12 +81,27 @@ class ServiceClient:
 
         Returns:
             :class:`ClientResponse` object
+
+        Raises:
+            ArchiverConnectionError: If there is a connection error.
+            ArchiverResponseError: If the response is not successful.
         """
         url = urllib.parse.urljoin(self.base_url, endpoint.lstrip("/"))
         LOG.debug("GET url: %s", url)
-        return await self.session.get(
-            url, params=params, raise_for_status=True, ssl=False
-        )
+        try:
+            return await self.session.get(
+                url, params=params, raise_for_status=True, ssl=False
+            )
+        except ClientConnectionError as e:
+            raise ArchiverConnectionError(
+                base_url=self.base_url,
+            ) from e
+        except ClientResponseError as e:
+            raise ArchiverResponseError(
+                base_url=self.base_url,
+                url=url,
+                response=e.message or None,
+            ) from e
 
     async def _get_json(
         self, endpoint: str, params: Mapping[str, str] | None = None
@@ -110,9 +135,24 @@ class ServiceClient:
 
         Returns:
             :class:`ClientResponse` object
+
+        Raises:
+            ArchiverConnectionError: If there is a connection error.
+            ArchiverResponseError: If the response is not successful.
         """
         url = urllib.parse.urljoin(self.base_url, endpoint.lstrip("/"))
         LOG.debug("POST url: %s", url)
-        return await self.session.post(
-            url, raise_for_status=True, params=params, data=data, json=json
-        )
+        try:
+            return await self.session.post(
+                url, raise_for_status=True, params=params, data=data, json=json
+            )
+        except ClientConnectionError as e:
+            raise ArchiverConnectionError(
+                base_url=self.base_url,
+            ) from e
+        except ClientResponseError as e:
+            raise ArchiverResponseError(
+                base_url=self.base_url,
+                url=url,
+                response=e.message or None,
+            ) from e

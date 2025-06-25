@@ -4,11 +4,11 @@ import json
 import logging
 
 import pytest
-from aiohttp import ClientResponseError
 from aioresponses import aioresponses
 from rich.logging import RichHandler
 
 from epicsarchiver.common.async_service import ServiceClient
+from epicsarchiver.common.errors import ArchiverResponseError
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -34,7 +34,7 @@ async def test_request_raise_exception() -> None:
     url = "http://test.example.com"
     with aioresponses() as mocked:
         mocked.get(url, status=404)
-        with pytest.raises(ClientResponseError):
+        with pytest.raises(ArchiverResponseError):
             async with ServiceClient(url) as service:
                 await service._get(url)
 
