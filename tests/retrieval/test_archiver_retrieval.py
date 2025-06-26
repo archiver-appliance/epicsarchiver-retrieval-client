@@ -31,7 +31,7 @@ def test_get_data() -> None:
     )
     ref_df = pd.DataFrame([e.val for e in TEST_EVENTS], index=pd_dates)
     ref_df = ref_df.rename_axis("date")
-    ref_df.columns = ["val"]  # type: ignore[assignment]
+    ref_df.columns = pd.Index(["val"], dtype="str")
     responses.add(
         responses.GET,
         f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
