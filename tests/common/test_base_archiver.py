@@ -4,12 +4,12 @@ import datetime
 import logging
 
 import pytest
-import requests
 import responses
 from pytz import utc as UTC  # noqa: N812
 from rich.logging import RichHandler
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
+from epicsarchiver.common.errors import ArchiverResponseError
 from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import format_date
 
 logging.basicConfig(
@@ -43,7 +43,7 @@ def test_request_raise_exception() -> None:
     archiver = BaseArchiverAppliance()
     url = "http://test.example.com"
     responses.add(responses.GET, url, status=404)
-    with pytest.raises(requests.exceptions.HTTPError):
+    with pytest.raises(ArchiverResponseError):
         archiver._request("GET", url)
     assert len(responses.calls) == 1
 
