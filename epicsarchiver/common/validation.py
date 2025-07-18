@@ -33,10 +33,10 @@ def validate_pv(pv: str) -> None:
         pv (str): The process variable name to validate.
 
     Raises:
-        ValidationError: If the PV name is empty or not a string.
+        PVNameError: If the PV name is empty or not a string.
     """
     if not pv:
-        raise ValidationError(pv)
+        raise PVNameError(pv)
 
 
 class TimePeriodError(ValidationError):
