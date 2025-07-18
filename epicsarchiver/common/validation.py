@@ -87,11 +87,10 @@ def validate_processor(processor: Processor | None) -> None:
         processor (Processor | None): The processor to validate.
 
     Raises:
-        ProcessorBinSizeError: If the processor's bin_size is not an
-          integer greater than 1.
+        ProcessorBinSizeError: If the processor's bin size set to a value less than 1.
     """
-    if processor is None:
+    if processor is None or processor.bin_size is None:
         return
 
-    if processor and processor.bin_size is not None and processor.bin_size <= 1:
+    if processor.bin_size < 1:
         raise ProcessorBinSizeError(processor.bin_size)
