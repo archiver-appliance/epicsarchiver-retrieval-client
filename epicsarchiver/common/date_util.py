@@ -27,10 +27,13 @@ class DateFormatError(ValidationError):
 def datetime_from_str(date_or_str: datetime.datetime | str) -> datetime.datetime:
     """Formats a date or string to a datetime object.
 
+    If the input is a string, it attempts to parse it into a datetime object.
+    If the input is already a datetime object, it returns it without timezone info.
+
+    All timezone information is stripped from the datetime object.
+
     Args:
-        date_or_str: can be a datetime object or string if a string is
-            given, it will be parsed automatically. Timezone is ignored.
-            UTC is always assumed.
+        date_or_str: can be a datetime object or string
 
     Returns:
         datetime.datetime: datetime object without timezone info.
