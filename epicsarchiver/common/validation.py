@@ -17,13 +17,9 @@ class ValidationError(Exception):
 class PVNameError(ValidationError):
     """Exception raised for invalid PV names."""
 
-    def __init__(self, pv: str) -> None:
-        """Initialize the PVNameError with a specific message.
-
-        Args:
-            pv (str): The process variable name that caused the error.
-        """
-        super().__init__(f"PV '{pv}' must be a non-empty string.")
+    def __init__(self) -> None:
+        """Initialize the PVNameError with a specific message."""
+        super().__init__("PV must be a non-empty string.")
 
 
 def validate_pv(pv: str) -> None:
@@ -36,7 +32,7 @@ def validate_pv(pv: str) -> None:
         PVNameError: If the PV name is empty or not a string.
     """
     if not pv:
-        raise PVNameError(pv)
+        raise PVNameError
 
 
 class TimePeriodError(ValidationError):
