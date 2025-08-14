@@ -16,6 +16,7 @@ from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
 from epicsarchiver.common.errors import ArchiverError
+from epicsarchiver.common.validation import ValidationError
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
 from epicsarchiver.retrieval.archiver_retrieval.async_archiver_retrieval import (
     AsyncArchiverRetrieval,
@@ -129,6 +130,10 @@ def get(  # noqa: PLR0917, PLR0913
             )
     except ArchiverError as exc:
         LOG.error("Error fetching data from archiver: %s", str(exc))  # noqa: TRY400
+        LOG.debug("Exception traceback", exc_info=exc)
+        ctx.exit(1)
+    except ValidationError as exc:
+        LOG.error("Validation error: %s", str(exc))  # noqa: TRY400
         LOG.debug("Exception traceback", exc_info=exc)
         ctx.exit(1)
 

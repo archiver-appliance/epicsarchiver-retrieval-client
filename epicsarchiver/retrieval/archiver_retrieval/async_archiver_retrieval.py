@@ -6,10 +6,14 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from pytz import UTC
-
 from epicsarchiver.common.async_service import ServiceClient
+from epicsarchiver.common.date_util import format_date
 from epicsarchiver.common.errors import ArchiverResponseError
+from epicsarchiver.common.validation import (
+    validate_processor,
+    validate_pv,
+    validate_start_end,
+)
 from epicsarchiver.retrieval.pb import ArchiveEventsData, parse_pb_data
 
 if TYPE_CHECKING:
@@ -21,12 +25,6 @@ if TYPE_CHECKING:
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
 
 LOG: logging.Logger = logging.getLogger(__name__)
-
-
-def _format_date(at: datetime.datetime) -> str:
-    return (
-        at.astimezone(UTC).replace(tzinfo=None).isoformat(timespec="microseconds") + "Z"
-    )
 
 
 class AsyncArchiverRetrieval(ServiceClient):
@@ -103,8 +101,8 @@ class AsyncArchiverRetrieval(ServiceClient):
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         params = {
             "pv": pv,
-            "from": _format_date(start),
-            "to": _format_date(end),
+            "from": format_date(start),
+            "to": format_date(end),
             "fetchLatestMetadata": "true",
         }
         return await self._get(
@@ -155,6 +153,9 @@ class AsyncArchiverRetrieval(ServiceClient):
         Returns:
             ArchiveEventsData: Metadata per year, list of events in time period.
         """
+        validate_pv(pv)
+        validate_start_end(start, end)
+        validate_processor(processor)
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         pv_request = processor.calc_pv_name(pv) if processor else pv
         r = await self._get_data_raw(pv_request, start, end)

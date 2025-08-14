@@ -2,42 +2,30 @@
 
 from __future__ import annotations
 
-import datetime
 import logging
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
-from dateutil import parser
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
+from epicsarchiver.common.date_util import datetime_from_str, format_date
+from epicsarchiver.common.validation import (
+    validate_processor,
+    validate_pv,
+    validate_start_end,
+)
 from epicsarchiver.retrieval.archive_event import ArchiveEvent, dataframe_from_events
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
+    import datetime
+
     from requests import Response
 
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
 
 
 LOG: logging.Logger = logging.getLogger(__name__)
-
-
-def format_date(date_or_str: datetime.datetime | str) -> str:
-    """Return a string representing the date and time in ISO 8601 format.
-
-    Args:
-        date_or_str: can be a datetime object or string if a string is
-            given, it will be parsed automatically. Timezone is ignored.
-            UTC is always assumed.
-
-    Returns:
-        string in ISO 8601 format
-    """
-    if not isinstance(date_or_str, datetime.datetime):
-        dt = parser.parse(date_or_str, ignoretz=True)
-    else:
-        dt = date_or_str.replace(tzinfo=None)
-    return dt.isoformat(timespec="microseconds") + "Z"
 
 
 def json_to_dataframe(data: Any) -> pd.DataFrame:
@@ -106,8 +94,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
     def _get_data_raw(
         self,
         pv: str,
-        start: str | datetime.datetime,
-        end: str | datetime.datetime,
+        start: datetime.datetime,
+        end: datetime.datetime,
     ) -> Response:
         """Retrieve archived data.
 
@@ -136,8 +124,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
     def get_events(
         self,
         pv: str,
-        start: str | datetime.datetime,
-        end: str | datetime.datetime,
+        start: datetime.datetime,
+        end: datetime.datetime,
         processor: Processor | None = None,
     ) -> list[ArchiveEvent]:
         """Retrieve archived data.
@@ -156,6 +144,9 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             list[ArchiveEvent]: requested events from the archiver.
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
+        validate_pv(pv)
+        validate_start_end(start, end)
+        validate_processor(processor)
         pv_request = processor.calc_pv_name(pv) if processor else pv
         r = self._get_data_raw(pv_request, start, end)
         pb_data = r.content
@@ -185,4 +176,10 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             `pandas.DataFrame`
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
-        return dataframe_from_events(self.get_events(pv, start, end, processor))
+        start_time = datetime_from_str(start)
+        end_time = datetime_from_str(end)
+        events = self.get_events(pv, start_time, end_time, processor)
+        if not events:
+            return dataframe_from_events([])
+        # Convert events to DataFrame
+        return dataframe_from_events(events)

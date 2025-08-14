@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 import pytest
 import responses
@@ -75,7 +77,11 @@ def test_get_events_pb() -> None:
         status=200,
         match_querystring=True,
     )
-    res_data = archiver.get_events(pv, "20180825 17:45", "20180825 18:45")
+    res_data = archiver.get_events(
+        pv,
+        datetime.datetime(2018, 8, 25, 17, 45, tzinfo=UTC),
+        datetime.datetime(2018, 8, 25, 18, 45, tzinfo=UTC),
+    )
     assert len(responses.calls) == 2
     assert res_data == [
         ArchiveEvent(
