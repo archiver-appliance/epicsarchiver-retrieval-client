@@ -45,7 +45,7 @@ python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
 extra-dependencies = [
   "mypy",
   "mypy-protobuf",
-  "pytest",
+  "pytest==8.4.2",         # pin to avoid errors in mypy tests
   "pytest-asyncio",
   "responses",
   "aioresponses",
@@ -64,6 +64,7 @@ check = ["check-src", "check-tests"]
 
 [envs.docs]
 extra-dependencies = [
+  "astroid==3.3.11",          # pin to avoid sphinx [autoapi.not_readable] error
   "sphinx",
   "sphinx-copybutton>=0.5.1",
   "sphinx-click",
