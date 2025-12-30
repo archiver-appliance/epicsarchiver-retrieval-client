@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import fnmatch
+import itertools
 import logging
 from typing import TYPE_CHECKING, Any
 
@@ -91,6 +93,22 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             self._data_url = data_url_base + "/data/getData.raw"
         return self._data_url
 
+    def matching_pvs_url(self) -> str:
+        """EPICS Archiver Appliance matching PVs URL.
+
+        Raises:
+            ConnectionError: Raises if archiver not available
+
+        Returns:
+            str: URL of retrieval engine
+        """
+        if self._matching_pvs_url is None:
+            retrieval_url_base = self.info.get("retrievalURL")
+            if retrieval_url_base is None:
+                raise ConnectionError
+            self._matching_pvs_url = retrieval_url_base + "/getMatchingPVs"
+        return self._matching_pvs_url
+
     def _get_data_raw(
         self,
         pv: str,
@@ -120,6 +138,31 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             params=params,
             stream=True,
         )
+
+    def _get_matching_pvs(
+        self,
+        pv: str,
+        limit: int,
+    ) -> Any:
+        """Retrieve list of matching pv names for given glob search string.
+
+        Args:
+            pv (str): PV glob name search string.
+            limit (int): Limit of PV names to return.
+
+        Returns:
+            Any: Json conversion of `Response` object
+        """
+        params = {
+            # Convert glob patterns to regex, case insensitive
+            "regex": "(?i)" + fnmatch.translate(pv),
+            "limit": str(limit),
+        }
+        return self._get(
+            self.matching_pvs_url(),
+            params=params,
+            stream=True,
+        ).json()
 
     def get_events(
         self,
@@ -183,3 +226,35 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             return dataframe_from_events([])
         # Convert events to DataFrame
         return dataframe_from_events(events)
+
+    def search(
+        self,
+        pvstrings: str | list[str],
+        limit: int = 500,
+    ) -> list[str]:
+        """Search for names of PVs matching the given strings.
+
+        Args:
+            pvstrings (str | list[str]): A string or list of strings containing
+                possible glob search characters.
+            limit (int): Limit of PV names to return for each search string given.
+                To get all the PV names, (potentially in the millions), set limit to -1.
+                [default: 500]
+
+        Returns:
+            list[str]: Sorted and unique list of PV names found.
+        """
+        pvstrings_list = pvstrings if isinstance(pvstrings, list) else [pvstrings]
+        if not pvstrings_list or pvstrings_list == [""]:
+            return []
+
+        # Combine the lists of lists that have been returned, remove repeated names,
+        # sort.
+        return sorted(
+            set(
+                itertools.chain.from_iterable([
+                    self._get_matching_pvs(pvstring, limit)
+                    for pvstring in pvstrings_list
+                ])
+            )
+        )

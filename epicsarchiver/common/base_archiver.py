@@ -52,6 +52,7 @@ class BaseArchiverAppliance:
         self.mgmt_url = mgmt_url(hostname, port)
         self._info: dict[str, str] = {}
         self._data_url: str | None = None
+        self._matching_pvs_url: str | None = None
         self.session = requests.Session()
 
     def __repr__(self) -> str:
