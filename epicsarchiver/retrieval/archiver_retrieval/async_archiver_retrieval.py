@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import fnmatch
+import itertools
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from epicsarchiver.common.async_service import ServiceClient
 from epicsarchiver.common.date_util import format_date
@@ -60,6 +62,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         self.hostname = hostname
         self.port = port
         self._data_url: str | None = None
+        self._matching_pvs_url: str | None = None
         super().__init__(f"https://{hostname}")
 
     async def data_url(self) -> str:
@@ -81,6 +84,26 @@ class AsyncArchiverRetrieval(ServiceClient):
                 raise ArchiverResponseError(msg)
             self._data_url = data_url_base + "/data/getData.raw"
         return self._data_url
+
+    async def matching_pvs_url(self) -> str:
+        """EPICS Archiver Appliance matching PVs URL.
+
+        Raises:
+            ArchiverResponseError: Raises if archiver not available
+
+        Returns:
+            str: URL of retrieval engine
+        """
+        if self._matching_pvs_url is None:
+            app_info = await self._get_json(
+                f"http://{self.hostname}:{self.port}/mgmt/bpl/getApplianceInfo"
+            )
+            retrieval_url_base = app_info.get("retrievalURL")
+            if retrieval_url_base is None:
+                msg = "Missing retrievalURL in response from getApplianceInfo."
+                raise ArchiverResponseError(msg)
+            self._matching_pvs_url = retrieval_url_base + "/getMatchingPVs"
+        return self._matching_pvs_url
 
     async def _get_data_raw(
         self,
@@ -107,6 +130,30 @@ class AsyncArchiverRetrieval(ServiceClient):
         }
         return await self._get(
             await self.data_url(),
+            params=params,
+        )
+
+    async def _get_matching_pvs(
+        self,
+        pv: str,
+        limit: int,
+    ) -> Any:
+        """Retrieve list of matching pv names for given glob search string.
+
+        Args:
+            pv (str): PV glob name search string.
+            limit (int): Limit of PV names to return.
+
+        Returns:
+            Any: Json conversion of :class:`ClientResponse` object
+        """
+        params = {
+            # Convert glob patterns to regex, case insensitive
+            "regex": "(?i)" + fnmatch.translate(pv),
+            "limit": str(limit),
+        }
+        return await self._get_json(
+            await self.matching_pvs_url(),
             params=params,
         )
 
@@ -161,6 +208,38 @@ class AsyncArchiverRetrieval(ServiceClient):
         r = await self._get_data_raw(pv_request, start, end)
         pb_data = await r.content.read()
         return parse_pb_data(pb_data)
+
+    async def search(
+        self,
+        pvstrings: str | list[str] | tuple[str],
+        limit: int = 500,
+    ) -> list[str]:
+        """Search for names of PVs matching the given strings.
+
+        Args:
+            pvstrings (str | list[str] | tuple[str]): A string, list of strings, or
+                tuple of strings containing possible glob search characters.
+            limit (int): Limit of PV names to return for each search string given.
+                To get all the PV names, (potentially in the millions), set limit to -1.
+                [default: 500]
+
+        Returns:
+            list[str]: Sorted and unique list of PV names found.
+        """
+        pvstrings_list = (
+            pvstrings if isinstance(pvstrings, (list, tuple)) else [pvstrings]
+        )
+        if not pvstrings_list or pvstrings_list == [""]:
+            return []
+
+        async def get_matching_pvs(pvstring: str, limit: int) -> Any:
+            return await self._get_matching_pvs(pvstring, limit)
+
+        requests = [get_matching_pvs(pvstring, limit) for pvstring in pvstrings_list]
+        responses = await asyncio.gather(*requests)
+        # Combine the lists of lists that have been returned, remove repeated names,
+        # sort.
+        return sorted(set(itertools.chain.from_iterable(responses)))
 
     async def get_all_events(
         self,
