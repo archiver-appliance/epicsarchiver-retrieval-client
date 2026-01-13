@@ -297,7 +297,7 @@ def _table_title(
 ) -> str:
     table_title = f"Period {start} - {end}"
     if len(pvs) == 1:
-        table_title = pvs[0] + table_title
+        table_title = pvs[0] + " " + table_title
     if processor:
         table_title += f" Processor {processor.processor_name}"
         if processor.bin_size:
