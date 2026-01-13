@@ -155,30 +155,47 @@ def get(  # noqa: PLR0917, PLR0913
 
 @click.command(context_settings={"show_default": True})
 @click.option(
-    "--debug",
-    is_flag=True,
-    callback=handle_debug,
-    show_default=True,
-    help="Turn on debug logging",
+    "--start",
+    "-s",
+    default=None,
+    type=click.DateTime(formats=DATE_FORMATS),
+    help="Start time of query",
+)
+@click.option(
+    "--end",
+    "-e",
+    default=None,
+    type=click.DateTime(formats=DATE_FORMATS),
+    help="End time of query",
 )
 @click.option(
     "--limit",
     "-l",
     default=500,
     type=int,
-    show_default=True,
     help="Limit of PV names to return for each search string given. "
     "To get all the PV names, (potentially in the millions), set limit to -1.",
 )
+@click.option(
+    "--debug",
+    is_flag=True,
+    callback=handle_debug,
+    help="Turn on debug logging",
+)
 @click.argument("pvstrings", type=str, required=True, nargs=-1)
 @click.pass_context
-def search(
+def search(  # noqa: PLR0917, PLR0913
     ctx: click.core.Context,
     pvstrings: tuple[str],
+    start: datetime | None,
+    end: datetime | None,
     limit: int,
     debug: bool,  # noqa: FBT001, ARG001
 ) -> None:
     """Search for PV names using glob search, case insensitive, multiple words.
+
+    Optionally specify start and/or end times to only return PVs that recorded data in
+    the specified time range.
 
     ARGUMENT pvstrings Multiple strings to search for, use glob search characters
 
@@ -189,13 +206,27 @@ def search(
         epicsarchiver --hostname archiver-01.example.com search         \
         PBI-APTM02:Ctrl-ECAT-100:*Temp1[2-4]*   mbl*0[6-7]0*ambient*
 
+        epicsarchiver --hostname archiver-01.example.com search         \
+        PBI-APTM02:* -s "2026-01-06 02:50:00"
+
+        epicsarchiver --hostname archiver-01.example.com search         \
+        MBL*:RFS*:*TempAmbient -s "2026-01-05"  -e "2026-01-06"
+
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
     LOG.debug("Search strings: %s", pvstrings)
     LOG.debug("Limit: %s", limit)
+    LOG.debug("Start: %s", start)
+    LOG.debug("End:   %s", end)
     try:
         pv_name_list = asyncio.run(
-            _pv_name_search(archiver=archiver, pvstrings=pvstrings, limit=limit)
+            _pv_name_search(
+                archiver=archiver,
+                pvstrings=pvstrings,
+                start=start,
+                end=end,
+                limit=limit,
+            )
         )
     except ArchiverError as exc:
         LOG.error("Error fetching data from archiver: %s", str(exc))  # noqa: TRY400
@@ -206,7 +237,7 @@ def search(
         LOG.info("No PVs found.")
         ctx.exit(0)
 
-    table_title = "Found " + str(len(pv_name_list)) + " PVs:"
+    table_title = _search_table_title(pv_name_list, start, end)
     table = _create_pv_name_table(pv_list=pv_name_list, title=table_title)
 
     console = Console()
@@ -238,6 +269,23 @@ def _table_caption(
             )
         return caption
     return None
+
+
+def _search_table_title(
+    pvs: list[str],
+    start: datetime | None,
+    end: datetime | None,
+) -> str:
+    table_title = "Found " + str(len(pvs)) + " PV"
+    if len(pvs) > 1:
+        table_title += "s"
+    if start and end:
+        table_title += f"\nbetween {start} \n    and {end}"
+    elif start:
+        table_title += f"\nfrom {start} until now"
+    elif end:
+        table_title += f"\nbefore {end}"
+    return table_title
 
 
 def _table_title(
@@ -383,7 +431,11 @@ async def _single_fetch_events(
 async def _pv_name_search(
     archiver: ArchiverAppliance,
     pvstrings: tuple[str],
+    start: datetime | None,
+    end: datetime | None,
     limit: int,
 ) -> list[str]:
     async with AsyncArchiverRetrieval(archiver.hostname, archiver.port) as a_retrieval:
-        return await a_retrieval.search(pvstrings=pvstrings, limit=limit)
+        return await a_retrieval.search(
+            pvstrings=pvstrings, start=start, end=end, limit=limit
+        )
