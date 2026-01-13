@@ -118,6 +118,7 @@ def get(  # noqa: PLR0917, PLR0913
     LOG.debug("PVs to fetch data from %s", pvs)
     events: AlignedPVEvents = []
     try:
+        meta = None
         if len(pvs) == 1:
             meta, events = asyncio.run(
                 _single_fetch_events(archiver, pvs[0], start, end, processor=processor)
