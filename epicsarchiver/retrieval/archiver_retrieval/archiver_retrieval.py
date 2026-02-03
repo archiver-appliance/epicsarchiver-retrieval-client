@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import datetime
 import fnmatch
 import itertools
 import logging
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
+from pytz import UTC
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 from epicsarchiver.common.date_util import datetime_from_str, format_date
@@ -20,8 +22,6 @@ from epicsarchiver.retrieval.archive_event import ArchiveEvent, dataframe_from_e
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
-    import datetime
-
     from requests import Response
 
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
@@ -230,6 +230,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
     def search(
         self,
         pvstrings: str | list[str],
+        start: datetime.datetime | None = None,
+        end: datetime.datetime | None = None,
         limit: int = 500,
     ) -> list[str]:
         """Search for names of PVs matching the given strings.
@@ -237,6 +239,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         Args:
             pvstrings (str | list[str]): A string or list of strings containing
                 possible glob search characters.
+            start (datetime.datetime | None): Start time of the time period.
+            end (datetime.datetime | None): End time of the time period.
             limit (int): Limit of PV names to return for each search string given.
                 To get all the PV names, (potentially in the millions), set limit to -1.
                 [default: 500]
@@ -248,13 +252,86 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         if not pvstrings_list or pvstrings_list == [""]:
             return []
 
-        # Combine the lists of lists that have been returned, remove repeated names,
-        # sort.
-        return sorted(
-            set(
+        # Limit returned list of PV to those in time range, if supplied.
+        return self._check_for_pvs_in_time_range(
+            # Combine the lists of lists that have been returned, remove repeats.
+            pv_list_glob_search=set(
                 itertools.chain.from_iterable([
                     self._get_matching_pvs(pvstring, limit)
                     for pvstring in pvstrings_list
                 ])
+            ),
+            start=start,
+            end=end,
+        )
+
+    def _check_for_pvs_in_time_range(
+        self,
+        pv_list_glob_search: set[str],
+        start: datetime.datetime | None = None,
+        end: datetime.datetime | None = None,
+    ) -> list[str]:
+        """Check if data recorded during the given time range for each PV in set.
+
+        If both start and end given, return only PVs which recorded data during that
+        time range.
+
+        If start given and end not, return PVs which recorded data between start and
+        now.
+
+        If end given and start not, return PVs which recorded any data before end.
+
+        Args:
+            pv_list_glob_search (set[str]): Set of pvs data wanted for.
+            start (datetime.datetime | None): Start of the time range.
+            end (datetime.datetime | None): End of the time range.
+
+        Returns:
+            list[str]: Sorted and unique list of PV names found.
+        """
+        if not start and not end:
+            # Return sorted list.
+            return sorted(pv_list_glob_search)
+
+        # Add timezone if missing, otherwise convert to UTC.
+        start = self._set_timezone_utc(input_time=start) if start else None
+        end = (
+            self._set_timezone_utc(input_time=end)
+            if end
+            else datetime.datetime.now(tz=UTC)
+        )
+
+        # Set both ends of time range in the data query query to end, then Archiver
+        # returns the most recent event prior to end, or an empty result.
+        all_events = [self.get_events(pv, end, end) for pv in pv_list_glob_search]
+
+        # Create set of those PVs with atleast one event within specified time range.
+        pv_set: set[str] = set()
+        for events in all_events:
+            pv_set.update(
+                event.pv
+                for event in events
+                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
+                or not start
             )
+
+        # Return sorted list.
+        return sorted(pv_set)
+
+    @staticmethod
+    def _set_timezone_utc(
+        input_time: datetime.datetime,
+    ) -> datetime.datetime:
+        """Add UTC timezone if timezone missing, otherwise convert to UTC.
+
+        Args:
+            input_time (datetime.datetime): A timestamp object.
+
+        Returns:
+            input_time (datetime.datetime): A timestamp object with timezone set to UTC.
+        """
+        return (
+            input_time.replace(tzinfo=UTC)
+            if input_time.tzinfo is None
+            else input_time.astimezone(UTC)
         )
