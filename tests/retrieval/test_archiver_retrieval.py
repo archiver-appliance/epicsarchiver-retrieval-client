@@ -112,11 +112,11 @@ def test_data_url_with_same_archiver_host(host: str) -> None:
         json=data,
         status=200,
     )
-    data_url = archiver.data_url()
+    data_url = archiver.get_data_url()
     assert len(responses.calls) == 1
     assert data_url == "http://archiver-01:17668/retrieval/data/getData.raw"
     # data_url shall be cached
-    _ = archiver.data_url()
+    _ = archiver.get_data_url()
     assert len(responses.calls) == 1
 
 
@@ -130,6 +130,6 @@ def test_data_url_with_no_specific_port() -> None:
         json=data,
         status=200,
     )
-    data_url = archiver.data_url()
+    data_url = archiver.get_data_url()
     assert len(responses.calls) == 1
     assert data_url == "http://archiver-01/foo/data/getData.raw"

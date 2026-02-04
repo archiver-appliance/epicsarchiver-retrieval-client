@@ -29,6 +29,9 @@ if TYPE_CHECKING:
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
+ENDPOINT_GET_DATA = "/data/getData.raw"
+ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
+
 
 def json_to_dataframe(data: Any) -> pd.DataFrame:
     """Converts json from the archiver.
@@ -77,7 +80,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
     """
 
-    def data_url(self) -> str:
+    def data_retrieval_url(self) -> str:
         """EPICS Archiver Appliance data retrieval url.
 
         Raises:
@@ -86,28 +89,27 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         Returns:
             str: url of retrieval engine
         """
-        if self._data_url is None:
-            data_url_base = self.info.get("dataRetrievalURL")
-            if data_url_base is None:
+        if self._data_retrieval_url is None:
+            self._data_retrieval_url = self.info.get("dataRetrievalURL")
+            if self._data_retrieval_url is None:
                 raise ConnectionError
-            self._data_url = data_url_base + "/data/getData.raw"
-        return self._data_url
+        return self._data_retrieval_url
 
-    def matching_pvs_url(self) -> str:
-        """EPICS Archiver Appliance matching PVs URL.
-
-        Raises:
-            ConnectionError: Raises if archiver not available
+    def get_data_url(self) -> str:
+        """EPICS Archiver Appliance data retrieval URL.
 
         Returns:
             str: URL of retrieval engine
         """
-        if self._matching_pvs_url is None:
-            retrieval_url_base = self.info.get("retrievalURL")
-            if retrieval_url_base is None:
-                raise ConnectionError
-            self._matching_pvs_url = retrieval_url_base + "/getMatchingPVs"
-        return self._matching_pvs_url
+        return self.data_retrieval_url() + ENDPOINT_GET_DATA
+
+    def get_matching_pvs_url(self) -> str:
+        """EPICS Archiver Appliance matching PVs URL.
+
+        Returns:
+            str: URL of retrieval engine
+        """
+        return self.data_retrieval_url() + ENDPOINT_GET_MATCHING_PVS
 
     def _get_data_raw(
         self,
@@ -134,7 +136,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             "to": format_date(end),
         }
         return self._get(
-            self.data_url(),
+            self.get_data_url(),
             params=params,
             stream=True,
         )
@@ -159,7 +161,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             "limit": str(limit),
         }
         return self._get(
-            self.matching_pvs_url(),
+            self.get_matching_pvs_url(),
             params=params,
             stream=True,
         ).json()
