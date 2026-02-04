@@ -25,7 +25,7 @@ import logging
 import re
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, TypeAlias
 
 import pandas as pd
 from attr import dataclass
@@ -89,26 +89,29 @@ PB_REPLACEMENTS_UNESCAPING = collections.OrderedDict([
     (ESC_BYTE + b"\x01", ESC_BYTE),
 ])
 
-EeScalarEvent = Union[
-    ee.ScalarString,
-    ee.ScalarShort,
-    ee.ScalarFloat,
-    ee.ScalarEnum,
-    ee.ScalarByte,
-    ee.ScalarInt,
-    ee.ScalarDouble,
-]
-EeVectorEvent = Union[
-    ee.VectorString,
-    ee.VectorShort,
-    ee.VectorFloat,
-    ee.VectorEnum,
-    ee.VectorChar,
-    ee.VectorInt,
-    ee.VectorDouble,
-    ee.V4GenericBytes,
-]
-EeEvent = Union[EeScalarEvent, EeVectorEvent]
+EeScalarEvent: TypeAlias = (
+    ee.ScalarString
+    | ee.ScalarShort
+    | ee.ScalarFloat
+    | ee.ScalarEnum
+    | ee.ScalarByte
+    | ee.ScalarInt
+    | ee.ScalarDouble
+)
+
+
+EeVectorEvent = (
+    ee.VectorString
+    | ee.VectorShort
+    | ee.VectorFloat
+    | ee.VectorEnum
+    | ee.VectorChar
+    | ee.VectorInt
+    | ee.VectorDouble
+    | ee.V4GenericBytes
+)
+
+EeEvent: TypeAlias = EeScalarEvent | EeVectorEvent
 
 # Create a regex pattern that matches any of the keys
 RE_ESCAPE_PATTERN = re.compile(
@@ -269,14 +272,12 @@ def _event_from_line(
     val = event.val
     if isinstance(
         event,
-        (
-            ee.VectorDouble,
-            ee.VectorEnum,
-            ee.VectorFloat,
-            ee.VectorInt,
-            ee.VectorShort,
-            ee.VectorString,
-        ),
+        ee.VectorDouble
+        | ee.VectorEnum
+        | ee.VectorFloat
+        | ee.VectorInt
+        | ee.VectorShort
+        | ee.VectorString,
     ):  # Note purposefully not including all Vectortypes here
         vector_val = list(val)
         val = vector_val
