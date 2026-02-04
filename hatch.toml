@@ -78,9 +78,9 @@ clean = ["make -C docs clean html"]
 
 [envs.jupyter]
 extra-dependencies = [
-  "notebook==7.1.2",
-  "nbval==0.11.0",
-  "matplotlib==3.8.3"
+  "notebook>=7.1.2",
+  "nbval>=0.11.0",
+  "matplotlib>=3.8.3"
 ]
 
 [envs.jupyter.scripts]
