@@ -9,8 +9,8 @@ description = "A python script for managing and pulling data from the Archiver A
 readme = "README.md"
 keywords = [  ]
 authors = [
-  { name = "Sky Brewer", email = "sky.brewer@ess.eu" },
   { name = "Benjamin Bertrand" },
+  { name = "Sky Brewer", email = "sky.brewer@ess.eu" },
 ]
 requires-python = ">=3.9"
 classifiers = [
@@ -22,6 +22,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dynamic = [ "version" ]
 
@@ -48,12 +49,6 @@ extend = "ruff.toml"
 log_cli = true
 log_cli_level = "DEBUG"
 
-[tool.coverage.run]
-source_pkgs = [ "epicsarchiver", "tests" ]
-branch = true
-parallel = true
-omit = [ "epicsarchiver/__about__.py" ]
-
 [tool.coverage.paths]
 epicsarchiver = [ "epicsarchiver", "*/py-epicsarchiver/epicsarchiver" ]
 tests = [ "tests", "*/epicsarchiver/tests" ]
@@ -61,6 +56,12 @@ tests = [ "tests", "*/epicsarchiver/tests" ]
 [tool.coverage.report]
 exclude_lines = [ "no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:" ]
 show_missing = true
+
+[tool.coverage.run]
+source_pkgs = [ "epicsarchiver", "tests" ]
+branch = true
+parallel = true
+omit = [ "epicsarchiver/__about__.py" ]
 
 [tool.mypy]
 strict = true
