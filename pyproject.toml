@@ -29,7 +29,7 @@ dependencies = [
   "aiohttp>=3",
   "click>=8",
   "numpy>=1.24",
-  "pandas==2.3.3",
+  "pandas<=2.2.3",
   "protobuf>=6",
   "pytz>=2024.1",
   "requests>=2",
