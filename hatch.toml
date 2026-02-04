@@ -87,5 +87,5 @@ extra-dependencies = [
 check = ['py.test --nbval tests/jupyter/']
 
 [envs.hatch-static-analysis]
-dependencies = ["ruff==0.8.3"]
+dependencies = ["ruff==0.15.0"]
 config-path = "ruff.toml"
