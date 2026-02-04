@@ -5,7 +5,6 @@ variables:
   TWINE_USERNAME: gitlab
   TWINE_PASSWORD: secret
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  LOWEST_PY_VERSION: "3.10"
 
 
 include:
@@ -37,6 +36,7 @@ before_script:
       - PY_VERSION: ["3.10", "3.11", "3.12", "3.13"]
 
 default:
+  image: python:3.10
   tags:
     - docker
 
@@ -58,14 +58,12 @@ test:
 
 jupyter-check:
   stage: test
-  image: python:$LOWEST_PY_VERSION
   script:
     - hatch run jupyter-check
 
 
 cov:
   stage: analyse
-  image: python:$LOWEST_PY_VERSION
   script:
     - hatch test -c
   coverage: /(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
@@ -78,20 +76,17 @@ cov:
 
 lint:
   stage: check
-  image: python:$LOWEST_PY_VERSION
   script:
     - hatch fmt --check
 
 lint-types:
   stage: check
-  image: python:$LOWEST_PY_VERSION
   script:
     - hatch run types:check
   parallel: !reference [.parallel,parallel]
 
 lint-docs:
   stage: check
-  image: python:$LOWEST_PY_VERSION
   script:
     - hatch run docs:check
 
@@ -109,7 +104,6 @@ build:
 
 pages:
   stage: deploy
-  image: python:$LOWEST_PY_VERSION
   script:
     - hatch run docs:build
     - mv docs/build/html public
@@ -122,7 +116,6 @@ pages:
 
 release-pypi-package:
   stage: release
-  image: python:$PY_VERSION
   before_script:
     - pip install twine
   script:
