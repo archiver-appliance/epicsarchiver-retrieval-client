@@ -129,11 +129,11 @@ def get(  # noqa: PLR0917, PLR0913
                 )
             )
     except ArchiverError as exc:
-        LOG.error("Error fetching data from archiver: %s", str(exc))  # noqa: TRY400
+        LOG.error("Error fetching data from archiver: %s", exc)  # noqa: TRY400
         LOG.debug("Exception traceback", exc_info=exc)
         ctx.exit(1)
     except ValidationError as exc:
-        LOG.error("Validation error: %s", str(exc))  # noqa: TRY400
+        LOG.error("Validation error: %s", exc)  # noqa: TRY400
         LOG.debug("Exception traceback", exc_info=exc)
         ctx.exit(1)
 
