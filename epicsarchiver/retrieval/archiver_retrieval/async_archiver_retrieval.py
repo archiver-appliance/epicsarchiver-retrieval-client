@@ -29,6 +29,9 @@ if TYPE_CHECKING:
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
+ENDPOINT_GET_DATA = "/data/getData.raw"
+ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
+
 
 class AsyncArchiverRetrieval(ServiceClient):
     """Async retrieval client for the EPICS archiver appliance.
@@ -62,11 +65,10 @@ class AsyncArchiverRetrieval(ServiceClient):
         """
         self.hostname = hostname
         self.port = port
-        self._data_url: str | None = None
-        self._matching_pvs_url: str | None = None
+        self._data_retrieval_url: str | None = None
         super().__init__(f"https://{hostname}")
 
-    async def data_url(self) -> str:
+    async def data_retrieval_url(self) -> str:
         """EPICS Archiver Appliance data retrieval URL.
 
         Raises:
@@ -75,36 +77,35 @@ class AsyncArchiverRetrieval(ServiceClient):
         Returns:
             str: URL of retrieval engine
         """
-        if self._data_url is None:
+        if self._data_retrieval_url is None:
             app_info = await self._get_json(
                 f"http://{self.hostname}:{self.port}/mgmt/bpl/getApplianceInfo"
             )
-            data_url_base = app_info.get("dataRetrievalURL")
-            if data_url_base is None:
+            self._data_retrieval_url = app_info.get("dataRetrievalURL")
+            if self._data_retrieval_url is None:
                 msg = "Missing dataRetrievalURL in response from getApplianceInfo."
                 raise ArchiverResponseError(msg)
-            self._data_url = data_url_base + "/data/getData.raw"
-        return self._data_url
+        return self._data_retrieval_url
 
-    async def matching_pvs_url(self) -> str:
-        """EPICS Archiver Appliance matching PVs URL.
-
-        Raises:
-            ArchiverResponseError: Raises if archiver not available
+    async def get_data_url(self) -> str:
+        """EPICS Archiver Appliance data retrieval URL.
 
         Returns:
             str: URL of retrieval engine
         """
-        if self._matching_pvs_url is None:
-            app_info = await self._get_json(
-                f"http://{self.hostname}:{self.port}/mgmt/bpl/getApplianceInfo"
-            )
-            retrieval_url_base = app_info.get("retrievalURL")
-            if retrieval_url_base is None:
-                msg = "Missing retrievalURL in response from getApplianceInfo."
-                raise ArchiverResponseError(msg)
-            self._matching_pvs_url = retrieval_url_base + "/getMatchingPVs"
-        return self._matching_pvs_url
+        data_retrieval_url = await self.data_retrieval_url()
+
+        return data_retrieval_url + ENDPOINT_GET_DATA
+
+    async def get_matching_pvs_url(self) -> str:
+        """EPICS Archiver Appliance matching PVs URL.
+
+        Returns:
+            str: URL of retrieval engine
+        """
+        data_retrieval_url = await self.data_retrieval_url()
+
+        return data_retrieval_url + ENDPOINT_GET_MATCHING_PVS
 
     async def _get_data_raw(
         self,
@@ -130,7 +131,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             "fetchLatestMetadata": "true",
         }
         return await self._get(
-            await self.data_url(),
+            await self.get_data_url(),
             params=params,
         )
 
@@ -154,7 +155,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             "limit": str(limit),
         }
         return await self._get_json(
-            await self.matching_pvs_url(),
+            await self.get_matching_pvs_url(),
             params=params,
         )
 
