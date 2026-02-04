@@ -83,7 +83,6 @@ lint-types:
   stage: check
   script:
     - hatch run types:check
-  parallel: !reference [.parallel,parallel]
 
 lint-docs:
   stage: check
