@@ -5,6 +5,7 @@ variables:
   TWINE_USERNAME: gitlab
   TWINE_PASSWORD: secret
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  LOWEST_PY_VERSION: "3.10"
 
 
 include:
@@ -33,7 +34,7 @@ before_script:
 .parallel:
   parallel:
     matrix:
-      - PY_VERSION: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+      - PY_VERSION: ["3.10", "3.11", "3.12", "3.13"]
 
 default:
   tags:
@@ -57,14 +58,14 @@ test:
 
 jupyter-check:
   stage: test
-  image: python:3.10
+  image: python:$LOWEST_PY_VERSION
   script:
     - hatch run jupyter-check
 
 
 cov:
   stage: analyse
-  image: python:3.10
+  image: python:$LOWEST_PY_VERSION
   script:
     - hatch test -c
   coverage: /(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
@@ -77,20 +78,20 @@ cov:
 
 lint:
   stage: check
-  image: python:3.8 # keep in sync with ruff.toml
+  image: python:$LOWEST_PY_VERSION
   script:
     - hatch fmt --check
 
 lint-types:
   stage: check
-  image: python:$PY_VERSION
+  image: python:$LOWEST_PY_VERSION
   script:
-    - hatch run +py=$PY_VERSION types:check
+    - hatch run types:check
   parallel: !reference [.parallel,parallel]
 
 lint-docs:
   stage: check
-  image: python:3.12
+  image: python:$LOWEST_PY_VERSION
   script:
     - hatch run docs:check
 
@@ -108,7 +109,7 @@ build:
 
 pages:
   stage: deploy
-  image: python:3.12
+  image: python:$LOWEST_PY_VERSION
   script:
     - hatch run docs:build
     - mv docs/build/html public
