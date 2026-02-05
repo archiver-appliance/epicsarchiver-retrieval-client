@@ -1,9 +1,12 @@
 import datetime
+import json
+from urllib.parse import quote
 
 import pandas as pd
 import pytest
 import responses
 from pytz import UTC
+from responses import matchers
 
 from epicsarchiver.retrieval.archive_event import ArchiveEvent, year_timestamp
 from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
@@ -53,6 +56,46 @@ def test_get_data() -> None:
     resp_data = archiver.get_data(pv, "20180825 17:45", "20180825 18:45")
     assert len(responses.calls) == 2
     pd.testing.assert_frame_equal(ref_df, resp_data)
+
+
+@responses.activate
+def test_search_with_no_time_range() -> None:
+    host = "archiver.example.org"
+    archiver = ArchiverRetrieval(host)
+    pvstring = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
+    regex = "(?i)^" + pvstring.replace("*", ".*").replace("?", ".") + "$"
+    ref_pv_list = [
+        "MBL-060RFC:RFS-CCU-120:TempAmbient",
+        "MBL-060RFC:RFS-CCU-220:TempAmbient",
+        "MBL-060RFC:RFS-CCU-320:TempAmbient",
+        "MBL-060RFC:RFS-CCU-420:TempAmbient",
+        "MBL-070RFC:RFS-CCU-120:TempAmbient",
+        "MBL-070RFC:RFS-CCU-220:TempAmbient",
+        "MBL-070RFC:RFS-CCU-320:TempAmbient",
+        "MBL-070RFC:RFS-CCU-420:TempAmbient",
+    ]
+    responses.add(
+        responses.GET,
+        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        "http://archiver-01:17668/retrieval/bpl/getMatchingPVs",
+        body=json.dumps(ref_pv_list),
+        status=200,
+        match=[matchers.query_string_matcher(f"regex={quote(regex)}&limit=500")],
+    )
+
+    resp_data = archiver.search(
+        pvstrings=pvstring,
+        start=None,
+        end=None,
+        limit=500,
+    )
+    assert len(responses.calls) == 2
+    assert resp_data == ref_pv_list
 
 
 @responses.activate

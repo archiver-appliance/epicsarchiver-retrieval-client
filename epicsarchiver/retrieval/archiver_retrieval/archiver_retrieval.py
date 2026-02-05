@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import fnmatch
 import itertools
 import logging
 from typing import TYPE_CHECKING, Any
@@ -156,8 +155,9 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             Any: Json conversion of `Response` object
         """
         params = {
-            # Convert glob patterns to regex, case insensitive
-            "regex": "(?i)" + fnmatch.translate(pv),
+            # Simple conversion of glob patterns to regex, case insensitive, anchor
+            # beginning and end.
+            "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
             "limit": str(limit),
         }
         return self._get(
