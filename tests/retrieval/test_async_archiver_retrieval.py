@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+from urllib.parse import quote
 
 import pytest
 from aioresponses import aioresponses
@@ -64,6 +65,47 @@ async def test_get_events_pb() -> None:
                 )
                 for e in events
             ]
+
+
+@pytest.mark.asyncio
+async def test_search_with_no_time_range() -> None:
+    with aioresponses() as mocked:
+        host = "archiver.example.org"
+        pvstring = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
+        regex = "(?i)^" + pvstring.replace("*", ".*").replace("?", ".") + "$"
+        app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
+
+        ref_pv_list = [
+            "MBL-060RFC:RFS-CCU-120:TempAmbient",
+            "MBL-060RFC:RFS-CCU-220:TempAmbient",
+            "MBL-060RFC:RFS-CCU-320:TempAmbient",
+            "MBL-060RFC:RFS-CCU-420:TempAmbient",
+            "MBL-070RFC:RFS-CCU-120:TempAmbient",
+            "MBL-070RFC:RFS-CCU-220:TempAmbient",
+            "MBL-070RFC:RFS-CCU-320:TempAmbient",
+            "MBL-070RFC:RFS-CCU-420:TempAmbient",
+        ]
+
+        mocked.get(
+            app_info_url,
+            body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
+        )
+        data_request_url = f"http://archiver-01:17668/retrieval/bpl/getMatchingPVs?regex={quote(regex)}&limit=500"
+        mocked.get(
+            data_request_url,
+            body=json.dumps(ref_pv_list),
+        )
+        async with AsyncArchiverRetrieval(host) as archiver:
+            resp_data = await archiver.search(
+                pvstrings=pvstring,
+                start=None,
+                end=None,
+                limit=500,
+            )
+            mocked.assert_any_call(app_info_url)
+            mocked.assert_any_call(data_request_url)
+
+            assert resp_data == ref_pv_list
 
 
 @pytest.mark.asyncio

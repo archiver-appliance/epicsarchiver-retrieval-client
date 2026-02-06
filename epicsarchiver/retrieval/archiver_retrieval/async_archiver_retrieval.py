@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import fnmatch
 import itertools
 import logging
 from typing import TYPE_CHECKING, Any
@@ -150,8 +149,9 @@ class AsyncArchiverRetrieval(ServiceClient):
             Any: Json conversion of :class:`ClientResponse` object
         """
         params = {
-            # Convert glob patterns to regex, case insensitive
-            "regex": "(?i)" + fnmatch.translate(pv),
+            # Simple conversion of glob patterns to regex, case insensitive, anchor
+            # beginning and end.
+            "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
             "limit": str(limit),
         }
         return await self._get_json(
