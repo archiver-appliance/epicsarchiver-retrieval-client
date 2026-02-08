@@ -97,10 +97,10 @@ class AsyncArchiverRetrieval(ServiceClient):
         return data_retrieval_url + ENDPOINT_GET_DATA
 
     async def get_matching_pvs_url(self) -> str:
-        """EPICS Archiver Appliance matching PVs URL.
+        """Get the EPICS Archiver Appliance matching PVs URL.
 
         Returns:
-            str: URL of retrieval engine
+            str: URL of matching PVs endoint.
         """
         data_retrieval_url = await self.data_retrieval_url()
 

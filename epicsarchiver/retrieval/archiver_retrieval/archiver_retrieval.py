@@ -103,10 +103,10 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         return self.data_retrieval_url() + ENDPOINT_GET_DATA
 
     def get_matching_pvs_url(self) -> str:
-        """EPICS Archiver Appliance matching PVs URL.
+        """Get the EPICS Archiver Appliance matching PVs URL.
 
         Returns:
-            str: URL of retrieval engine
+            str: URL of matching PVs endoint.
         """
         return self.data_retrieval_url() + ENDPOINT_GET_MATCHING_PVS
 
