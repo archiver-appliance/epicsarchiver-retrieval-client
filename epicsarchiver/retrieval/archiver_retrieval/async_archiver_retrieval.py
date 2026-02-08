@@ -6,7 +6,7 @@ import asyncio
 import datetime
 import itertools
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, cast
 
 from pytz import UTC
 
@@ -138,7 +138,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         self,
         pv: str,
         limit: int,
-    ) -> Any:
+    ) -> list[str]:
         """Retrieve list of matching pv names for given glob search string.
 
         Args:
@@ -146,7 +146,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             limit (int): Limit of PV names to return.
 
         Returns:
-            Any: Json conversion of :class:`ClientResponse` object
+            list[str]: List of pv names
         """
         params = {
             # Simple conversion of glob patterns to regex, case insensitive, anchor
@@ -154,10 +154,10 @@ class AsyncArchiverRetrieval(ServiceClient):
             "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
             "limit": str(limit),
         }
-        return await self._get_json(
-            await self.get_matching_pvs_url(),
-            params=params,
+        return_value = await self._get_json(
+            await self.get_matching_pvs_url(), params=params
         )
+        return cast("list[str]", return_value)
 
     async def get_events(
         self,
@@ -241,7 +241,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         if not pvstrings_list or pvstrings_list == [""]:
             return []
 
-        async def get_matching_pvs(pvstring: str, limit: int) -> Any:
+        async def get_matching_pvs(pvstring: str, limit: int) -> list[str]:
             return await self._get_matching_pvs(pvstring, limit)
 
         requests = [get_matching_pvs(pvstring, limit) for pvstring in pvstrings_list]

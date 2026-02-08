@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 import itertools
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 from pytz import UTC
@@ -144,7 +144,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         self,
         pv: str,
         limit: int,
-    ) -> Any:
+    ) -> list[str]:
         """Retrieve list of matching pv names for given glob search string.
 
         Args:
@@ -152,7 +152,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             limit (int): Limit of PV names to return.
 
         Returns:
-            Any: Json conversion of `Response` object
+            list[str]: List of pv names
         """
         params = {
             # Simple conversion of glob patterns to regex, case insensitive, anchor
@@ -160,11 +160,14 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
             "limit": str(limit),
         }
-        return self._get(
-            self.get_matching_pvs_url(),
-            params=params,
-            stream=True,
-        ).json()
+        return cast(
+            "list[str]",
+            self._get(
+                self.get_matching_pvs_url(),
+                params=params,
+                stream=True,
+            ).json(),
+        )
 
     def get_events(
         self,
