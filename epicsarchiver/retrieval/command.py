@@ -183,11 +183,11 @@ def get(  # noqa: PLR0917, PLR0913
     callback=handle_debug,
     help="Turn on debug logging",
 )
-@click.argument("pv-glob-search", type=str, required=True, nargs=1)
+@click.argument("query", type=str, required=True, nargs=1)
 @click.pass_context
 def search(  # noqa: PLR0917, PLR0913
     ctx: click.core.Context,
-    pv_glob_search: str,
+    query: str,
     start: datetime | None,
     end: datetime | None,
     limit: int,
@@ -198,7 +198,7 @@ def search(  # noqa: PLR0917, PLR0913
     Optionally specify start and/or end times to only return PVs that recorded data in
     the specified time range.
 
-    ARGUMENT pv-glob-search PV name search pattern, use glob search characters, case
+    ARGUMENT query PV name search pattern, use glob search characters, case
     insensitive
 
     Example usage:
@@ -220,7 +220,7 @@ def search(  # noqa: PLR0917, PLR0913
         pv_name_list = asyncio.run(
             _pv_name_search(
                 archiver=archiver,
-                pv_glob_search=pv_glob_search,
+                query=query,
                 start=start,
                 end=end,
                 limit=limit,
@@ -427,12 +427,10 @@ async def _single_fetch_events(
 
 async def _pv_name_search(
     archiver: ArchiverAppliance,
-    pv_glob_search: str,
+    query: str,
     start: datetime | None,
     end: datetime | None,
     limit: int,
 ) -> list[str]:
     async with AsyncArchiverRetrieval(archiver.hostname, archiver.port) as a_retrieval:
-        return await a_retrieval.search(
-            pv_glob_search=pv_glob_search, start=start, end=end, limit=limit
-        )
+        return await a_retrieval.search(query=query, start=start, end=end, limit=limit)

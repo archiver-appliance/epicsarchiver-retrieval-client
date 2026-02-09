@@ -232,7 +232,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
     def search(
         self,
-        pv_glob_search: str,
+        query: str,
+        *,
         start: datetime.datetime | None = None,
         end: datetime.datetime | None = None,
         limit: int = 500,
@@ -240,7 +241,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         """Search for names of PVs matching the given strings.
 
         Args:
-            pv_glob_search (str): A string containing possible glob search characters.
+            query (str): A string containing possible glob search characters.
             start (datetime.datetime | None): Start time of the time period.
             end (datetime.datetime | None): End time of the time period.
             limit (int): Limit of PV names to return for each search string given.
@@ -250,13 +251,13 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         Returns:
             list[str]: List of PV names found.
         """
-        if not pv_glob_search:
+        if not query:
             return []
 
         # Limit returned list of PV to those in time range, if supplied.
         return self._check_for_pvs_in_time_range(
             # Combine the lists of lists that have been returned, remove repeats.
-            pv_list_glob_search=self._get_matching_pvs(pv_glob_search, limit),
+            pv_list_glob_search=self._get_matching_pvs(query, limit),
             start=start,
             end=end,
         )

@@ -71,8 +71,8 @@ async def test_get_events_pb() -> None:
 async def test_search_with_no_time_range() -> None:
     with aioresponses() as mocked:
         host = "archiver.example.org"
-        pv_glob_search = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
-        regex = "(?i)^" + pv_glob_search.replace("*", ".*").replace("?", ".") + "$"
+        query = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
+        regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
         app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
 
         ref_pv_list = [
@@ -97,7 +97,7 @@ async def test_search_with_no_time_range() -> None:
         )
         async with AsyncArchiverRetrieval(host) as archiver:
             resp_data = await archiver.search(
-                pv_glob_search=pv_glob_search,
+                query=query,
                 start=None,
                 end=None,
                 limit=500,

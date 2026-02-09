@@ -215,7 +215,8 @@ class AsyncArchiverRetrieval(ServiceClient):
 
     async def search(
         self,
-        pv_glob_search: str,
+        query: str,
+        *,
         start: datetime.datetime | None = None,
         end: datetime.datetime | None = None,
         limit: int = 500,
@@ -226,7 +227,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         in the specified time range.
 
         Args:
-            pv_glob_search (str): A string containing possible glob search characters.
+            query (str): A string containing possible glob search characters.
             start (datetime.datetime | None): Start time of the time period.
             end (datetime.datetime | None): End time of the time period.
             limit (int): Limit of PV names to return for each search string given.
@@ -236,12 +237,12 @@ class AsyncArchiverRetrieval(ServiceClient):
         Returns:
             list[str]: List of PV names found.
         """
-        if not pv_glob_search:
+        if not query:
             return []
 
         # Limit returned list of PV to those in time range, if supplied.
         return await self._check_for_pvs_in_time_range(
-            await self._get_matching_pvs(pv_glob_search, limit),
+            await self._get_matching_pvs(query, limit),
             start=start,
             end=end,
         )
