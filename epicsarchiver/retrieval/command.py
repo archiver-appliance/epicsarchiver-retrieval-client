@@ -216,10 +216,6 @@ def search(  # noqa: PLR0917, PLR0913
 
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
-    LOG.debug("Search string: %s", pv_glob_search)
-    LOG.debug("Limit: %s", limit)
-    LOG.debug("Start: %s", start)
-    LOG.debug("End:   %s", end)
     try:
         pv_name_list = asyncio.run(
             _pv_name_search(
@@ -230,9 +226,8 @@ def search(  # noqa: PLR0917, PLR0913
                 limit=limit,
             )
         )
-    except ArchiverError as exc:
-        LOG.error("Error fetching data from archiver: %s", str(exc))  # noqa: TRY400
-        LOG.debug("Exception traceback", exc_info=exc)
+    except ArchiverError:
+        LOG.exception("Error fetching data from archiver")
         ctx.exit(1)
 
     if not pv_name_list:
@@ -278,15 +273,15 @@ def _search_table_title(
     start: datetime | None,
     end: datetime | None,
 ) -> str:
-    table_title = "Found " + str(len(pvs)) + " PV"
-    if len(pvs) > 1:
+    table_title = f"Found {(len_pvs := len(pvs))} PV"
+    if len_pvs > 1:
         table_title += "s"
     if start and end:
-        table_title += f"\nbetween {start} \n    and {end}"
+        table_title += f" between {start} and {end}"
     elif start:
-        table_title += f"\nfrom {start} until now"
+        table_title += f" from {start} until now"
     elif end:
-        table_title += f"\nbefore {end}"
+        table_title += f" before {end}"
     return table_title
 
 
