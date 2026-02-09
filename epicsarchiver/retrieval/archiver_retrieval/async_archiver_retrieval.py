@@ -98,6 +98,9 @@ class AsyncArchiverRetrieval(ServiceClient):
     async def get_matching_pvs_url(self) -> str:
         """Get the EPICS Archiver Appliance matching PVs URL.
 
+        Use this url to search for pv names matching an input search string that can
+        contain glob patterns.
+
         Returns:
             str: URL of matching PVs endoint.
         """
