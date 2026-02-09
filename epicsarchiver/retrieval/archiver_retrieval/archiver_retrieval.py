@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import itertools
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
@@ -234,7 +233,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
     def search(
         self,
-        pvstrings: str | list[str],
+        pv_glob_search: str,
         start: datetime.datetime | None = None,
         end: datetime.datetime | None = None,
         limit: int = 500,
@@ -242,8 +241,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         """Search for names of PVs matching the given strings.
 
         Args:
-            pvstrings (str | list[str]): A string or list of strings containing
-                possible glob search characters.
+            pv_glob_search (str): A string containing possible glob search characters.
             start (datetime.datetime | None): Start time of the time period.
             end (datetime.datetime | None): End time of the time period.
             limit (int): Limit of PV names to return for each search string given.
@@ -251,28 +249,22 @@ class ArchiverRetrieval(BaseArchiverAppliance):
                 [default: 500]
 
         Returns:
-            list[str]: Sorted and unique list of PV names found.
+            list[str]: List of PV names found.
         """
-        pvstrings_list = pvstrings if isinstance(pvstrings, list) else [pvstrings]
-        if not pvstrings_list or pvstrings_list == [""]:
+        if not pv_glob_search:
             return []
 
         # Limit returned list of PV to those in time range, if supplied.
         return self._check_for_pvs_in_time_range(
             # Combine the lists of lists that have been returned, remove repeats.
-            pv_list_glob_search=set(
-                itertools.chain.from_iterable([
-                    self._get_matching_pvs(pvstring, limit)
-                    for pvstring in pvstrings_list
-                ])
-            ),
+            pv_list_glob_search=self._get_matching_pvs(pv_glob_search, limit),
             start=start,
             end=end,
         )
 
     def _check_for_pvs_in_time_range(
         self,
-        pv_list_glob_search: set[str],
+        pv_list_glob_search: list[str],
         start: datetime.datetime | None = None,
         end: datetime.datetime | None = None,
     ) -> list[str]:
@@ -287,16 +279,15 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         If end given and start not, return PVs which recorded any data before end.
 
         Args:
-            pv_list_glob_search (set[str]): Set of pvs data wanted for.
+            pv_list_glob_search (list[str]): Set of pvs data wanted for.
             start (datetime.datetime | None): Start of the time range.
             end (datetime.datetime | None): End of the time range.
 
         Returns:
-            list[str]: Sorted and unique list of PV names found.
+            list[str]: List of PV names found.
         """
         if not start and not end:
-            # Return sorted list.
-            return sorted(pv_list_glob_search)
+            return pv_list_glob_search
 
         # Add timezone if missing, otherwise convert to UTC.
         start = self._set_timezone_utc(input_time=start) if start else None
@@ -310,18 +301,17 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         # returns the most recent event prior to end, or an empty result.
         all_events = [self.get_events(pv, end, end) for pv in pv_list_glob_search]
 
-        # Create set of those PVs with atleast one event within specified time range.
-        pv_set: set[str] = set()
+        # Create list of those PVs with atleast one event within specified time range.
+        pv_list: list[str] = []
         for events in all_events:
-            pv_set.update(
+            pv_list.extend(
                 event.pv
                 for event in events
                 if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
                 or not start
             )
 
-        # Return sorted list.
-        return sorted(pv_set)
+        return pv_list
 
     @staticmethod
     def _set_timezone_utc(

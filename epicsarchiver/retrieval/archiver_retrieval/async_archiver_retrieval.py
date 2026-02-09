@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import itertools
 import logging
 from typing import TYPE_CHECKING, cast
 
@@ -213,7 +212,7 @@ class AsyncArchiverRetrieval(ServiceClient):
 
     async def search(
         self,
-        pvstrings: str | list[str] | tuple[str],
+        pv_glob_search: str,
         start: datetime.datetime | None = None,
         end: datetime.datetime | None = None,
         limit: int = 500,
@@ -224,8 +223,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         in the specified time range.
 
         Args:
-            pvstrings (str | list[str] | tuple[str]): A string, list of strings, or
-                tuple of strings containing possible glob search characters.
+            pv_glob_search (str): A string containing possible glob search characters.
             start (datetime.datetime | None): Start time of the time period.
             end (datetime.datetime | None): End time of the time period.
             limit (int): Limit of PV names to return for each search string given.
@@ -233,31 +231,21 @@ class AsyncArchiverRetrieval(ServiceClient):
                 [default: 500]
 
         Returns:
-            list[str]: Sorted and unique list of PV names found.
+            list[str]: List of PV names found.
         """
-        pvstrings_list = (
-            pvstrings if isinstance(pvstrings, (list, tuple)) else [pvstrings]
-        )
-        if not pvstrings_list or pvstrings_list == [""]:
+        if not pv_glob_search:
             return []
-
-        async def get_matching_pvs(pvstring: str, limit: int) -> list[str]:
-            return await self._get_matching_pvs(pvstring, limit)
-
-        requests = [get_matching_pvs(pvstring, limit) for pvstring in pvstrings_list]
-        responses = await asyncio.gather(*requests)
 
         # Limit returned list of PV to those in time range, if supplied.
         return await self._check_for_pvs_in_time_range(
-            # Combine the lists of lists that have been returned, remove repeats.
-            pv_list_glob_search=set(itertools.chain.from_iterable(responses)),
+            await self._get_matching_pvs(pv_glob_search, limit),
             start=start,
             end=end,
         )
 
     async def _check_for_pvs_in_time_range(
         self,
-        pv_list_glob_search: set[str],
+        pv_list_glob_search: list[str],
         start: datetime.datetime | None = None,
         end: datetime.datetime | None = None,
     ) -> list[str]:
@@ -272,16 +260,15 @@ class AsyncArchiverRetrieval(ServiceClient):
         If end given and start not, return PVs which recorded any data before end.
 
         Args:
-            pv_list_glob_search (set[str]): Set of pvs data wanted for.
+            pv_list_glob_search (list[str]): Set of pvs data wanted for.
             start (datetime.datetime | None): Start of the time range.
             end (datetime.datetime | None): End of the time range.
 
         Returns:
-            list[str]: Sorted and unique list of PV names found.
+            list[str]: List of PV names found.
         """
         if not start and not end:
-            # Return sorted list.
-            return sorted(pv_list_glob_search)
+            return pv_list_glob_search
 
         # Add timezone if missing, otherwise convert to UTC.
         start = self._set_timezone_utc(input_time=start) if start else None
@@ -293,20 +280,19 @@ class AsyncArchiverRetrieval(ServiceClient):
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
-        all_events = await self.get_all_events(pv_list_glob_search, end, end)
+        all_events = await self.get_all_events(set(pv_list_glob_search), end, end)
 
-        # Create set of those PVs with atleast one event within specified time range.
-        pv_set: set[str] = set()
+        # Create list of those PVs with atleast one event within specified time range.
+        pv_list: list[str] = []
         for events in all_events.values():
-            pv_set.update(
+            pv_list.extend(
                 event.pv
                 for event in events
                 if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
                 or not start
             )
 
-        # Return sorted list.
-        return sorted(pv_set)
+        return pv_list
 
     @staticmethod
     def _set_timezone_utc(
