@@ -62,8 +62,8 @@ def test_get_data() -> None:
 def test_search_with_no_time_range() -> None:
     host = "archiver.example.org"
     archiver = ArchiverRetrieval(host)
-    pvstring = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
-    regex = "(?i)^" + pvstring.replace("*", ".*").replace("?", ".") + "$"
+    pv_glob_search = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
+    regex = "(?i)^" + pv_glob_search.replace("*", ".*").replace("?", ".") + "$"
     ref_pv_list = [
         "MBL-060RFC:RFS-CCU-120:TempAmbient",
         "MBL-060RFC:RFS-CCU-220:TempAmbient",
@@ -89,7 +89,7 @@ def test_search_with_no_time_range() -> None:
     )
 
     resp_data = archiver.search(
-        pvstrings=pvstring,
+        pv_glob_search=pv_glob_search,
         start=None,
         end=None,
         limit=500,
