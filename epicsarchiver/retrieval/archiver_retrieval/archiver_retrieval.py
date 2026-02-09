@@ -251,9 +251,6 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         Returns:
             list[str]: List of PV names found.
         """
-        if not query:
-            return []
-
         # Limit returned list of PV to those in time range, if supplied.
         return self._check_for_pvs_in_time_range(
             # Combine the lists of lists that have been returned, remove repeats.

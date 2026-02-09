@@ -237,9 +237,6 @@ class AsyncArchiverRetrieval(ServiceClient):
         Returns:
             list[str]: List of PV names found.
         """
-        if not query:
-            return []
-
         # Limit returned list of PV to those in time range, if supplied.
         return await self._check_for_pvs_in_time_range(
             await self._get_matching_pvs(query, limit),
