@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, cast
 from pytz import UTC
 
 from epicsarchiver.common.async_service import ServiceClient
-from epicsarchiver.common.date_util import format_date
+from epicsarchiver.common.date_util import format_date, set_timezone_utc
 from epicsarchiver.common.errors import ArchiverResponseError
 from epicsarchiver.common.validation import (
     validate_processor,
@@ -274,12 +274,8 @@ class AsyncArchiverRetrieval(ServiceClient):
             return pv_list_glob_search
 
         # Add timezone if missing, otherwise convert to UTC.
-        start = self._set_timezone_utc(input_time=start) if start else None
-        end = (
-            self._set_timezone_utc(input_time=end)
-            if end
-            else datetime.datetime.now(tz=UTC)
-        )
+        start = set_timezone_utc(input_time=start) if start else None
+        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
@@ -296,24 +292,6 @@ class AsyncArchiverRetrieval(ServiceClient):
             )
 
         return pv_list
-
-    @staticmethod
-    def _set_timezone_utc(
-        input_time: datetime.datetime,
-    ) -> datetime.datetime:
-        """Add UTC timezone if timezone missing, otherwise convert to UTC.
-
-        Args:
-            input_time (datetime.datetime): A timestamp object.
-
-        Returns:
-            input_time (datetime.datetime): A timestamp object with timezone set to UTC.
-        """
-        return (
-            input_time.replace(tzinfo=UTC)
-            if input_time.tzinfo is None
-            else input_time.astimezone(UTC)
-        )
 
     async def get_all_events(
         self,

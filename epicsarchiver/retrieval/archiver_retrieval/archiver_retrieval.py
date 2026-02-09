@@ -10,7 +10,11 @@ import pandas as pd
 from pytz import UTC
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
-from epicsarchiver.common.date_util import datetime_from_str, format_date
+from epicsarchiver.common.date_util import (
+    datetime_from_str,
+    format_date,
+    set_timezone_utc,
+)
 from epicsarchiver.common.validation import (
     validate_processor,
     validate_pv,
@@ -285,12 +289,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             return pv_list_glob_search
 
         # Add timezone if missing, otherwise convert to UTC.
-        start = self._set_timezone_utc(input_time=start) if start else None
-        end = (
-            self._set_timezone_utc(input_time=end)
-            if end
-            else datetime.datetime.now(tz=UTC)
-        )
+        start = set_timezone_utc(input_time=start) if start else None
+        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
@@ -307,21 +307,3 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             )
 
         return pv_list
-
-    @staticmethod
-    def _set_timezone_utc(
-        input_time: datetime.datetime,
-    ) -> datetime.datetime:
-        """Add UTC timezone if timezone missing, otherwise convert to UTC.
-
-        Args:
-            input_time (datetime.datetime): A timestamp object.
-
-        Returns:
-            input_time (datetime.datetime): A timestamp object with timezone set to UTC.
-        """
-        return (
-            input_time.replace(tzinfo=UTC)
-            if input_time.tzinfo is None
-            else input_time.astimezone(UTC)
-        )
