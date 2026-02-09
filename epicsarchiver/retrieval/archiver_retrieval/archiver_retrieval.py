@@ -81,16 +81,11 @@ class ArchiverRetrieval(BaseArchiverAppliance):
     def data_retrieval_url(self) -> str:
         """EPICS Archiver Appliance data retrieval url.
 
-        Raises:
-            ConnectionError: Raises if archiver not available
-
         Returns:
             str: url of retrieval engine
         """
         if self._data_retrieval_url is None:
-            self._data_retrieval_url = self.info.get("dataRetrievalURL")
-            if self._data_retrieval_url is None:
-                raise ConnectionError
+            self._data_retrieval_url = self.info["dataRetrievalURL"]
         return self._data_retrieval_url
 
     def get_data_url(self) -> str:
