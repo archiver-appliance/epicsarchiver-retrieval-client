@@ -20,7 +20,6 @@ from tests.retrieval.fake_data import TEST_EVENTS, create_pb_bytes
 @responses.activate
 def test_get_data() -> None:
     host = "archiver.example.org"
-    archiver = ArchiverRetrieval(host)
     pv = "mypv"
     events = TEST_EVENTS
     dates = [
@@ -53,6 +52,7 @@ def test_get_data() -> None:
         status=200,
         match_querystring=True,
     )
+    archiver = ArchiverRetrieval(host)
     resp_data = archiver.get_data(pv, "20180825 17:45", "20180825 18:45")
     assert len(responses.calls) == 2
     pd.testing.assert_frame_equal(ref_df, resp_data)
@@ -61,7 +61,6 @@ def test_get_data() -> None:
 @responses.activate
 def test_search_with_no_time_range() -> None:
     host = "archiver.example.org"
-    archiver = ArchiverRetrieval(host)
     query = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
     regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
     ref_pv_list = [
@@ -88,6 +87,7 @@ def test_search_with_no_time_range() -> None:
         match=[matchers.query_string_matcher(f"regex={quote(regex)}&limit=500")],
     )
 
+    archiver = ArchiverRetrieval(host)
     resp_data = archiver.search(
         query=query,
         start=None,
@@ -101,7 +101,6 @@ def test_search_with_no_time_range() -> None:
 @responses.activate
 def test_get_events_pb() -> None:
     host = "archiver.example.org"
-    archiver = ArchiverRetrieval(host)
     pv = "mypv"
     events = TEST_EVENTS
     responses.add(
@@ -120,6 +119,7 @@ def test_get_events_pb() -> None:
         status=200,
         match_querystring=True,
     )
+    archiver = ArchiverRetrieval(host)
     res_data = archiver.get_events(
         pv,
         datetime.datetime(2018, 8, 25, 17, 45, tzinfo=UTC),
@@ -147,7 +147,6 @@ def test_get_events_pb() -> None:
 @responses.activate
 @pytest.mark.parametrize("host", ["archiver-01.example.com", "192.168.4.75"])
 def test_data_url_with_same_archiver_host(host: str) -> None:
-    archiver = ArchiverRetrieval(host)
     data = {"dataRetrievalURL": "http://archiver-01:17668/retrieval"}
     responses.add(
         responses.GET,
@@ -155,17 +154,17 @@ def test_data_url_with_same_archiver_host(host: str) -> None:
         json=data,
         status=200,
     )
-    data_url = archiver.get_data_url()
+    archiver = ArchiverRetrieval(host)
+    data_url = archiver.data_url
     assert len(responses.calls) == 1
     assert data_url == "http://archiver-01:17668/retrieval/data/getData.raw"
     # data_url shall be cached
-    _ = archiver.get_data_url()
+    _ = archiver.data_url
     assert len(responses.calls) == 1
 
 
 @responses.activate
 def test_data_url_with_no_specific_port() -> None:
-    archiver = ArchiverRetrieval("archiver-01.example.com")
     data = {"dataRetrievalURL": "http://archiver-01/foo"}
     responses.add(
         responses.GET,
@@ -173,6 +172,7 @@ def test_data_url_with_no_specific_port() -> None:
         json=data,
         status=200,
     )
-    data_url = archiver.get_data_url()
+    archiver = ArchiverRetrieval("archiver-01.example.com")
+    data_url = archiver.data_url
     assert len(responses.calls) == 1
     assert data_url == "http://archiver-01/foo/data/getData.raw"

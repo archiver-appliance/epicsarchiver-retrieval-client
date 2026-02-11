@@ -82,31 +82,20 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
     """
 
-    def data_retrieval_url(self) -> str:
-        """EPICS Archiver Appliance data retrieval url.
+    def __init__(self, hostname: str = "localhost", port: int = 17665):
+        """Create Archiver Appliance object.
 
-        Returns:
-            str: url of retrieval engine
+        Args:
+            hostname (str, optional): hostname of archiver. Defaults to "localhost".
+            port (int, optional): port number of mgmt interface. Defaults to 17665.
         """
-        if self._data_retrieval_url is None:
-            self._data_retrieval_url = self.info["dataRetrievalURL"]
-        return self._data_retrieval_url
+        super().__init__(hostname, port)
 
-    def get_data_url(self) -> str:
-        """EPICS Archiver Appliance data retrieval URL.
-
-        Returns:
-            str: URL of retrieval engine
-        """
-        return self.data_retrieval_url() + ENDPOINT_GET_DATA
-
-    def get_matching_pvs_url(self) -> str:
-        """Get the EPICS Archiver Appliance matching PVs URL.
-
-        Returns:
-            str: URL of matching PVs endoint.
-        """
-        return self.data_retrieval_url() + ENDPOINT_GET_MATCHING_PVS
+        self._data_retrieval_url = self.info["dataRetrievalURL"]
+        self.data_url: str = self._data_retrieval_url + ENDPOINT_GET_DATA
+        self.matching_pvs_url: str = (
+            self._data_retrieval_url + ENDPOINT_GET_MATCHING_PVS
+        )
 
     def _get_data_raw(
         self,
@@ -133,7 +122,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             "to": format_date(end),
         }
         return self._get(
-            self.get_data_url(),
+            self.data_url,
             params=params,
             stream=True,
         )
@@ -161,7 +150,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         return cast(
             "list[str]",
             self._get(
-                self.get_matching_pvs_url(),
+                self.matching_pvs_url,
                 params=params,
                 stream=True,
             ).json(),
@@ -253,7 +242,6 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         """
         # Limit returned list of PV to those in time range, if supplied.
         return self._check_for_pvs_in_time_range(
-            # Combine the lists of lists that have been returned, remove repeats.
             pv_list_glob_search=self._get_matching_pvs(query, limit),
             start=start,
             end=end,
