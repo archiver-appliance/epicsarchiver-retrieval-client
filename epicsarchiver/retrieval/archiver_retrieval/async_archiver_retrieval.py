@@ -8,10 +8,10 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 from pytz import UTC
+from typing_extensions import Self
 
 from epicsarchiver.common.async_service import ServiceClient
 from epicsarchiver.common.date_util import format_date, set_timezone_utc
-from epicsarchiver.common.errors import ArchiverResponseError
 from epicsarchiver.common.validation import (
     validate_processor,
     validate_pv,
@@ -63,50 +63,33 @@ class AsyncArchiverRetrieval(ServiceClient):
         """
         self.hostname = hostname
         self.port = port
-        self._data_retrieval_url: str | None = None
+
         super().__init__(f"https://{hostname}")
 
-    async def data_retrieval_url(self) -> str:
-        """EPICS Archiver Appliance data retrieval URL.
+        self._data_retrieval_url: str = ""
+        self.data_url: str = ""
+        self.matching_pvs_url: str = ""
 
-        Raises:
-            ArchiverResponseError: Raises if archiver not available
+    async def __aenter__(self) -> Self:
+        """Asynchronous enter.
 
-        Returns:
-            str: URL of retrieval engine
-        """
-        if self._data_retrieval_url is None:
-            app_info = await self._get_json(
-                f"http://{self.hostname}:{self.port}/mgmt/bpl/getApplianceInfo"
-            )
-            self._data_retrieval_url = app_info.get("dataRetrievalURL")
-            if self._data_retrieval_url is None:
-                msg = "Missing dataRetrievalURL in response from getApplianceInfo."
-                raise ArchiverResponseError(msg)
-        return self._data_retrieval_url
-
-    async def get_data_url(self) -> str:
-        """EPICS Archiver Appliance data retrieval URL.
+        Set url endpoints that will be used in this class:
+            self.data_url: EPICS Archiver Appliance data retrieval URL.
+                Use this url to retrieve pv data.
+            self.matching_pvs_url: EPICS Archiver Appliance matching PVs URL.
+                Use this url to search for pv names matching an input search string that
+                can contain glob patterns.
 
         Returns:
-            str: URL of retrieval engine
+            Self: self
         """
-        data_retrieval_url = await self.data_retrieval_url()
-
-        return data_retrieval_url + ENDPOINT_GET_DATA
-
-    async def get_matching_pvs_url(self) -> str:
-        """Get the EPICS Archiver Appliance matching PVs URL.
-
-        Use this url to search for pv names matching an input search string that can
-        contain glob patterns.
-
-        Returns:
-            str: URL of matching PVs endoint.
-        """
-        data_retrieval_url = await self.data_retrieval_url()
-
-        return data_retrieval_url + ENDPOINT_GET_MATCHING_PVS
+        app_info = await self._get_json(
+            f"http://{self.hostname}:{self.port}/mgmt/bpl/getApplianceInfo"
+        )
+        self._data_retrieval_url = app_info["dataRetrievalURL"]
+        self.data_url = self._data_retrieval_url + ENDPOINT_GET_DATA
+        self.matching_pvs_url = self._data_retrieval_url + ENDPOINT_GET_MATCHING_PVS
+        return self
 
     async def _get_data_raw(
         self,
@@ -131,10 +114,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             "to": format_date(end),
             "fetchLatestMetadata": "true",
         }
-        return await self._get(
-            await self.get_data_url(),
-            params=params,
-        )
+        return await self._get(self.data_url, params=params)
 
     async def _get_matching_pvs(
         self,
@@ -156,9 +136,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
             "limit": str(limit),
         }
-        return_value = await self._get_json(
-            await self.get_matching_pvs_url(), params=params
-        )
+        return_value = await self._get_json(self.matching_pvs_url, params=params)
         return cast("list[str]", return_value)
 
     async def get_events(
