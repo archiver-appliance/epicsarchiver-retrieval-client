@@ -34,10 +34,10 @@ def test_get_all_pvs_no_argument() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs?limit=500",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs",
         json=data,
         status=200,
-        match_querystring=True,
+        match=[responses.matchers.query_string_matcher("limit=500")],
     )
     pvs = archiver.get_all_pvs()
     assert len(responses.calls) == 1
@@ -50,10 +50,10 @@ def test_get_all_pvs_with_limit() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs?limit=1200",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs",
         json=data,
         status=200,
-        match_querystring=True,
+        match=[responses.matchers.query_string_matcher("limit=1200")],
     )
     pvs = archiver.get_all_pvs(limit=1200)
     assert len(responses.calls) == 1
@@ -66,10 +66,10 @@ def test_get_all_pvs_with_pv() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs?pv=KLYS*&limit=500",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs",
         json=data,
         status=200,
-        match_querystring=True,
+        match=[responses.matchers.query_string_matcher("pv=KLYS*&limit=500")],
     )
     pvs = archiver.get_all_pvs(pv_query="KLYS*")
     assert len(responses.calls) == 1
@@ -82,10 +82,10 @@ def test_get_all_pvs_with_regex() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs?regex=foo&limit=500",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs",
         json=data,
         status=200,
-        match_querystring=True,
+        match=[responses.matchers.query_string_matcher("regex=foo&limit=500")],
     )
     pvs = archiver.get_all_pvs(regex="foo")
     assert len(responses.calls) == 1
@@ -98,10 +98,10 @@ def test_get_pv_status() -> None:
     data = [{"pvName": "mypv"}]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus?pv=mypv",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus",
         json=data,
         status=200,
-        match_querystring=True,
+        match=[responses.matchers.query_string_matcher("pv=mypv")],
     )
     pvs = archiver.get_pv_status("mypv")
     assert len(responses.calls) == 1
@@ -157,10 +157,10 @@ def test_get_pv_type_info() -> None:
     }
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVTypeInfo?pv=mypv",
+        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVTypeInfo",
         json=data,
         status=200,
-        match_querystring=True,
+        match=[responses.matchers.query_string_matcher("pv=mypv")],
     )
 
     pvs = archiver.get_pv_type_info("mypv")

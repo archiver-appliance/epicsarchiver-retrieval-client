@@ -48,13 +48,18 @@ def test_get_data() -> None:
     )
     responses.add(
         responses.GET,
-        f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z",
+        "http://archiver-01:17668/retrieval/data/getData.raw",
         body=create_pb_bytes(
             events,
             PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018),
         ),
         status=200,
-        match_querystring=True,
+        match=[
+            matchers.query_string_matcher(
+                f"pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&"
+                "to=2018-08-25T18%3A45%3A00.000000Z"
+            )
+        ],
     )
     archiver = ArchiverRetrieval(host)
     resp_data = archiver.get_data(pv, "20180825 17:45", "20180825 18:45")
@@ -181,13 +186,18 @@ def test_get_events_pb() -> None:
     )
     responses.add(
         responses.GET,
-        f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z",
+        "http://archiver-01:17668/retrieval/data/getData.raw",
         body=create_pb_bytes(
             events,
             PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018),
         ),
         status=200,
-        match_querystring=True,
+        match=[
+            matchers.query_string_matcher(
+                f"pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&"
+                "to=2018-08-25T18%3A45%3A00.000000Z"
+            )
+        ],
     )
     archiver = ArchiverRetrieval(host)
     res_data = archiver.get_events(

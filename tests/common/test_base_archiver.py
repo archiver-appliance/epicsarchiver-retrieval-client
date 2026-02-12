@@ -154,10 +154,10 @@ def test_get_or_post_single_pv() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/endpoint?pv=mypv",
+        "http://archiver.example.org:17665/mgmt/bpl/endpoint",
         json=data,
         status=200,
-        match_querystring=True,
+        match=[responses.matchers.query_string_matcher("pv=mypv")],
     )
     r = archiver._get_or_post("/endpoint", "mypv")
     assert len(responses.calls) == 1
@@ -173,7 +173,6 @@ def test_get_or_post_comma_separated_list() -> None:
         "http://archiver.example.org:17665/mgmt/bpl/endpoint",
         json=data,
         status=200,
-        match_querystring=True,
     )
     pvs = "mypv1,mypv2"
     r = archiver._get_or_post("/endpoint", pvs)
