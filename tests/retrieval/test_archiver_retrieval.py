@@ -12,9 +12,13 @@ from epicsarchiver.retrieval.archive_event import ArchiveEvent, year_timestamp
 from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
     ArchiverRetrieval,
 )
-from epicsarchiver.retrieval.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo
+from epicsarchiver.retrieval.EPICSEvent_pb2 import (
+    SCALAR_DOUBLE,
+    SCALAR_INT,
+    PayloadInfo,
+)
 from epicsarchiver.retrieval.pb import to_field_value
-from tests.retrieval.fake_data import TEST_EVENTS, create_pb_bytes
+from tests.retrieval.fake_data import TEST_EVENTS, TEST_EVENTS_2, create_pb_bytes
 
 
 @responses.activate
@@ -96,6 +100,72 @@ def test_search_with_no_time_range() -> None:
     )
     assert len(responses.calls) == 2
     assert resp_data == ref_pv_list
+
+
+@responses.activate
+def test_search_with_time_range() -> None:
+    host = "archiver.example.org"
+    query = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
+    regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
+    start = datetime.datetime(2026, 1, 6, 2, 49, 0, tzinfo=UTC)
+    end = datetime.datetime(2026, 1, 6, 2, 50, 0, tzinfo=UTC)
+    events = TEST_EVENTS_2
+
+    # The intial query for pv names returns a list of pvs
+    ref_pv_list_initial = [
+        "MBL-060RFC:RFS-CCU-120:TempAmbient",
+        "MBL-060RFC:RFS-CCU-220:TempAmbient",
+        "MBL-060RFC:RFS-CCU-320:TempAmbient",
+        "MBL-060RFC:RFS-CCU-420:TempAmbient",
+        "MBL-070RFC:RFS-CCU-120:TempAmbient",
+        "MBL-070RFC:RFS-CCU-220:TempAmbient",
+        "MBL-070RFC:RFS-CCU-320:TempAmbient",
+        "MBL-070RFC:RFS-CCU-420:TempAmbient",
+    ]
+    # Subsequent data queries will have timestamps that will be checked to see if
+    # they are in given range, only one event qualifies
+    ref_pv_list_final = ["MBL-070RFC:RFS-CCU-420:TempAmbient"]
+
+    responses.add(
+        responses.GET,
+        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        "http://archiver-01:17668/retrieval/bpl/getMatchingPVs",
+        body=json.dumps(ref_pv_list_initial),
+        status=200,
+        match=[matchers.query_string_matcher(f"regex={quote(regex)}&limit=500")],
+    )
+
+    for pv, event in zip(ref_pv_list_initial, events):
+        responses.add(
+            responses.GET,
+            "http://archiver-01:17668/retrieval/data/getData.raw",
+            body=create_pb_bytes(
+                [event],
+                PayloadInfo(type=SCALAR_DOUBLE, pvname=pv, year=2026),
+            ),
+            status=200,
+            match=[
+                matchers.query_string_matcher(
+                    f"pv={quote(pv)}&from=2026-01-06T02%3A50%3A00.000000Z&"
+                    "to=2026-01-06T02%3A50%3A00.000000Z"
+                )
+            ],
+        )
+
+    archiver = ArchiverRetrieval(host)
+    resp_data = archiver.search(
+        query=query,
+        start=start,
+        end=end,
+        limit=500,
+    )
+    assert len(responses.calls) == 10
+    assert resp_data == ref_pv_list_final
 
 
 @responses.activate

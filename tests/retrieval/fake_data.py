@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 
 import epicsarchiver.retrieval.EPICSEvent_pb2 as ee
-from epicsarchiver.retrieval.EPICSEvent_pb2 import ScalarInt
+from epicsarchiver.retrieval.EPICSEvent_pb2 import ScalarDouble, ScalarInt
 from epicsarchiver.retrieval.pb import EeEvent, escape_bytes
 
 
@@ -55,5 +55,72 @@ TEST_EVENTS = [
         severity=0,
         status=0,
         fieldvalues=[ee.FieldValue(name="hey", val="ho")],
+    ),
+]
+
+TEST_EVENTS_2 = [
+    ScalarDouble(
+        val=27.7,
+        secondsintoyear=441882,
+        nano=16621477,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
+    ),
+    ScalarDouble(
+        val=29.3,
+        secondsintoyear=433823,
+        nano=260156786,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
+    ),
+    ScalarDouble(
+        val=27.6,
+        secondsintoyear=438718,
+        nano=17097413,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
+    ),
+    ScalarDouble(
+        val=27.4,
+        secondsintoyear=438747,
+        nano=17626861,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
+    ),
+    ScalarDouble(
+        val=29.0,
+        secondsintoyear=429611,
+        nano=159839002,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
+    ),
+    ScalarDouble(
+        val=28.4,
+        secondsintoyear=427722,
+        nano=59125341,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
+    ),
+    ScalarDouble(
+        val=28.8,
+        secondsintoyear=440634,
+        nano=743097850,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
+    ),
+    ScalarDouble(
+        val=27.5,
+        secondsintoyear=442199,
+        nano=408253561,
+        severity=0,
+        status=0,
+        fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
     ),
 ]
