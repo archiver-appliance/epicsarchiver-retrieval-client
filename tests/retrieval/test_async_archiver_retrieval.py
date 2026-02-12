@@ -12,9 +12,13 @@ from epicsarchiver.retrieval.archive_event import ArchiveEvent
 from epicsarchiver.retrieval.archiver_retrieval.async_archiver_retrieval import (
     AsyncArchiverRetrieval,
 )
-from epicsarchiver.retrieval.EPICSEvent_pb2 import SCALAR_INT, PayloadInfo
+from epicsarchiver.retrieval.EPICSEvent_pb2 import (
+    SCALAR_DOUBLE,
+    SCALAR_INT,
+    PayloadInfo,
+)
 from epicsarchiver.retrieval.pb import to_field_value
-from tests.retrieval.fake_data import TEST_EVENTS, create_pb_bytes
+from tests.retrieval.fake_data import TEST_EVENTS, TEST_EVENTS_2, create_pb_bytes
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -106,6 +110,76 @@ async def test_search_with_no_time_range() -> None:
             mocked.assert_any_call(data_request_url)
 
             assert resp_data == ref_pv_list
+
+
+@pytest.mark.asyncio
+async def test_search_with_time_range() -> None:
+    with aioresponses() as mocked:
+        host = "archiver.example.org"
+        query = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
+        regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
+        app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
+        start = datetime.datetime(2026, 1, 6, 2, 49, 0, tzinfo=UTC)
+        end = datetime.datetime(2026, 1, 6, 2, 50, 0, tzinfo=UTC)
+        events = TEST_EVENTS_2
+
+        # The intial query for pv names returns a list of pvs
+        ref_pv_list_initial = [
+            "MBL-060RFC:RFS-CCU-120:TempAmbient",
+            "MBL-060RFC:RFS-CCU-220:TempAmbient",
+            "MBL-060RFC:RFS-CCU-320:TempAmbient",
+            "MBL-060RFC:RFS-CCU-420:TempAmbient",
+            "MBL-070RFC:RFS-CCU-120:TempAmbient",
+            "MBL-070RFC:RFS-CCU-220:TempAmbient",
+            "MBL-070RFC:RFS-CCU-320:TempAmbient",
+            "MBL-070RFC:RFS-CCU-420:TempAmbient",
+        ]
+        # Subsequent data queries will have timestamps that will be checked to see if
+        # they are in given range, only one event qualifies
+        ref_pv_list_final = ["MBL-070RFC:RFS-CCU-420:TempAmbient"]
+
+        mocked.get(
+            app_info_url,
+            body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
+        )
+
+        matching_pvs_url = (
+            "http://archiver-01:17668/retrieval/bpl/getMatchingPVs?"
+            f"regex={quote(regex)}&limit=500"
+        )
+        mocked.get(
+            matching_pvs_url,
+            body=json.dumps(ref_pv_list_initial),
+        )
+
+        data_request_url = (
+            "http://archiver-01:17668/retrieval/data/getData.raw?"
+            "pv={pv}&from=2026-01-06T02%3A50%3A00.000000Z&"
+            "to=2026-01-06T02%3A50%3A00.000000Z&fetchLatestMetadata=true"
+        )
+        for pv, event in zip(ref_pv_list_initial, events):
+            mocked.get(
+                data_request_url.format(pv=quote(pv)),
+                body=create_pb_bytes(
+                    [event],
+                    PayloadInfo(type=SCALAR_DOUBLE, pvname=pv, year=2026),
+                ),
+            )
+
+        async with AsyncArchiverRetrieval(host) as archiver:
+            resp_data = await archiver.search(
+                query=query,
+                start=start,
+                end=end,
+                limit=500,
+            )
+            mocked.assert_any_call(app_info_url)
+            mocked.assert_any_call(matching_pvs_url)
+
+            for pv in ref_pv_list_initial:
+                mocked.assert_any_call(data_request_url.format(pv=quote(pv)))
+
+            assert resp_data == ref_pv_list_final
 
 
 @pytest.mark.asyncio
