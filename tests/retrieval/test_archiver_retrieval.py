@@ -70,17 +70,17 @@ def test_get_data() -> None:
 @responses.activate
 def test_search_with_no_time_range() -> None:
     host = "archiver.example.org"
-    query = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
+    query = "qu[h-j]ck:*:fox-[1-8]"
     regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
     ref_pv_list = [
-        "MBL-060RFC:RFS-CCU-120:TempAmbient",
-        "MBL-060RFC:RFS-CCU-220:TempAmbient",
-        "MBL-060RFC:RFS-CCU-320:TempAmbient",
-        "MBL-060RFC:RFS-CCU-420:TempAmbient",
-        "MBL-070RFC:RFS-CCU-120:TempAmbient",
-        "MBL-070RFC:RFS-CCU-220:TempAmbient",
-        "MBL-070RFC:RFS-CCU-320:TempAmbient",
-        "MBL-070RFC:RFS-CCU-420:TempAmbient",
+        "Quick:Brown:Fox-1",
+        "Quick:Brown:Fox-2",
+        "Quick:Brown:Fox-3",
+        "Quick:Brown:Fox-4",
+        "Quick:Brown:Fox-5",
+        "Quick:Brown:Fox-6",
+        "Quick:Brown:Fox-7",
+        "Quick:Brown:Fox-8",
     ]
     responses.add(
         responses.GET,
@@ -110,7 +110,7 @@ def test_search_with_no_time_range() -> None:
 @responses.activate
 def test_search_with_time_range() -> None:
     host = "archiver.example.org"
-    query = "m?l-0[6-7]0RFC:*:*ambi[a-e]nt*"
+    query = "qu[h-j]ck:*:fox-[1-8]"
     regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
     start = datetime.datetime(2026, 1, 6, 2, 49, 0, tzinfo=UTC)
     end = datetime.datetime(2026, 1, 6, 2, 50, 0, tzinfo=UTC)
@@ -118,18 +118,18 @@ def test_search_with_time_range() -> None:
 
     # The intial query for pv names returns a list of pvs
     ref_pv_list_initial = [
-        "MBL-060RFC:RFS-CCU-120:TempAmbient",
-        "MBL-060RFC:RFS-CCU-220:TempAmbient",
-        "MBL-060RFC:RFS-CCU-320:TempAmbient",
-        "MBL-060RFC:RFS-CCU-420:TempAmbient",
-        "MBL-070RFC:RFS-CCU-120:TempAmbient",
-        "MBL-070RFC:RFS-CCU-220:TempAmbient",
-        "MBL-070RFC:RFS-CCU-320:TempAmbient",
-        "MBL-070RFC:RFS-CCU-420:TempAmbient",
+        "Quick:Brown:Fox-1",
+        "Quick:Brown:Fox-2",
+        "Quick:Brown:Fox-3",
+        "Quick:Brown:Fox-4",
+        "Quick:Brown:Fox-5",
+        "Quick:Brown:Fox-6",
+        "Quick:Brown:Fox-7",
+        "Quick:Brown:Fox-8",
     ]
     # Subsequent data queries will have timestamps that will be checked to see if
     # they are in given range, only one event qualifies
-    ref_pv_list_final = ["MBL-070RFC:RFS-CCU-420:TempAmbient"]
+    ref_pv_list_final = ["Quick:Brown:Fox-8"]
 
     responses.add(
         responses.GET,
