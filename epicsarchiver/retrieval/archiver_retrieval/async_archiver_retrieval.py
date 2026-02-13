@@ -139,6 +139,53 @@ class AsyncArchiverRetrieval(ServiceClient):
         return_value = await self._get_json(self.matching_pvs_url, params=params)
         return cast("list[str]", return_value)
 
+    async def _check_for_pvs_in_time_range(
+        self,
+        pv_list_glob_search: list[str],
+        start: datetime.datetime | None = None,
+        end: datetime.datetime | None = None,
+    ) -> list[str]:
+        """Check if data recorded during the given time range for each PV in set.
+
+        If both start and end given, return only PVs which recorded data during that
+        time range.
+
+        If start given and end not, return PVs which recorded data between start and
+        now.
+
+        If end given and start not, return PVs which recorded any data before end.
+
+        Args:
+            pv_list_glob_search (list[str]): Set of pvs data wanted for.
+            start (datetime.datetime | None): Start of the time range.
+            end (datetime.datetime | None): End of the time range.
+
+        Returns:
+            list[str]: List of PV names found.
+        """
+        if not start and not end:
+            return pv_list_glob_search
+
+        # Add timezone if missing, otherwise convert to UTC.
+        start = set_timezone_utc(input_time=start) if start else None
+        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
+
+        # Set both ends of time range in the data query query to end, then Archiver
+        # returns the most recent event prior to end, or an empty result.
+        all_events = await self.get_all_events(set(pv_list_glob_search), end, end)
+
+        # Create list of those PVs with atleast one event within specified time range.
+        pv_list: list[str] = []
+        for events in all_events.values():
+            pv_list.extend(
+                event.pv
+                for event in events
+                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
+                or not start
+            )
+
+        return pv_list
+
     async def get_events(
         self,
         pv: str,
@@ -191,6 +238,36 @@ class AsyncArchiverRetrieval(ServiceClient):
         pb_data = await r.content.read()
         return parse_pb_data(pb_data)
 
+    async def get_all_events(
+        self,
+        pvs: set[str],
+        start: datetime.datetime,
+        end: datetime.datetime,
+        processor: Processor | None = None,
+    ) -> dict[str, list[ArchiveEvent]]:
+        """Get a list of events for every pv requested.
+
+        Makes all the calls to the archiver asynchronously, so some maybe made in
+        parallel.
+
+        Args:
+            pvs (set[str]): Set of pvs data wanted for.
+            start (datetime.datetime): Start time of period.
+            end (datetime.datetime): End time of period.
+            processor (Processor | None, optional): Optional choice of Preprocessor.
+                Defaults to None.
+
+        Returns:
+            dict[str, list[ArchiveEvent]]: Dictionary of pvs (keys) and events (values).
+        """
+
+        async def get_pv_and_events(pv: str) -> tuple[str, list[ArchiveEvent]]:
+            return (pv, await self.get_events(pv, start, end, processor=processor))
+
+        requests = [get_pv_and_events(pv) for pv in pvs]
+        responses = await asyncio.gather(*requests)
+        return dict(responses)
+
     async def search(
         self,
         query: str,
@@ -221,80 +298,3 @@ class AsyncArchiverRetrieval(ServiceClient):
             start=start,
             end=end,
         )
-
-    async def _check_for_pvs_in_time_range(
-        self,
-        pv_list_glob_search: list[str],
-        start: datetime.datetime | None = None,
-        end: datetime.datetime | None = None,
-    ) -> list[str]:
-        """Check if data recorded during the given time range for each PV in set.
-
-        If both start and end given, return only PVs which recorded data during that
-        time range.
-
-        If start given and end not, return PVs which recorded data between start and
-        now.
-
-        If end given and start not, return PVs which recorded any data before end.
-
-        Args:
-            pv_list_glob_search (list[str]): Set of pvs data wanted for.
-            start (datetime.datetime | None): Start of the time range.
-            end (datetime.datetime | None): End of the time range.
-
-        Returns:
-            list[str]: List of PV names found.
-        """
-        if not start and not end:
-            return pv_list_glob_search
-
-        # Add timezone if missing, otherwise convert to UTC.
-        start = set_timezone_utc(input_time=start) if start else None
-        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
-
-        # Set both ends of time range in the data query query to end, then Archiver
-        # returns the most recent event prior to end, or an empty result.
-        all_events = await self.get_all_events(set(pv_list_glob_search), end, end)
-
-        # Create list of those PVs with atleast one event within specified time range.
-        pv_list: list[str] = []
-        for events in all_events.values():
-            pv_list.extend(
-                event.pv
-                for event in events
-                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
-                or not start
-            )
-
-        return pv_list
-
-    async def get_all_events(
-        self,
-        pvs: set[str],
-        start: datetime.datetime,
-        end: datetime.datetime,
-        processor: Processor | None = None,
-    ) -> dict[str, list[ArchiveEvent]]:
-        """Get a list of events for every pv requested.
-
-        Makes all the calls to the archiver asynchronously, so some maybe made in
-        parallel.
-
-        Args:
-            pvs (set[str]): Set of pvs data wanted for.
-            start (datetime.datetime): Start time of period.
-            end (datetime.datetime): End time of period.
-            processor (Processor | None, optional): Optional choice of Preprocessor.
-                Defaults to None.
-
-        Returns:
-            dict[str, list[ArchiveEvent]]: Dictionary of pvs (keys) and events (values).
-        """
-
-        async def get_pv_and_events(pv: str) -> tuple[str, list[ArchiveEvent]]:
-            return (pv, await self.get_events(pv, start, end, processor=processor))
-
-        requests = [get_pv_and_events(pv) for pv in pvs]
-        responses = await asyncio.gather(*requests)
-        return dict(responses)

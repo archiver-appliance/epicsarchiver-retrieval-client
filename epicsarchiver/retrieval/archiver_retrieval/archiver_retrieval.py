@@ -156,6 +156,53 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             ).json(),
         )
 
+    def _check_for_pvs_in_time_range(
+        self,
+        pv_list_glob_search: list[str],
+        start: datetime.datetime | None = None,
+        end: datetime.datetime | None = None,
+    ) -> list[str]:
+        """Check if data recorded during the given time range for each PV in set.
+
+        If both start and end given, return only PVs which recorded data during that
+        time range.
+
+        If start given and end not, return PVs which recorded data between start and
+        now.
+
+        If end given and start not, return PVs which recorded any data before end.
+
+        Args:
+            pv_list_glob_search (list[str]): Set of pvs data wanted for.
+            start (datetime.datetime | None): Start of the time range.
+            end (datetime.datetime | None): End of the time range.
+
+        Returns:
+            list[str]: List of PV names found.
+        """
+        if not start and not end:
+            return pv_list_glob_search
+
+        # Add timezone if missing, otherwise convert to UTC.
+        start = set_timezone_utc(input_time=start) if start else None
+        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
+
+        # Set both ends of time range in the data query query to end, then Archiver
+        # returns the most recent event prior to end, or an empty result.
+        all_events = [self.get_events(pv, end, end) for pv in pv_list_glob_search]
+
+        # Create list of those PVs with atleast one event within specified time range.
+        pv_list: list[str] = []
+        for events in all_events:
+            pv_list.extend(
+                event.pv
+                for event in events
+                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
+                or not start
+            )
+
+        return pv_list
+
     def get_events(
         self,
         pv: str,
@@ -246,50 +293,3 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             start=start,
             end=end,
         )
-
-    def _check_for_pvs_in_time_range(
-        self,
-        pv_list_glob_search: list[str],
-        start: datetime.datetime | None = None,
-        end: datetime.datetime | None = None,
-    ) -> list[str]:
-        """Check if data recorded during the given time range for each PV in set.
-
-        If both start and end given, return only PVs which recorded data during that
-        time range.
-
-        If start given and end not, return PVs which recorded data between start and
-        now.
-
-        If end given and start not, return PVs which recorded any data before end.
-
-        Args:
-            pv_list_glob_search (list[str]): Set of pvs data wanted for.
-            start (datetime.datetime | None): Start of the time range.
-            end (datetime.datetime | None): End of the time range.
-
-        Returns:
-            list[str]: List of PV names found.
-        """
-        if not start and not end:
-            return pv_list_glob_search
-
-        # Add timezone if missing, otherwise convert to UTC.
-        start = set_timezone_utc(input_time=start) if start else None
-        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
-
-        # Set both ends of time range in the data query query to end, then Archiver
-        # returns the most recent event prior to end, or an empty result.
-        all_events = [self.get_events(pv, end, end) for pv in pv_list_glob_search]
-
-        # Create list of those PVs with atleast one event within specified time range.
-        pv_list: list[str] = []
-        for events in all_events:
-            pv_list.extend(
-                event.pv
-                for event in events
-                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
-                or not start
-            )
-
-        return pv_list
