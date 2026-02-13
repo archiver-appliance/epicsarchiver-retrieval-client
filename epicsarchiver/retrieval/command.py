@@ -273,9 +273,7 @@ def _search_table_title(
     start: datetime | None,
     end: datetime | None,
 ) -> str:
-    table_title = f"Found {(len_pvs := len(pvs))} PV"
-    if len_pvs > 1:
-        table_title += "s"
+    table_title = f"Found {(len_pvs := len(pvs))} PV{'s' if len_pvs > 1 else ''}"
     if start and end:
         table_title += f" between {start} and {end}"
     elif start:
@@ -293,7 +291,7 @@ def _table_title(
 ) -> str:
     table_title = f"Period {start} - {end}"
     if len(pvs) == 1:
-        table_title = pvs[0] + " " + table_title
+        table_title = f"{pvs[0]} {table_title}"
     if processor:
         table_title += f" Processor {processor.processor_name}"
         if processor.bin_size:
