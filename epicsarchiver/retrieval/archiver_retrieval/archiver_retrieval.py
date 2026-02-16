@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import datetime
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
+from pytz import UTC
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
-from epicsarchiver.common.date_util import datetime_from_str, format_date
+from epicsarchiver.common.date_util import (
+    datetime_from_str,
+    format_date,
+    set_timezone_utc,
+)
 from epicsarchiver.common.validation import (
     validate_processor,
     validate_pv,
@@ -18,14 +24,15 @@ from epicsarchiver.retrieval.archive_event import ArchiveEvent, dataframe_from_e
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
-    import datetime
-
     from requests import Response
 
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
 
 
 LOG: logging.Logger = logging.getLogger(__name__)
+
+ENDPOINT_GET_DATA = "/data/getData.raw"
+ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
 
 
 def json_to_dataframe(data: Any) -> pd.DataFrame:
@@ -75,21 +82,20 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
     """
 
-    def data_url(self) -> str:
-        """EPICS Archiver Appliance data retrieval url.
+    def __init__(self, hostname: str = "localhost", port: int = 17665):
+        """Create Archiver Appliance object.
 
-        Raises:
-            ConnectionError: Raises if archiver not available
-
-        Returns:
-            str: url of retrieval engine
+        Args:
+            hostname (str, optional): hostname of archiver. Defaults to "localhost".
+            port (int, optional): port number of mgmt interface. Defaults to 17665.
         """
-        if self._data_url is None:
-            data_url_base = self.info.get("dataRetrievalURL")
-            if data_url_base is None:
-                raise ConnectionError
-            self._data_url = data_url_base + "/data/getData.raw"
-        return self._data_url
+        super().__init__(hostname, port)
+
+        self._data_retrieval_url = self.info["dataRetrievalURL"]
+        self.data_url: str = self._data_retrieval_url + ENDPOINT_GET_DATA
+        self.matching_pvs_url: str = (
+            self._data_retrieval_url + ENDPOINT_GET_MATCHING_PVS
+        )
 
     def _get_data_raw(
         self,
@@ -116,10 +122,86 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             "to": format_date(end),
         }
         return self._get(
-            self.data_url(),
+            self.data_url,
             params=params,
             stream=True,
         )
+
+    def _get_matching_pvs(
+        self,
+        pv: str,
+        limit: int,
+    ) -> list[str]:
+        """Retrieve list of matching pv names for given glob search string.
+
+        Args:
+            pv (str): PV glob name search string.
+            limit (int): Limit of PV names to return.
+
+        Returns:
+            list[str]: List of pv names
+        """
+        params = {
+            # Simple conversion of glob patterns to regex, case insensitive, anchor
+            # beginning and end.
+            "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
+            "limit": str(limit),
+        }
+        return cast(
+            "list[str]",
+            self._get(
+                self.matching_pvs_url,
+                params=params,
+                stream=True,
+            ).json(),
+        )
+
+    def _check_for_pvs_in_time_range(
+        self,
+        pv_list_glob_search: list[str],
+        start: datetime.datetime | None = None,
+        end: datetime.datetime | None = None,
+    ) -> list[str]:
+        """Check if data recorded during the given time range for each PV in set.
+
+        If both start and end given, return only PVs which recorded data during that
+        time range.
+
+        If start given and end not, return PVs which recorded data between start and
+        now.
+
+        If end given and start not, return PVs which recorded any data before end.
+
+        Args:
+            pv_list_glob_search (list[str]): Set of pvs data wanted for.
+            start (datetime.datetime | None): Start of the time range.
+            end (datetime.datetime | None): End of the time range.
+
+        Returns:
+            list[str]: List of PV names found.
+        """
+        if not start and not end:
+            return pv_list_glob_search
+
+        # Add timezone if missing, otherwise convert to UTC.
+        start = set_timezone_utc(input_time=start) if start else None
+        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
+
+        # Set both ends of time range in the data query query to end, then Archiver
+        # returns the most recent event prior to end, or an empty result.
+        all_events = [self.get_events(pv, end, end) for pv in pv_list_glob_search]
+
+        # Create list of those PVs with atleast one event within specified time range.
+        pv_list: list[str] = []
+        for events in all_events:
+            pv_list.extend(
+                event.pv
+                for event in events
+                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
+                or not start
+            )
+
+        return pv_list
 
     def get_events(
         self,
@@ -183,3 +265,31 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             return dataframe_from_events([])
         # Convert events to DataFrame
         return dataframe_from_events(events)
+
+    def search(
+        self,
+        query: str,
+        *,
+        start: datetime.datetime | None = None,
+        end: datetime.datetime | None = None,
+        limit: int = 500,
+    ) -> list[str]:
+        """Search for names of PVs matching the given strings.
+
+        Args:
+            query (str): A string containing possible glob search characters.
+            start (datetime.datetime | None): Start time of the time period.
+            end (datetime.datetime | None): End time of the time period.
+            limit (int): Limit of PV names to return for each search string given.
+                To get all the PV names, (potentially in the millions), set limit to -1.
+                [default: 500]
+
+        Returns:
+            list[str]: List of PV names found.
+        """
+        # Limit returned list of PV to those in time range, if supplied.
+        return self._check_for_pvs_in_time_range(
+            pv_list_glob_search=self._get_matching_pvs(query, limit),
+            start=start,
+            end=end,
+        )

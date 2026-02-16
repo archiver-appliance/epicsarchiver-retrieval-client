@@ -118,6 +118,7 @@ def get(  # noqa: PLR0917, PLR0913
     LOG.debug("PVs to fetch data from %s", pvs)
     events: AlignedPVEvents = []
     try:
+        meta = None
         if len(pvs) == 1:
             meta, events = asyncio.run(
                 _single_fetch_events(archiver, pvs[0], start, end, processor=processor)
@@ -153,6 +154,95 @@ def get(  # noqa: PLR0917, PLR0913
     ctx.exit(0)
 
 
+@click.command(context_settings={"show_default": True})
+@click.option(
+    "--start",
+    "-s",
+    default=None,
+    type=click.DateTime(formats=DATE_FORMATS),
+    help="Start time of query",
+)
+@click.option(
+    "--end",
+    "-e",
+    default=None,
+    type=click.DateTime(formats=DATE_FORMATS),
+    help="End time of query",
+)
+@click.option(
+    "--limit",
+    "-l",
+    default=500,
+    type=int,
+    help="Limit of PV names to return for each search string given. "
+    "To get all the PV names, (potentially in the millions), set limit to -1.",
+)
+@click.option(
+    "--debug",
+    is_flag=True,
+    callback=handle_debug,
+    help="Turn on debug logging",
+)
+@click.argument("query", type=str, required=True, nargs=1)
+@click.pass_context
+def search(  # noqa: PLR0917, PLR0913
+    ctx: click.core.Context,
+    query: str,
+    start: datetime | None,
+    end: datetime | None,
+    limit: int,
+    debug: bool,  # noqa: FBT001, ARG001
+) -> None:
+    """Search for PV names using glob search, case insensitive, multiple words.
+
+    Optionally specify start and/or end times to only return PVs that recorded data in
+    the specified time range.
+
+    ARGUMENT query PV name search pattern, use glob search characters, case
+    insensitive
+
+    Example usage:
+
+    .. code-block:: console
+
+        epicsarchiver --hostname archiver-01.example.com search         \
+        PBI-APTM02:Ctrl-ECAT-100:*Temp1[2-4]*
+
+        epicsarchiver --hostname archiver-01.example.com search         \
+        PBI-APTM02:* -s "2026-01-06 02:50:00"
+
+        epicsarchiver --hostname archiver-01.example.com search         \
+        mbl*0[6-7]0*ambient* -s "2026-01-05"  -e "2026-01-06"
+
+    """
+    archiver: ArchiverAppliance = ctx.obj["archiver"]
+    try:
+        pv_name_list = asyncio.run(
+            _pv_name_search(
+                archiver=archiver,
+                query=query,
+                start=start,
+                end=end,
+                limit=limit,
+            )
+        )
+    except ArchiverError:
+        LOG.exception("Error fetching data from archiver")
+        ctx.exit(1)
+
+    if not pv_name_list:
+        LOG.info("No PVs found.")
+        ctx.exit(0)
+
+    table_title = _search_table_title(pv_name_list, start, end)
+    table = _create_pv_name_table(pv_list=pv_name_list, title=table_title)
+
+    console = Console()
+    console.print(table)
+
+    ctx.exit(0)
+
+
 def _meta_field_values(meta: dict[int, ArchiveEventsMeta]) -> dict[int, dict[str, str]]:
     return {
         year: {
@@ -178,6 +268,21 @@ def _table_caption(
     return None
 
 
+def _search_table_title(
+    pvs: list[str],
+    start: datetime | None,
+    end: datetime | None,
+) -> str:
+    table_title = f"Found {(len_pvs := len(pvs))} PV{'s' if len_pvs > 1 else ''}"
+    if start and end:
+        table_title += f" between {start} and {end}"
+    elif start:
+        table_title += f" from {start} until now"
+    elif end:
+        table_title += f" before {end}"
+    return table_title
+
+
 def _table_title(
     pvs: tuple[str],
     start: datetime,
@@ -186,7 +291,7 @@ def _table_title(
 ) -> str:
     table_title = f"Period {start} - {end}"
     if len(pvs) == 1:
-        table_title = pvs[0] + table_title
+        table_title = f"{pvs[0]} {table_title}"
     if processor:
         table_title += f" Processor {processor.processor_name}"
         if processor.bin_size:
@@ -241,6 +346,17 @@ def _create_singular_table(
                 str(event.status),
                 str(event.severity),
             )
+    return table
+
+
+def _create_pv_name_table(
+    pv_list: list[str],
+    title: str,
+) -> Table:
+    table = Table(title=title)
+    table.add_column("PV name", justify="left")
+    for pv in pv_list:
+        table.add_row(pv)
     return table
 
 
@@ -305,3 +421,14 @@ async def _single_fetch_events(
             pv, start, end, processor=processor
         )
         return meta, _align_events({pv: events})
+
+
+async def _pv_name_search(
+    archiver: ArchiverAppliance,
+    query: str,
+    start: datetime | None,
+    end: datetime | None,
+    limit: int,
+) -> list[str]:
+    async with AsyncArchiverRetrieval(archiver.hostname, archiver.port) as a_retrieval:
+        return await a_retrieval.search(query=query, start=start, end=end, limit=limit)

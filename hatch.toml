@@ -42,7 +42,7 @@ cov-report = "coverage xml"
 extra-dependencies = [
   "mypy",
   "mypy-protobuf",
-  "pytest",
+  "pytest==8.4.2",         # pin to avoid errors in mypy tests
   "pytest-asyncio",
   "responses",
   "aioresponses",
@@ -61,6 +61,7 @@ check = ["check-src", "check-tests"]
 
 [envs.docs]
 extra-dependencies = [
+  "astroid==3.3.11",          # pin to avoid sphinx [autoapi.not_readable] error
   "sphinx",
   "sphinx-copybutton>=0.5.1",
   "sphinx-click",

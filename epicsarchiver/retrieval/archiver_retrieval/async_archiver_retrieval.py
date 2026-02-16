@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+from pytz import UTC
+from typing_extensions import Self
 
 from epicsarchiver.common.async_service import ServiceClient
-from epicsarchiver.common.date_util import format_date
-from epicsarchiver.common.errors import ArchiverResponseError
+from epicsarchiver.common.date_util import format_date, set_timezone_utc
 from epicsarchiver.common.validation import (
     validate_processor,
     validate_pv,
@@ -17,14 +20,15 @@ from epicsarchiver.common.validation import (
 from epicsarchiver.retrieval.pb import ArchiveEventsData, parse_pb_data
 
 if TYPE_CHECKING:
-    import datetime
-
     from aiohttp import ClientResponse
 
     from epicsarchiver.retrieval.archive_event import ArchiveEvent
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
 
 LOG: logging.Logger = logging.getLogger(__name__)
+
+ENDPOINT_GET_DATA = "/data/getData.raw"
+ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
 
 
 class AsyncArchiverRetrieval(ServiceClient):
@@ -59,28 +63,33 @@ class AsyncArchiverRetrieval(ServiceClient):
         """
         self.hostname = hostname
         self.port = port
-        self._data_url: str | None = None
+
         super().__init__(f"https://{hostname}")
 
-    async def data_url(self) -> str:
-        """EPICS Archiver Appliance data retrieval URL.
+        self._data_retrieval_url: str = ""
+        self.data_url: str = ""
+        self.matching_pvs_url: str = ""
 
-        Raises:
-            ArchiverResponseError: Raises if archiver not available
+    async def __aenter__(self) -> Self:
+        """Asynchronous enter.
+
+        Set url endpoints that will be used in this class:
+            self.data_url: EPICS Archiver Appliance data retrieval URL.
+                Use this url to retrieve pv data.
+            self.matching_pvs_url: EPICS Archiver Appliance matching PVs URL.
+                Use this url to search for pv names matching an input search string that
+                can contain glob patterns.
 
         Returns:
-            str: URL of retrieval engine
+            Self: self
         """
-        if self._data_url is None:
-            app_info = await self._get_json(
-                f"http://{self.hostname}:{self.port}/mgmt/bpl/getApplianceInfo"
-            )
-            data_url_base = app_info.get("dataRetrievalURL")
-            if data_url_base is None:
-                msg = "Missing dataRetrievalURL in response from getApplianceInfo."
-                raise ArchiverResponseError(msg)
-            self._data_url = data_url_base + "/data/getData.raw"
-        return self._data_url
+        app_info = await self._get_json(
+            f"http://{self.hostname}:{self.port}/mgmt/bpl/getApplianceInfo"
+        )
+        self._data_retrieval_url = app_info["dataRetrievalURL"]
+        self.data_url = self._data_retrieval_url + ENDPOINT_GET_DATA
+        self.matching_pvs_url = self._data_retrieval_url + ENDPOINT_GET_MATCHING_PVS
+        return self
 
     async def _get_data_raw(
         self,
@@ -105,10 +114,77 @@ class AsyncArchiverRetrieval(ServiceClient):
             "to": format_date(end),
             "fetchLatestMetadata": "true",
         }
-        return await self._get(
-            await self.data_url(),
-            params=params,
-        )
+        return await self._get(self.data_url, params=params)
+
+    async def _get_matching_pvs(
+        self,
+        pv: str,
+        limit: int,
+    ) -> list[str]:
+        """Retrieve list of matching pv names for given glob search string.
+
+        Args:
+            pv (str): PV glob name search string.
+            limit (int): Limit of PV names to return.
+
+        Returns:
+            list[str]: List of pv names
+        """
+        params = {
+            # Simple conversion of glob patterns to regex, case insensitive, anchor
+            # beginning and end.
+            "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
+            "limit": str(limit),
+        }
+        return_value = await self._get_json(self.matching_pvs_url, params=params)
+        return cast("list[str]", return_value)
+
+    async def _check_for_pvs_in_time_range(
+        self,
+        pv_list_glob_search: list[str],
+        start: datetime.datetime | None = None,
+        end: datetime.datetime | None = None,
+    ) -> list[str]:
+        """Check if data recorded during the given time range for each PV in set.
+
+        If both start and end given, return only PVs which recorded data during that
+        time range.
+
+        If start given and end not, return PVs which recorded data between start and
+        now.
+
+        If end given and start not, return PVs which recorded any data before end.
+
+        Args:
+            pv_list_glob_search (list[str]): Set of pvs data wanted for.
+            start (datetime.datetime | None): Start of the time range.
+            end (datetime.datetime | None): End of the time range.
+
+        Returns:
+            list[str]: List of PV names found.
+        """
+        if not start and not end:
+            return pv_list_glob_search
+
+        # Add timezone if missing, otherwise convert to UTC.
+        start = set_timezone_utc(input_time=start) if start else None
+        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
+
+        # Set both ends of time range in the data query query to end, then Archiver
+        # returns the most recent event prior to end, or an empty result.
+        all_events = await self.get_all_events(set(pv_list_glob_search), end, end)
+
+        # Create list of those PVs with atleast one event within specified time range.
+        pv_list: list[str] = []
+        for events in all_events.values():
+            pv_list.extend(
+                event.pv
+                for event in events
+                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
+                or not start
+            )
+
+        return pv_list
 
     async def get_events(
         self,
@@ -191,3 +267,34 @@ class AsyncArchiverRetrieval(ServiceClient):
         requests = [get_pv_and_events(pv) for pv in pvs]
         responses = await asyncio.gather(*requests)
         return dict(responses)
+
+    async def search(
+        self,
+        query: str,
+        *,
+        start: datetime.datetime | None = None,
+        end: datetime.datetime | None = None,
+        limit: int = 500,
+    ) -> list[str]:
+        """Search for names of PVs matching the given strings.
+
+        Optionally specify start and/or end times to only return PVs that recorded data
+        in the specified time range.
+
+        Args:
+            query (str): A string containing possible glob search characters.
+            start (datetime.datetime | None): Start time of the time period.
+            end (datetime.datetime | None): End time of the time period.
+            limit (int): Limit of PV names to return for each search string given.
+                To get all the PV names, (potentially in the millions), set limit to -1.
+                [default: 500]
+
+        Returns:
+            list[str]: List of PV names found.
+        """
+        # Limit returned list of PV to those in time range, if supplied.
+        return await self._check_for_pvs_in_time_range(
+            await self._get_matching_pvs(query, limit),
+            start=start,
+            end=end,
+        )

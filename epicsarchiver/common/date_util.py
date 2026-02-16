@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from dateutil import parser
+from pytz import UTC
 
 from epicsarchiver.common.validation import ValidationError
 
@@ -59,3 +60,21 @@ def format_date(at: datetime.datetime) -> str:
         str: Formatted date string in ISO 8601 format with 'Z' suffix.
     """
     return at.replace(tzinfo=None).isoformat(timespec="microseconds") + "Z"
+
+
+def set_timezone_utc(
+    input_time: datetime.datetime,
+) -> datetime.datetime:
+    """Add UTC timezone if timezone missing, otherwise convert to UTC.
+
+    Args:
+        input_time (datetime.datetime): A timestamp object.
+
+    Returns:
+        input_time (datetime.datetime): A timestamp object with timezone set to UTC.
+    """
+    return (
+        input_time.replace(tzinfo=UTC)
+        if input_time.tzinfo is None
+        else input_time.astimezone(UTC)
+    )
