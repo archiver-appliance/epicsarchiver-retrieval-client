@@ -33,9 +33,10 @@ before_script:
 .parallel:
   parallel:
     matrix:
-      - PY_VERSION: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+      - PY_VERSION: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
 default:
+  image: python:3.10
   tags:
     - docker
 
@@ -57,14 +58,12 @@ test:
 
 jupyter-check:
   stage: test
-  image: python:3.10
   script:
     - hatch run jupyter-check
 
 
 cov:
   stage: analyse
-  image: python:3.10
   script:
     - hatch test -c
   coverage: /(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/
@@ -77,20 +76,16 @@ cov:
 
 lint:
   stage: check
-  image: python:3.8 # keep in sync with ruff.toml
   script:
     - hatch fmt --check
 
 lint-types:
   stage: check
-  image: python:$PY_VERSION
   script:
-    - hatch run +py=$PY_VERSION types:check
-  parallel: !reference [.parallel,parallel]
+    - hatch run types:check
 
 lint-docs:
   stage: check
-  image: python:3.12
   script:
     - hatch run docs:check
 
@@ -108,7 +103,6 @@ build:
 
 pages:
   stage: deploy
-  image: python:3.12
   script:
     - hatch run docs:build
     - mv docs/build/html public
@@ -121,7 +115,6 @@ pages:
 
 release-pypi-package:
   stage: release
-  image: python:$PY_VERSION
   before_script:
     - pip install twine
   script:
