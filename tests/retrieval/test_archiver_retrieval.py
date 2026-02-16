@@ -145,7 +145,7 @@ def test_search_with_time_range() -> None:
         match=[matchers.query_string_matcher(f"regex={quote(regex)}&limit=500")],
     )
 
-    for pv, event in zip(ref_pv_list_initial, events):
+    for pv, event in zip(ref_pv_list_initial, events, strict=True):
         responses.add(
             responses.GET,
             "http://archiver-01:17668/retrieval/data/getData.raw",
