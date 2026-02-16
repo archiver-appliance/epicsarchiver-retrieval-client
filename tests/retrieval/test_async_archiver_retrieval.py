@@ -157,7 +157,7 @@ async def test_search_with_time_range() -> None:
             "pv={pv}&from=2026-01-06T02%3A50%3A00.000000Z&"
             "to=2026-01-06T02%3A50%3A00.000000Z&fetchLatestMetadata=true"
         )
-        for pv, event in zip(ref_pv_list_initial, events):
+        for pv, event in zip(ref_pv_list_initial, events, strict=True):
             mocked.get(
                 data_request_url.format(pv=quote(pv)),
                 body=create_pb_bytes(
