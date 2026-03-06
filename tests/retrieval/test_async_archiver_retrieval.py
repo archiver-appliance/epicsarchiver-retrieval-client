@@ -75,8 +75,7 @@ async def test_get_events_pb() -> None:
 async def test_search_with_no_time_range() -> None:
     with aioresponses() as mocked:
         host = "archiver.example.org"
-        query = "qu[h-j]ck:*:fox-[1-8]"
-        regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
+        query = "(?i)^qu[h-j]ck:.*:fox-[1-8]$"
         app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
 
         ref_pv_list = [
@@ -94,7 +93,7 @@ async def test_search_with_no_time_range() -> None:
             app_info_url,
             body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
         )
-        data_request_url = f"http://archiver-01:17668/retrieval/bpl/getMatchingPVs?regex={quote(regex)}&limit=500"
+        data_request_url = f"http://archiver-01:17668/retrieval/bpl/getMatchingPVs?regex={quote(query)}&limit=500"
         mocked.get(
             data_request_url,
             body=json.dumps(ref_pv_list),
@@ -116,8 +115,7 @@ async def test_search_with_no_time_range() -> None:
 async def test_search_with_time_range() -> None:
     with aioresponses() as mocked:
         host = "archiver.example.org"
-        query = "qu[h-j]ck:*:fox-[1-8]"
-        regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
+        query = "(?i)^qu[h-j]ck:.*:fox-[1-8]$"
         app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
         start = datetime.datetime(2026, 1, 6, 2, 49, 0, tzinfo=UTC)
         end = datetime.datetime(2026, 1, 6, 2, 50, 0, tzinfo=UTC)
@@ -145,7 +143,7 @@ async def test_search_with_time_range() -> None:
 
         matching_pvs_url = (
             "http://archiver-01:17668/retrieval/bpl/getMatchingPVs?"
-            f"regex={quote(regex)}&limit=500"
+            f"regex={quote(query)}&limit=500"
         )
         mocked.get(
             matching_pvs_url,

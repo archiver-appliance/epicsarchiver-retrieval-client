@@ -129,22 +129,20 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
     def _get_matching_pvs(
         self,
-        pv: str,
+        query: str,
         limit: int,
     ) -> list[str]:
-        """Retrieve list of matching pv names for given glob search string.
+        """Retrieve list of matching pv names for given regex search string.
 
         Args:
-            pv (str): PV glob name search string.
+            query (str): A regex search string.
             limit (int): Limit of PV names to return.
 
         Returns:
             list[str]: List of pv names
         """
         params = {
-            # Simple conversion of glob patterns to regex, case insensitive, anchor
-            # beginning and end.
-            "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
+            "regex": query,
             "limit": str(limit),
         }
         return cast(
@@ -158,11 +156,11 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
     def _check_for_pvs_in_time_range(
         self,
-        pv_list_glob_search: list[str],
+        query: list[str],
         start: datetime.datetime | None = None,
         end: datetime.datetime | None = None,
     ) -> list[str]:
-        """Check if data recorded during the given time range for each PV in set.
+        """Check if data recorded during the given time range for each PV in list.
 
         If both start and end given, return only PVs which recorded data during that
         time range.
@@ -173,7 +171,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         If end given and start not, return PVs which recorded any data before end.
 
         Args:
-            pv_list_glob_search (list[str]): Set of pvs data wanted for.
+            query (list[str]): List of pvs.
             start (datetime.datetime | None): Start of the time range.
             end (datetime.datetime | None): End of the time range.
 
@@ -181,7 +179,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             list[str]: List of PV names found.
         """
         if not start and not end:
-            return pv_list_glob_search
+            return query
 
         # Add timezone if missing, otherwise convert to UTC.
         start = set_timezone_utc(input_time=start) if start else None
@@ -189,7 +187,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
-        all_events = [self.get_events(pv, end, end) for pv in pv_list_glob_search]
+        all_events = [self.get_events(pv, end, end) for pv in query]
 
         # Create list of those PVs with atleast one event within specified time range.
         pv_list: list[str] = []
@@ -274,10 +272,13 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         end: datetime.datetime | None = None,
         limit: int = 500,
     ) -> list[str]:
-        """Search for names of PVs matching the given strings.
+        """Search for names of PVs matching the given regex search string.
+
+        Optionally specify start and/or end times to only return PVs that recorded data
+        in the specified time range.
 
         Args:
-            query (str): A string containing possible glob search characters.
+            query (str): A regex search string.
             start (datetime.datetime | None): Start time of the time period.
             end (datetime.datetime | None): End time of the time period.
             limit (int): Limit of PV names to return for each search string given.
@@ -289,7 +290,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         """
         # Limit returned list of PV to those in time range, if supplied.
         return self._check_for_pvs_in_time_range(
-            pv_list_glob_search=self._get_matching_pvs(query, limit),
+            query=self._get_matching_pvs(query, limit),
             start=start,
             end=end,
         )
