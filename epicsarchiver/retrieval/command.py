@@ -193,26 +193,25 @@ def search(  # noqa: PLR0917, PLR0913
     limit: int,
     debug: bool,  # noqa: FBT001, ARG001
 ) -> None:
-    """Search for PV names using glob search, case insensitive, multiple words.
+    """Search for PV names using regex search patterns.
 
     Optionally specify start and/or end times to only return PVs that recorded data in
     the specified time range.
 
-    ARGUMENT query PV name search pattern, use glob search characters, case
-    insensitive
+    ARGUMENT query PV name regex search pattern.
 
     Example usage:
 
     .. code-block:: console
 
         epicsarchiver --hostname archiver-01.example.com search         \
-        PBI-APTM02:Ctrl-ECAT-100:*Temp1[2-4]*
+        "PBI-APTM02:Ctrl-ECAT-100:.*Temp1[2-4].*"
 
         epicsarchiver --hostname archiver-01.example.com search         \
-        PBI-APTM02:* -s "2026-01-06 02:50:00"
+        "PBI-APTM02:.*" -s "2026-01-06 02:50:00"
 
         epicsarchiver --hostname archiver-01.example.com search         \
-        mbl*0[6-7]0*ambient* -s "2026-01-05"  -e "2026-01-06"
+        "(?i)mbl-060RFC:.*:tempambient" -s "2026-01-05"  -e "2026-01-06"
 
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
