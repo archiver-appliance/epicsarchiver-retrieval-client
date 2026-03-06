@@ -70,8 +70,7 @@ def test_get_data() -> None:
 @responses.activate
 def test_search_with_no_time_range() -> None:
     host = "archiver.example.org"
-    query = "qu[h-j]ck:*:fox-[1-8]"
-    regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
+    query = "(?i)^qu[h-j]ck:.*:fox-[1-8]$"
     ref_pv_list = [
         "Quick:Brown:Fox-1",
         "Quick:Brown:Fox-2",
@@ -93,7 +92,7 @@ def test_search_with_no_time_range() -> None:
         "http://archiver-01:17668/retrieval/bpl/getMatchingPVs",
         body=json.dumps(ref_pv_list),
         status=200,
-        match=[matchers.query_string_matcher(f"regex={quote(regex)}&limit=500")],
+        match=[matchers.query_string_matcher(f"regex={quote(query)}&limit=500")],
     )
 
     archiver = ArchiverRetrieval(host)
@@ -110,8 +109,7 @@ def test_search_with_no_time_range() -> None:
 @responses.activate
 def test_search_with_time_range() -> None:
     host = "archiver.example.org"
-    query = "qu[h-j]ck:*:fox-[1-8]"
-    regex = "(?i)^" + query.replace("*", ".*").replace("?", ".") + "$"
+    query = "(?i)^qu[h-j]ck:.*:fox-[1-8]$"
     start = datetime.datetime(2026, 1, 6, 2, 49, 0, tzinfo=UTC)
     end = datetime.datetime(2026, 1, 6, 2, 50, 0, tzinfo=UTC)
     events = TEST_EVENTS_2
@@ -142,7 +140,7 @@ def test_search_with_time_range() -> None:
         "http://archiver-01:17668/retrieval/bpl/getMatchingPVs",
         body=json.dumps(ref_pv_list_initial),
         status=200,
-        match=[matchers.query_string_matcher(f"regex={quote(regex)}&limit=500")],
+        match=[matchers.query_string_matcher(f"regex={quote(query)}&limit=500")],
     )
 
     for pv, event in zip(ref_pv_list_initial, events, strict=True):
