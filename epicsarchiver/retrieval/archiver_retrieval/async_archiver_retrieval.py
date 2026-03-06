@@ -78,7 +78,7 @@ class AsyncArchiverRetrieval(ServiceClient):
                 Use this url to retrieve pv data.
             self.matching_pvs_url: EPICS Archiver Appliance matching PVs URL.
                 Use this url to search for pv names matching an input search string that
-                can contain glob patterns.
+                can contain regex patterns.
 
         Returns:
             Self: self
@@ -118,22 +118,20 @@ class AsyncArchiverRetrieval(ServiceClient):
 
     async def _get_matching_pvs(
         self,
-        pv: str,
+        query: str,
         limit: int,
     ) -> list[str]:
-        """Retrieve list of matching pv names for given glob search string.
+        """Retrieve list of matching pv names for given regex search string.
 
         Args:
-            pv (str): PV glob name search string.
+            query (str): A regex search string.
             limit (int): Limit of PV names to return.
 
         Returns:
             list[str]: List of pv names
         """
         params = {
-            # Simple conversion of glob patterns to regex, case insensitive, anchor
-            # beginning and end.
-            "regex": "(?i)^" + pv.replace("*", ".*").replace("?", ".") + "$",
+            "regex": query,
             "limit": str(limit),
         }
         return_value = await self._get_json(self.matching_pvs_url, params=params)
@@ -141,11 +139,11 @@ class AsyncArchiverRetrieval(ServiceClient):
 
     async def _check_for_pvs_in_time_range(
         self,
-        pv_list_glob_search: list[str],
+        query: list[str],
         start: datetime.datetime | None = None,
         end: datetime.datetime | None = None,
     ) -> list[str]:
-        """Check if data recorded during the given time range for each PV in set.
+        """Check if data recorded during the given time range for each PV in list.
 
         If both start and end given, return only PVs which recorded data during that
         time range.
@@ -156,7 +154,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         If end given and start not, return PVs which recorded any data before end.
 
         Args:
-            pv_list_glob_search (list[str]): Set of pvs data wanted for.
+            query (list[str]): List of pvs.
             start (datetime.datetime | None): Start of the time range.
             end (datetime.datetime | None): End of the time range.
 
@@ -164,7 +162,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             list[str]: List of PV names found.
         """
         if not start and not end:
-            return pv_list_glob_search
+            return query
 
         # Add timezone if missing, otherwise convert to UTC.
         start = set_timezone_utc(input_time=start) if start else None
@@ -172,7 +170,7 @@ class AsyncArchiverRetrieval(ServiceClient):
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
-        all_events = await self.get_all_events(set(pv_list_glob_search), end, end)
+        all_events = await self.get_all_events(set(query), end, end)
 
         # Create list of those PVs with atleast one event within specified time range.
         pv_list: list[str] = []
@@ -276,13 +274,13 @@ class AsyncArchiverRetrieval(ServiceClient):
         end: datetime.datetime | None = None,
         limit: int = 500,
     ) -> list[str]:
-        """Search for names of PVs matching the given strings.
+        """Search for names of PVs matching the given regex search string.
 
         Optionally specify start and/or end times to only return PVs that recorded data
         in the specified time range.
 
         Args:
-            query (str): A string containing possible glob search characters.
+            query (str): A regex search string.
             start (datetime.datetime | None): Start time of the time period.
             end (datetime.datetime | None): End time of the time period.
             limit (int): Limit of PV names to return for each search string given.
