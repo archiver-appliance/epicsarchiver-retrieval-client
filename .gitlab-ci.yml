@@ -118,7 +118,7 @@ release-pypi-package:
   before_script:
     - pip install twine
   script:
-    - twine upload dist/* --skip-existing --verbose
+    - twine upload dist/* --verbose
   only:
     - tags
   parallel: !reference [.parallel,parallel]
