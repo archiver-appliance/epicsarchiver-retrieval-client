@@ -91,15 +91,12 @@ lint-docs:
 
 build:
   stage: build
-  image: python:$PY_VERSION
   script:
     - hatch build
   artifacts:
     expire_in: 1 day
     paths:
       - dist/
-  parallel: !reference [.parallel,parallel]
-
 
 pages:
   stage: deploy
@@ -118,7 +115,6 @@ release-pypi-package:
   before_script:
     - pip install twine
   script:
-    - twine upload dist/* --skip-existing --verbose
+    - twine upload dist/* --verbose
   only:
     - tags
-  parallel: !reference [.parallel,parallel]
