@@ -10,6 +10,8 @@ variables:
 include:
   - project: "ics-infrastructure/gitlab-ci-yml"
     file: "PreCommit.gitlab-ci.yml"
+  - project: "ics-infrastructure/gitlab-ci-yml"
+    file: "SonarScanner.gitlab-ci.yml"
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
