@@ -9,7 +9,15 @@ from epicsarchiver.epicsarchiver import (
 )
 from epicsarchiver.retrieval.archive_event import (
     ArchiveEvent,
+    ArchiveEventsData,
+    ArchiveEventsMeta,
     FieldValue,
 )
 
-__all__ += ["ArchiveEvent", "ArchiverAppliance", "FieldValue"]
+__all__ += [
+    "ArchiveEvent",
+    "ArchiveEventsData",
+    "ArchiveEventsMeta",
+    "ArchiverAppliance",
+    "FieldValue",
+]

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from datetime import datetime as pydt
 from datetime import timedelta
 
-import polars as pl
 from pytz import utc as UTC  # noqa: N812
 
 
@@ -115,58 +114,3 @@ def ysn_timestamp(year: int, seconds: int, nanos: int) -> pydt:
     year_start = year_timestamp(year)
     total_us = (year_start + seconds) * 1_000_000 + nanos // 1_000
     return pydt(1970, 1, 1, tzinfo=UTC) + timedelta(microseconds=total_us)
-
-
-_FIELD_VALUE_DTYPE = pl.List(pl.Struct({"name": pl.Utf8, "value": pl.Utf8}))
-
-
-def _fv_list(fvs: list[FieldValue] | None) -> list[dict[str, str | None]]:
-    return [{"name": fv.name, "value": fv.value} for fv in (fvs or [])]
-
-
-def dataframe_from_events(
-    events: list[ArchiveEvent],
-    metadata: dict[int, ArchiveEventsMeta] | None = None,
-) -> pl.DataFrame:
-    """Converts a list of ArchiveEvent to pl.DataFrame.
-
-    Args:
-        events (list[ArchiveEvent]): input events
-        metadata (dict[int, ArchiveEventsMeta] | None): optional per-year metadata;
-            when provided, populates the "headers" column.
-
-    Returns:
-        pl.DataFrame: columns "date", "val", "severity", "status",
-            "field_values", "headers".
-    """
-    if not events:
-        return pl.DataFrame(
-            schema={
-                "date": pl.Datetime("ns", "UTC"),
-                "val": pl.Null,
-                "severity": pl.Int32,
-                "status": pl.Int32,
-                "field_values": _FIELD_VALUE_DTYPE,
-                "headers": _FIELD_VALUE_DTYPE,
-            }
-        )
-    meta = metadata or {}
-    return pl.DataFrame({
-        "date": pl.Series(
-            [e.timestamp_ns for e in events], dtype=pl.Datetime("ns", "UTC")
-        ),
-        "val": [e.val for e in events],
-        "severity": pl.Series([e.severity for e in events], dtype=pl.Int32),
-        "status": pl.Series([e.status for e in events], dtype=pl.Int32),
-        "field_values": pl.Series(
-            [_fv_list(e.field_values) for e in events],
-            dtype=_FIELD_VALUE_DTYPE,
-        ),
-        "headers": pl.Series(
-            [
-                _fv_list(meta[e.year].headers if e.year in meta else None)
-                for e in events
-            ],
-            dtype=_FIELD_VALUE_DTYPE,
-        ),
-    })

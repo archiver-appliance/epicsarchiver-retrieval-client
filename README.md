@@ -11,10 +11,32 @@ Python package to interact with the [EPICS Archiver Appliance](https://slacmshan
 
 ## Installation
 
-py-epicsarchiver can be installed using artifactory PyPI repository::
+py-epicsarchiver can be installed using artifactory PyPI repository:
 
 ```console
 pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+```
+
+The core package has minimal dependencies (protobuf + pytz) and is sufficient for parsing `.pb` files
+and working with `ArchiveEvent` objects directly. Heavy dependencies are opt-in via extras:
+
+| Extra | Installs | Use when |
+|-------|----------|----------|
+| `[polars]` | polars | you want `get_data()` to return a `DataFrame` |
+| `[sync]` | requests | you want the synchronous `ArchiverRetrieval` client |
+| `[async]` | aiohttp | you want the async `AsyncArchiverRetrieval` client |
+| `[cli]` | click, rich | you want the `epicsarchiver` command-line tool |
+| `[all]` | everything above | full functionality |
+
+```console
+# Everything (recommended for most users)
+pip install "py-epicsarchiver[all]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+
+# Core only — parse local .pb files, no HTTP clients or DataFrames
+pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+
+# Sync retrieval with DataFrame output
+pip install "py-epicsarchiver[polars,sync]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 ```
 
 ## Quick start
@@ -57,15 +79,37 @@ Note you can also specify a hostname for the archiver either with an environment
 export EPICSARCHIVER_HOSTNAME=archiver-01.example.com
 ````
 
-To fetch events using the python library:
+To fetch data using the Python library (requires `[polars,sync]`):
 
 ```python
 from epicsarchiver import ArchiverAppliance
+from epicsarchiver.retrieval.archiver_retrieval import ArchiverRetrieval
 
-archiver = ArchiverAppliance("archiver-01.example.com")
-print(archiver.version)
-archiver.get_pv_status(pv='BPM*')
-archiver_events = archiver.get_events('my:pv', start='2018-07-04 13:00', end=datetime.utcnow())
+# High-level: returns a polars DataFrame
+retrieval = ArchiverRetrieval("archiver-01.example.com")
+df = retrieval.get_data("my:pv", start="2018-07-04 13:00", end="2018-07-04 14:00")
+# DataFrame columns: date (ns UTC), val, severity, status, field_values, headers
+
+# Low-level: returns ArchiveEventsData (no polars required)
+metadata, events = retrieval.get_events(
+    "my:pv",
+    start=datetime(2018, 7, 4, 13, 0, tzinfo=UTC),
+    end=datetime(2018, 7, 4, 14, 0, tzinfo=UTC),
+)
+```
+
+To search for PV names:
+
+```python
+# Without time range — returns all matching PVs
+pv_list = retrieval.search("(?i)^my-system:.*:temperature$")
+
+# With time range — only PVs that recorded data in the given window
+pv_list = retrieval.search(
+    "(?i)^my-system:.*:temperature$",
+    start=datetime(2026, 1, 1, tzinfo=UTC),
+    end=datetime(2026, 1, 2, tzinfo=UTC),
+)
 ```
 
 ## Development

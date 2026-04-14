@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
-import polars as pl
 from pytz import UTC
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
@@ -20,15 +19,13 @@ from epicsarchiver.common.validation import (
     validate_pv,
     validate_start_end,
 )
-from epicsarchiver.retrieval.archive_event import (
-    ArchiveEventsData,
-    dataframe_from_events,
-)
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
+    import polars as pl
     from requests import Response
 
+    from epicsarchiver.retrieval.archive_event import ArchiveEventsData
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
 
 
@@ -36,35 +33,6 @@ LOG: logging.Logger = logging.getLogger(__name__)
 
 ENDPOINT_GET_DATA = "/data/getData.raw"
 ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
-
-
-def json_to_dataframe(data: Any) -> pl.DataFrame:
-    """Converts json from the archiver.
-
-    Converts to a dataframe with columns "date", "val", and any other fields
-    returned by the API (typically "severity", "status").
-
-    Args:
-        data: json from a json archiver request
-
-    Returns:
-        pl.DataFrame
-    """
-    raw = data[0]["data"]
-    if not raw:
-        return pl.DataFrame(
-            schema={
-                "date": pl.Datetime("ns", "UTC"),
-                "val": pl.Null,
-                "severity": pl.Int32,
-                "status": pl.Int32,
-            }
-        )
-    df = pl.DataFrame(raw)
-    total_nanos = df["secs"].cast(pl.Int64) * 1_000_000_000 + df["nanos"].cast(pl.Int64)
-    return df.with_columns(
-        total_nanos.cast(pl.Datetime("ns", "UTC")).alias("date")
-    ).drop(["secs", "nanos"])
 
 
 class ArchiverRetrieval(BaseArchiverAppliance):
@@ -257,7 +225,17 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
         Returns:
             `polars.DataFrame`
+
+        Raises:
+            ImportError: If the polars extra is not installed.
         """
+        try:
+            from epicsarchiver.retrieval.dataframe import (  # noqa: PLC0415
+                dataframe_from_events,
+            )
+        except ImportError as exc:
+            msg = "polars extra required: pip install py-epicsarchiver[polars]"
+            raise ImportError(msg) from exc
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         start_time = datetime_from_str(start)
         end_time = datetime_from_str(end)
