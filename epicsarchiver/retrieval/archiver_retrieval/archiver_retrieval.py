@@ -8,7 +8,10 @@ from typing import TYPE_CHECKING, cast
 
 from pytz import UTC
 
-from epicsarchiver.common.base_archiver import DEFAULT_MGMT_PORT, BaseArchiverAppliance
+from epicsarchiver.common.base_archiver import (
+    DEFAULT_RETRIEVAL_PORT,
+    BaseArchiverAppliance,
+)
 from epicsarchiver.common.date_util import (
     QueryTimestamp,
     ensure_utc,
@@ -30,7 +33,6 @@ if TYPE_CHECKING:
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
-DEFAULT_RETRIEVAL_PORT = 17668
 ENDPOINT_GET_DATA = "/data/getData.raw"
 ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
 
@@ -42,7 +44,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
     Args:
         hostname: EPICS Archiver Appliance hostname
-        port: EPICS Archiver Appliance management port
+        port: EPICS Archiver Appliance retrieval port
 
     Examples:
 
@@ -55,7 +57,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_MGMT_PORT):
+    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_RETRIEVAL_PORT):
         """Create Archiver Appliance object.
 
         Args:
@@ -63,12 +65,9 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             port (int, optional): port number of mgmt interface.
         """
         super().__init__(hostname, port)
-
-        self._data_retrieval_url = self.info["dataRetrievalURL"]
-        self.data_url: str = self._data_retrieval_url + ENDPOINT_GET_DATA
-        self.matching_pvs_url: str = (
-            self._data_retrieval_url + ENDPOINT_GET_MATCHING_PVS
-        )
+        self._base_url = f"http://{self.hostname}:{self.port}/retrieval"
+        self.data_url: str = self._base_url + ENDPOINT_GET_DATA
+        self.matching_pvs_url: str = self._base_url + ENDPOINT_GET_MATCHING_PVS
 
     def _get_data_raw(
         self,

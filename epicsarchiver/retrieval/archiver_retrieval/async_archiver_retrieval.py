@@ -11,7 +11,7 @@ from pytz import UTC
 from typing_extensions import Self
 
 from epicsarchiver.common.async_service import ServiceClient
-from epicsarchiver.common.base_archiver import DEFAULT_MGMT_PORT
+from epicsarchiver.common.base_archiver import DEFAULT_RETRIEVAL_PORT
 from epicsarchiver.common.date_util import (
     QueryTimestamp,
     ensure_utc,
@@ -42,7 +42,7 @@ class AsyncArchiverRetrieval(ServiceClient):
 
     Args:
         hostname: EPICS Archiver Appliance hostname
-        port: EPICS Archiver Appliance management port
+        port: EPICS Archiver Appliance retrieval port
 
     Examples:
 
@@ -58,7 +58,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             )
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_MGMT_PORT):
+    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_RETRIEVAL_PORT):
         """Create Async archiver retrieval client.
 
         Args:
@@ -68,9 +68,8 @@ class AsyncArchiverRetrieval(ServiceClient):
         self.hostname = hostname
         self.port = port
 
-        super().__init__(f"https://{hostname}")
+        super().__init__(f"https://{hostname}:{port}/retrieval")
 
-        self._data_retrieval_url: str = ""
         self.data_url: str = ""
         self.matching_pvs_url: str = ""
 
@@ -87,12 +86,8 @@ class AsyncArchiverRetrieval(ServiceClient):
         Returns:
             Self: self
         """
-        app_info = await self._get_json(
-            f"http://{self.hostname}:{self.port}/mgmt/bpl/getApplianceInfo"
-        )
-        self._data_retrieval_url = app_info["dataRetrievalURL"]
-        self.data_url = self._data_retrieval_url + ENDPOINT_GET_DATA
-        self.matching_pvs_url = self._data_retrieval_url + ENDPOINT_GET_MATCHING_PVS
+        self.data_url = self.base_url + ENDPOINT_GET_DATA
+        self.matching_pvs_url = self.base_url + ENDPOINT_GET_MATCHING_PVS
         return self
 
     async def _get_data_raw(

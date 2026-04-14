@@ -2,20 +2,19 @@
 
 from __future__ import annotations
 
-from epicsarchiver.mgmt.archiver_mgmt import ArchiverMgmt
 from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
     ArchiverRetrieval,
 )
 
 
-class ArchiverAppliance(ArchiverMgmt, ArchiverRetrieval):
+class ArchiverAppliance(ArchiverRetrieval):
     """EPICS Archiver Appliance client.
 
     Hold a session to the Archiver Appliance web application.
 
     Args:
         hostname: EPICS Archiver Appliance hostname
-        port: EPICS Archiver Appliance management port
+        port: EPICS Archiver Appliance retrieval port
 
     Examples:
 

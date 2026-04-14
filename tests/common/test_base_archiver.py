@@ -6,7 +6,10 @@ import pytest
 import responses
 from rich.logging import RichHandler
 
-from epicsarchiver.common.base_archiver import BaseArchiverAppliance
+from epicsarchiver.common.base_archiver import (
+    DEFAULT_RETRIEVAL_PORT,
+    BaseArchiverAppliance,
+)
 from epicsarchiver.common.errors import ArchiverResponseError
 
 logging.basicConfig(
@@ -19,9 +22,9 @@ LOG: logging.Logger = logging.getLogger(__name__)
 def test_epicsarchiver_url() -> None:
     """Test the CLI."""
     archiver = BaseArchiverAppliance()
-    assert archiver.mgmt_url == "http://localhost:{DEFAULT_MGMT_PORT}/mgmt/bpl/"
+    assert archiver._base_url == f"http://localhost:{DEFAULT_RETRIEVAL_PORT}"
     archiver = BaseArchiverAppliance("archiver-01.example.com", port=80)
-    assert archiver.mgmt_url == "http://archiver-01.example.com:80/mgmt/bpl/"
+    assert archiver._base_url == "http://archiver-01.example.com:80"
 
 
 @responses.activate
@@ -47,8 +50,8 @@ def test_request_raise_exception() -> None:
 
 @responses.activate
 def test_get_relative_endpoint() -> None:
-    archiver = BaseArchiverAppliance("archiver.example.com")
-    url = "http://archiver.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/endpoint"
+    archiver = BaseArchiverAppliance("archiver.example.com", port=17665)
+    url = "http://archiver.example.com:17665/endpoint"
     responses.add(
         responses.GET,
         url,
@@ -72,7 +75,7 @@ def test_get_absolute_endpoint() -> None:
 @responses.activate
 def test_get_return_response() -> None:
     archiver = BaseArchiverAppliance()
-    url = "http://archiver.example.com:{DEFAULT_MGMT_PORT}/my/endpoint"
+    url = "http://archiver.example.com:17665/my/endpoint"
     data = {"test": "hello"}
     responses.add(responses.GET, url, json=data, status=200)
     r = archiver._get(url)
@@ -96,7 +99,7 @@ def test_post_relative_endpoint() -> None:
     archiver = BaseArchiverAppliance("archiver.example.com")
     responses.add(
         responses.POST,
-        "http://archiver.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/endpoint",
+        f"http://archiver.example.com:{DEFAULT_RETRIEVAL_PORT}/endpoint",
         status=201,
     )
     archiver._post("endpoint")
@@ -106,52 +109,12 @@ def test_post_relative_endpoint() -> None:
 
 
 @responses.activate
-def test_info() -> None:
-    archiver = BaseArchiverAppliance("archiver-01.example.com")
-    data = {
-        "engineURL": "http://archiver-01:17666/engine/bpl",
-        "identity": "appliance0",
-    }
-    responses.add(
-        responses.GET,
-        "http://archiver-01.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
-        json=data,
-        status=200,
-    )
-    info = archiver.info
-    assert len(responses.calls) == 1
-    assert info == data
-    # info shall be cached - no more calls
-    _ = archiver.info
-    assert len(responses.calls) == 1
-
-
-@responses.activate
-def test_identity_and_version() -> None:
-    archiver = BaseArchiverAppliance("archiver-01.example.com")
-    data = {"identity": "appliance0", "version": "v1.0.0"}
-    responses.add(
-        responses.GET,
-        "http://archiver-01.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
-        json=data,
-        status=200,
-    )
-    identity = archiver.identity
-    assert len(responses.calls) == 1
-    assert identity == "appliance0"
-    version = archiver.version
-    # No extra call
-    assert len(responses.calls) == 1
-    assert version == "v1.0.0"
-
-
-@responses.activate
 def test_get_or_post_single_pv() -> None:
     archiver = BaseArchiverAppliance("archiver.example.org")
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:{DEFAULT_MGMT_PORT}/mgmt/bpl/endpoint",
+        f"http://archiver.example.org:{DEFAULT_RETRIEVAL_PORT}/endpoint",
         json=data,
         status=200,
         match=[responses.matchers.query_string_matcher("pv=mypv")],
@@ -167,7 +130,7 @@ def test_get_or_post_comma_separated_list() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.POST,
-        "http://archiver.example.org:{DEFAULT_MGMT_PORT}/mgmt/bpl/endpoint",
+        f"http://archiver.example.org:{DEFAULT_RETRIEVAL_PORT}/endpoint",
         json=data,
         status=200,
     )

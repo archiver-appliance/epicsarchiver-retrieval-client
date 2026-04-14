@@ -3,12 +3,12 @@ import json
 from urllib.parse import quote
 
 import polars as pl
-import pytest
 import responses
 from polars.testing import assert_frame_equal
 from pytz import UTC
 from responses import matchers
 
+from epicsarchiver.common.base_archiver import DEFAULT_RETRIEVAL_PORT
 from epicsarchiver.common.date_util import NANO_PER_SECOND, year_start_epoch_seconds
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
 from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
@@ -49,13 +49,7 @@ def test_get_data() -> None:
     })
     responses.add(
         responses.GET,
-        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
-        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        "http://archiver-01:17668/retrieval/data/getData.raw",
+        f"http://{host}:{DEFAULT_RETRIEVAL_PORT}/retrieval/data/getData.raw",
         body=create_pb_bytes(
             events,
             PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018),
@@ -70,7 +64,7 @@ def test_get_data() -> None:
     )
     archiver = ArchiverRetrieval(host)
     resp_data = archiver.get_data(pv, "20180825 17:45", "20180825 18:45")
-    assert len(responses.calls) == 2
+    assert len(responses.calls) == 1
     assert_frame_equal(ref_df, resp_data)
 
 
@@ -90,13 +84,7 @@ def test_search_with_no_time_range() -> None:
     ]
     responses.add(
         responses.GET,
-        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
-        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        "http://archiver-01:17668/retrieval/bpl/getMatchingPVs",
+        f"http://{host}:{DEFAULT_RETRIEVAL_PORT}/retrieval/bpl/getMatchingPVs",
         body=json.dumps(ref_pv_list),
         status=200,
         match=[matchers.query_string_matcher(f"regex={quote(query)}&limit=500")],
@@ -109,7 +97,7 @@ def test_search_with_no_time_range() -> None:
         end=None,
         limit=500,
     )
-    assert len(responses.calls) == 2
+    assert len(responses.calls) == 1
     assert resp_data == ref_pv_list
 
 
@@ -138,13 +126,7 @@ def test_search_with_time_range() -> None:
 
     responses.add(
         responses.GET,
-        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
-        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        "http://archiver-01:17668/retrieval/bpl/getMatchingPVs",
+        f"http://{host}:{DEFAULT_RETRIEVAL_PORT}/retrieval/bpl/getMatchingPVs",
         body=json.dumps(ref_pv_list_initial),
         status=200,
         match=[matchers.query_string_matcher(f"regex={quote(query)}&limit=500")],
@@ -153,7 +135,7 @@ def test_search_with_time_range() -> None:
     for pv, event in zip(ref_pv_list_initial, events, strict=True):
         responses.add(
             responses.GET,
-            "http://archiver-01:17668/retrieval/data/getData.raw",
+            f"http://{host}:17668/retrieval/data/getData.raw",
             body=create_pb_bytes(
                 [event],
                 PayloadInfo(type=SCALAR_DOUBLE, pvname=pv, year=2026),
@@ -174,7 +156,7 @@ def test_search_with_time_range() -> None:
         end=end,
         limit=500,
     )
-    assert len(responses.calls) == 10
+    assert len(responses.calls) == 9
     assert resp_data == ref_pv_list_final
 
 
@@ -185,13 +167,7 @@ def test_get_events_pb() -> None:
     events = TEST_EVENTS
     responses.add(
         responses.GET,
-        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
-        json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
-        status=200,
-    )
-    responses.add(
-        responses.GET,
-        "http://archiver-01:17668/retrieval/data/getData.raw",
+        f"http://{host}:{DEFAULT_RETRIEVAL_PORT}/retrieval/data/getData.raw",
         body=create_pb_bytes(
             events,
             PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018),
@@ -210,7 +186,7 @@ def test_get_events_pb() -> None:
         datetime.datetime(2018, 8, 25, 17, 45, tzinfo=UTC),
         datetime.datetime(2018, 8, 25, 18, 45, tzinfo=UTC),
     )
-    assert len(responses.calls) == 2
+    assert len(responses.calls) == 1
     assert res_events == [
         ArchiveEvent(
             pv,
@@ -224,40 +200,3 @@ def test_get_events_pb() -> None:
         )
         for e in events
     ]
-
-
-# Test ArchiverRetrieval
-
-
-@responses.activate
-@pytest.mark.parametrize("host", ["archiver-01.example.com", "192.168.4.75"])
-def test_data_url_with_same_archiver_host(host: str) -> None:
-    data = {"dataRetrievalURL": "http://archiver-01:17668/retrieval"}
-    responses.add(
-        responses.GET,
-        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
-        json=data,
-        status=200,
-    )
-    archiver = ArchiverRetrieval(host)
-    data_url = archiver.data_url
-    assert len(responses.calls) == 1
-    assert data_url == "http://archiver-01:17668/retrieval/data/getData.raw"
-    # data_url shall be cached
-    _ = archiver.data_url
-    assert len(responses.calls) == 1
-
-
-@responses.activate
-def test_data_url_with_no_specific_port() -> None:
-    data = {"dataRetrievalURL": "http://archiver-01/foo"}
-    responses.add(
-        responses.GET,
-        "http://archiver-01.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
-        json=data,
-        status=200,
-    )
-    archiver = ArchiverRetrieval("archiver-01.example.com")
-    data_url = archiver.data_url
-    assert len(responses.calls) == 1
-    assert data_url == "http://archiver-01/foo/data/getData.raw"
