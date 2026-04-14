@@ -17,12 +17,12 @@ from epicsarchiver.common.validation import (
     validate_pv,
     validate_start_end,
 )
-from epicsarchiver.retrieval.pb import ArchiveEventsData, parse_pb_data
+from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
     from aiohttp import ClientResponse
 
-    from epicsarchiver.retrieval.archive_event import ArchiveEvent
+    from epicsarchiver.retrieval.archive_event import ArchiveEvent, ArchiveEventsData
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
 
 LOG: logging.Logger = logging.getLogger(__name__)

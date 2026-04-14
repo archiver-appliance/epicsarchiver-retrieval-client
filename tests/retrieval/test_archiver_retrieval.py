@@ -31,11 +31,20 @@ def test_get_data() -> None:
         (year_timestamp(2018) + d.secondsintoyear) * 1_000_000_000 + d.nano
         for d in events
     ]
+    fv_dtype = pl.List(pl.Struct({"name": pl.Utf8, "value": pl.Utf8}))
     ref_df = pl.DataFrame({
         "date": pl.Series(dates_ns, dtype=pl.Datetime("ns", "UTC")),
         "val": [e.val for e in TEST_EVENTS],
         "severity": pl.Series([e.severity for e in TEST_EVENTS], dtype=pl.Int32),
         "status": pl.Series([e.status for e in TEST_EVENTS], dtype=pl.Int32),
+        "field_values": pl.Series(
+            [
+                [{"name": fv.name, "value": fv.val} for fv in e.fieldvalues]
+                for e in TEST_EVENTS
+            ],
+            dtype=fv_dtype,
+        ),
+        "headers": pl.Series([[] for _ in TEST_EVENTS], dtype=fv_dtype),
     })
     responses.add(
         responses.GET,
@@ -195,13 +204,13 @@ def test_get_events_pb() -> None:
         ],
     )
     archiver = ArchiverRetrieval(host)
-    res_data = archiver.get_events(
+    _, res_events = archiver.get_events(
         pv,
         datetime.datetime(2018, 8, 25, 17, 45, tzinfo=UTC),
         datetime.datetime(2018, 8, 25, 18, 45, tzinfo=UTC),
     )
     assert len(responses.calls) == 2
-    assert res_data == [
+    assert res_events == [
         ArchiveEvent(
             pv,
             e.val,

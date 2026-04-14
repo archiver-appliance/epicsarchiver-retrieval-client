@@ -27,7 +27,7 @@ from epicsarchiver.retrieval.archiver_retrieval.processor import (
 
 if TYPE_CHECKING:
     from epicsarchiver.epicsarchiver import ArchiverAppliance
-    from epicsarchiver.retrieval.pb import ArchiveEventsMeta
+    from epicsarchiver.retrieval.archive_event import ArchiveEventsMeta
 
 LOG: logging.Logger = logging.getLogger(__name__)
 

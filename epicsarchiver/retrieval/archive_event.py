@@ -23,6 +23,20 @@ class FieldValue:
 
 
 @dataclass
+class ArchiveEventsMeta:
+    """Metadata about a year's chunk of archived events."""
+
+    pv_name: str
+    pv_type: str
+    element_count: int
+    headers: list[FieldValue]
+    year: int
+
+
+ArchiveEventsData = tuple[dict[int, ArchiveEventsMeta], list["ArchiveEvent"]]
+
+
+@dataclass
 class ArchiveEvent:
     """One Event, retrieved from the AA, representing a change in value of a PV."""
 
@@ -103,14 +117,27 @@ def ysn_timestamp(year: int, seconds: int, nanos: int) -> pydt:
     return pydt(1970, 1, 1, tzinfo=UTC) + timedelta(microseconds=total_us)
 
 
-def dataframe_from_events(events: list[ArchiveEvent]) -> pl.DataFrame:
+_FIELD_VALUE_DTYPE = pl.List(pl.Struct({"name": pl.Utf8, "value": pl.Utf8}))
+
+
+def _fv_list(fvs: list[FieldValue] | None) -> list[dict[str, str | None]]:
+    return [{"name": fv.name, "value": fv.value} for fv in (fvs or [])]
+
+
+def dataframe_from_events(
+    events: list[ArchiveEvent],
+    metadata: dict[int, ArchiveEventsMeta] | None = None,
+) -> pl.DataFrame:
     """Converts a list of ArchiveEvent to pl.DataFrame.
 
     Args:
         events (list[ArchiveEvent]): input events
+        metadata (dict[int, ArchiveEventsMeta] | None): optional per-year metadata;
+            when provided, populates the "headers" column.
 
     Returns:
-        pl.DataFrame: Output dataframe with columns "date", "val", "severity", "status".
+        pl.DataFrame: columns "date", "val", "severity", "status",
+            "field_values", "headers".
     """
     if not events:
         return pl.DataFrame(
@@ -119,8 +146,11 @@ def dataframe_from_events(events: list[ArchiveEvent]) -> pl.DataFrame:
                 "val": pl.Null,
                 "severity": pl.Int32,
                 "status": pl.Int32,
+                "field_values": _FIELD_VALUE_DTYPE,
+                "headers": _FIELD_VALUE_DTYPE,
             }
         )
+    meta = metadata or {}
     return pl.DataFrame({
         "date": pl.Series(
             [e.timestamp_ns for e in events], dtype=pl.Datetime("ns", "UTC")
@@ -128,4 +158,15 @@ def dataframe_from_events(events: list[ArchiveEvent]) -> pl.DataFrame:
         "val": [e.val for e in events],
         "severity": pl.Series([e.severity for e in events], dtype=pl.Int32),
         "status": pl.Series([e.status for e in events], dtype=pl.Int32),
+        "field_values": pl.Series(
+            [_fv_list(e.field_values) for e in events],
+            dtype=_FIELD_VALUE_DTYPE,
+        ),
+        "headers": pl.Series(
+            [
+                _fv_list(meta[e.year].headers if e.year in meta else None)
+                for e in events
+            ],
+            dtype=_FIELD_VALUE_DTYPE,
+        ),
     })

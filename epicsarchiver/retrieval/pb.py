@@ -27,12 +27,13 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import TYPE_CHECKING, TypeAlias
 
-from attr import dataclass
 from google.protobuf.message import DecodeError
 
 from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
 from epicsarchiver.retrieval.archive_event import (
     ArchiveEvent,
+    ArchiveEventsData,
+    ArchiveEventsMeta,
     FieldValue,
     ysn_timestamp,
 )
@@ -273,20 +274,6 @@ def _event_from_line(
         event.status,
         [to_field_value(f) for f in event.fieldvalues],
     )
-
-
-@dataclass
-class ArchiveEventsMeta:
-    """Metadata about the events."""
-
-    pv_name: str
-    pv_type: str
-    element_count: int
-    headers: list[FieldValue]
-    year: int
-
-
-ArchiveEventsData = tuple[dict[int, ArchiveEventsMeta], list[ArchiveEvent]]
 
 
 def parse_pb_data(

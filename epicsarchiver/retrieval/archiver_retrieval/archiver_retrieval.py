@@ -20,7 +20,10 @@ from epicsarchiver.common.validation import (
     validate_pv,
     validate_start_end,
 )
-from epicsarchiver.retrieval.archive_event import ArchiveEvent, dataframe_from_events
+from epicsarchiver.retrieval.archive_event import (
+    ArchiveEventsData,
+    dataframe_from_events,
+)
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
@@ -189,7 +192,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
-        all_events = [self.get_events(pv, end, end) for pv in query]
+        all_events = [self.get_events(pv, end, end)[1] for pv in query]
 
         # Create list of those PVs with atleast one event within specified time range.
         pv_list: list[str] = []
@@ -208,7 +211,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         start: datetime.datetime,
         end: datetime.datetime,
         processor: Processor | None = None,
-    ) -> list[ArchiveEvent]:
+    ) -> ArchiveEventsData:
         """Retrieve archived data.
 
         Args:
@@ -220,9 +223,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             processor (Processor | None, optional): Preprocessor
                 to use. Defaults to None.
 
-
         Returns:
-            list[ArchiveEvent]: requested events from the archiver.
+            ArchiveEventsData: tuple of (metadata, events).
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         validate_pv(pv)
@@ -231,9 +233,9 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         pv_request = processor.calc_pv_name(pv) if processor else pv
         r = self._get_data_raw(pv_request, start, end)
         pb_data = r.content
-        metadata, events = parse_pb_data(pb_data)
-        LOG.debug("Metadata: %s", metadata)
-        return events
+        data = parse_pb_data(pb_data)
+        LOG.debug("Metadata: %s", data[0])
+        return data
 
     def get_data(
         self,
@@ -259,11 +261,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         start_time = datetime_from_str(start)
         end_time = datetime_from_str(end)
-        events = self.get_events(pv, start_time, end_time, processor)
-        if not events:
-            return dataframe_from_events([])
-        # Convert events to DataFrame
-        return dataframe_from_events(events)
+        metadata, events = self.get_events(pv, start_time, end_time, processor)
+        return dataframe_from_events(events, metadata)
 
     def search(
         self,
