@@ -2,9 +2,10 @@ import datetime
 import json
 from urllib.parse import quote
 
-import pandas as pd
+import polars as pl
 import pytest
 import responses
+from polars.testing import assert_frame_equal
 from pytz import UTC
 from responses import matchers
 
@@ -26,20 +27,16 @@ def test_get_data() -> None:
     host = "archiver.example.org"
     pv = "mypv"
     events = TEST_EVENTS
-    dates = [
-        pd.Timestamp(
-            (year_timestamp(2018) + d.secondsintoyear) * int(1e9) + d.nano,
-            tz=UTC,
-        )
+    dates_ns = [
+        (year_timestamp(2018) + d.secondsintoyear) * 1_000_000_000 + d.nano
         for d in events
     ]
-    pd_dates = pd.DatetimeIndex(
-        dates,
-        tz=UTC,
-    )
-    ref_df = pd.DataFrame([e.val for e in TEST_EVENTS], index=pd_dates)
-    ref_df = ref_df.rename_axis("date")
-    ref_df.columns = pd.Index(["val"], dtype="str")
+    ref_df = pl.DataFrame({
+        "date": pl.Series(dates_ns, dtype=pl.Datetime("ns", "UTC")),
+        "val": [e.val for e in TEST_EVENTS],
+        "severity": pl.Series([e.severity for e in TEST_EVENTS], dtype=pl.Int32),
+        "status": pl.Series([e.status for e in TEST_EVENTS], dtype=pl.Int32),
+    })
     responses.add(
         responses.GET,
         f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
@@ -64,7 +61,7 @@ def test_get_data() -> None:
     archiver = ArchiverRetrieval(host)
     resp_data = archiver.get_data(pv, "20180825 17:45", "20180825 18:45")
     assert len(responses.calls) == 2
-    pd.testing.assert_frame_equal(ref_df, resp_data)
+    assert_frame_equal(ref_df, resp_data)
 
 
 @responses.activate

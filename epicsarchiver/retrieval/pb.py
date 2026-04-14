@@ -27,10 +27,8 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import TYPE_CHECKING, TypeAlias
 
-import pandas as pd
 from attr import dataclass
 from google.protobuf.message import DecodeError
-from pandas import Timestamp
 
 from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
 from epicsarchiver.retrieval.archive_event import (
@@ -154,22 +152,6 @@ def escape_bytes(byte_seq: bytes) -> bytes:
     return byte_seq
 
 
-def event_pd_timestamp(
-    year: int,
-    event: EeEvent,
-) -> Timestamp:
-    """Converts from protobuf event time format to python datetime.
-
-    Args:
-        year (int): year of event
-        event (EeEvent): input event
-
-    Returns:
-        pydt: Output datetime
-    """
-    return ysn_timestamp(year, event.secondsintoyear, event.nano)
-
-
 def event_timestamp(
     year: int,
     event: EeEvent,
@@ -183,7 +165,7 @@ def event_timestamp(
     Returns:
         pydt: Output datetime
     """
-    return event_pd_timestamp(year, event).to_pydatetime()
+    return ysn_timestamp(year, event.secondsintoyear, event.nano)
 
 
 def get_timestamp_from_line_function(
@@ -360,7 +342,7 @@ def get_iso_timestamp_for_event(
     event: EeEvent,
 ) -> str:
     """Returns an ISO-formatted timestamp string for the given event."""
-    return pd.Timestamp(event_timestamp(year, event)).isoformat()
+    return event_timestamp(year, event).isoformat()
 
 
 def read_pb_file(filename: str) -> ArchiveEventsData:

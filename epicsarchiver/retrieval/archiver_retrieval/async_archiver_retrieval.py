@@ -178,8 +178,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             pv_list.extend(
                 event.pv
                 for event in events
-                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
-                or not start
+                if (start and event.timestamp >= start) or not start
             )
 
         return pv_list

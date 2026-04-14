@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime as pydt
+from datetime import timedelta
 
-import pandas as pd
-from pandas import Timestamp
+import polars as pl
 from pytz import utc as UTC  # noqa: N812
 
 
@@ -36,25 +36,26 @@ class ArchiveEvent:
     field_values: list[FieldValue] | None
 
     @property
-    def timestamp(self) -> pydt:
-        """Provides a datetime for the archive event.
-
-        This will lose information (the last few decimal places) since
-        datetime does not handle nano seconds.
+    def timestamp_ns(self) -> int:
+        """Nanoseconds since Unix epoch.
 
         Returns:
-            datetime: datetime for event
+            int: nanoseconds since Unix epoch, compatible with pl.Datetime("ns", "UTC")
         """
-        return self.pd_timestamp.to_pydatetime(warn=True)
+        return (
+            year_timestamp(self.year) + self.secondsintoyear
+        ) * 1_000_000_000 + self.nanos
 
     @property
-    def pd_timestamp(self) -> Timestamp:
-        """Provides a pandas Timestamp for the archive event.
+    def timestamp(self) -> pydt:
+        """UTC datetime (microsecond precision), derived from timestamp_ns.
 
         Returns:
-            datetime: datetime for event
+            datetime: UTC datetime
         """
-        return ysn_timestamp(self.year, self.secondsintoyear, self.nanos)
+        return pydt(1970, 1, 1, tzinfo=UTC) + timedelta(
+            microseconds=self.timestamp_ns // 1_000
+        )
 
     @property
     def field_values_dict(self) -> dict[str, str]:
@@ -84,8 +85,10 @@ def year_timestamp(year: int) -> int:
     )
 
 
-def ysn_timestamp(year: int, seconds: int, nanos: int) -> Timestamp:
+def ysn_timestamp(year: int, seconds: int, nanos: int) -> pydt:
     """Get datetime from year, seconds into year and nanoseconds.
+
+    Precision is truncated to microseconds.
 
     Args:
         year (int): year
@@ -93,24 +96,36 @@ def ysn_timestamp(year: int, seconds: int, nanos: int) -> Timestamp:
         nanos (int): nanoseconds
 
     Returns:
-        Timestamp: datetime
+        datetime: UTC datetime (microsecond precision)
     """
     year_start = year_timestamp(year)
+    total_us = (year_start + seconds) * 1_000_000 + nanos // 1_000
+    return pydt(1970, 1, 1, tzinfo=UTC) + timedelta(microseconds=total_us)
 
-    return Timestamp((year_start + seconds) * int(1e9) + nanos, tz=UTC)
 
-
-def dataframe_from_events(events: list[ArchiveEvent]) -> pd.DataFrame:
-    """Converts a list of ArchiveEvent to pd.DataFrame.
+def dataframe_from_events(events: list[ArchiveEvent]) -> pl.DataFrame:
+    """Converts a list of ArchiveEvent to pl.DataFrame.
 
     Args:
         events (list[ArchiveEvent]): input events
 
     Returns:
-        pd.DataFrame: Output dataframe with columns "date", "val"
-          where "date" is index column.
+        pl.DataFrame: Output dataframe with columns "date", "val", "severity", "status".
     """
-    val = pd.DataFrame([event.__dict__ for event in events])
-    val["date"] = [v.pd_timestamp for v in events]
-    val = val[["date", "val"]]
-    return val.set_index("date")
+    if not events:
+        return pl.DataFrame(
+            schema={
+                "date": pl.Datetime("ns", "UTC"),
+                "val": pl.Null,
+                "severity": pl.Int32,
+                "status": pl.Int32,
+            }
+        )
+    return pl.DataFrame({
+        "date": pl.Series(
+            [e.timestamp_ns for e in events], dtype=pl.Datetime("ns", "UTC")
+        ),
+        "val": [e.val for e in events],
+        "severity": pl.Series([e.severity for e in events], dtype=pl.Int32),
+        "status": pl.Series([e.status for e in events], dtype=pl.Int32),
+    })

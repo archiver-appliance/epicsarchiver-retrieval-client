@@ -42,6 +42,7 @@ cov-report = "coverage xml"
 extra-dependencies = [
   "mypy",
   "mypy-protobuf",
+  "polars>=1.0",
   "pytest==8.4.2",         # pin to avoid errors in mypy tests
   "pytest-asyncio",
   "responses",

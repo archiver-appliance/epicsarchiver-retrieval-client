@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 
 import click
 from dateutil import tz
-from pandas import Timestamp
 from pytz import UTC
 from rich.console import Console
 from rich.table import Table
@@ -42,7 +41,7 @@ DATE_FORMATS = [
 ]
 
 
-AlignedPVEvents = list[tuple[Timestamp, dict[str, ArchiveEvent]]]
+AlignedPVEvents = list[tuple[int, dict[str, ArchiveEvent]]]
 
 
 @click.command(context_settings={"show_default": True})
@@ -315,8 +314,11 @@ def _create_multi_table(
     return table
 
 
-def _to_local_timestamp_str(timestamp: Timestamp) -> str:
-    return str(timestamp.tz_convert(tz.tzlocal()))
+def _to_local_timestamp_str(timestamp_ns: int) -> str:
+    dt = datetime(1970, 1, 1, tzinfo=UTC) + timedelta(
+        microseconds=timestamp_ns // 1_000
+    )
+    return str(dt.astimezone(tz.tzlocal()))
 
 
 def _val_to_str(event: ArchiveEvent | None) -> str:
@@ -384,12 +386,12 @@ def _align_events(
     Returns:
         AlignedPVEvents: List of pairs, (timestamp, dict[pv_name, pv_value])
     """
-    data: dict[Timestamp, dict[str, ArchiveEvent]] = {}
+    data: dict[int, dict[str, ArchiveEvent]] = {}
     for pv, events in all_events.items():
         for event in events:
-            if event.pd_timestamp not in data:
-                data[event.pd_timestamp] = {}
-            data[event.pd_timestamp][pv] = event
+            if event.timestamp_ns not in data:
+                data[event.timestamp_ns] = {}
+            data[event.timestamp_ns][pv] = event
 
     return [(timestamp, data[timestamp]) for timestamp in sorted(data.keys())]
 

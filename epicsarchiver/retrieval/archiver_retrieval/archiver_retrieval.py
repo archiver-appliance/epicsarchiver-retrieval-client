@@ -6,7 +6,7 @@ import datetime
 import logging
 from typing import TYPE_CHECKING, Any, cast
 
-import pandas as pd
+import polars as pl
 from pytz import UTC
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
@@ -35,31 +35,33 @@ ENDPOINT_GET_DATA = "/data/getData.raw"
 ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
 
 
-def json_to_dataframe(data: Any) -> pd.DataFrame:
+def json_to_dataframe(data: Any) -> pl.DataFrame:
     """Converts json from the archiver.
 
-    Converts to a dataframe with two
-    columns "date" and "val" and the index is "date".
+    Converts to a dataframe with columns "date", "val", and any other fields
+    returned by the API (typically "severity", "status").
 
     Args:
         data: json from a json archiver request
 
     Returns:
-        pd.DataFrame
+        pl.DataFrame
     """
-    events_dataframe = pd.DataFrame(data[0]["data"])
-    try:
-        total_nanos = (
-            events_dataframe["secs"].multiply(1e9).add(events_dataframe["nanos"])
+    raw = data[0]["data"]
+    if not raw:
+        return pl.DataFrame(
+            schema={
+                "date": pl.Datetime("ns", "UTC"),
+                "val": pl.Null,
+                "severity": pl.Int32,
+                "status": pl.Int32,
+            }
         )
-        events_dataframe["date"] = pd.to_datetime(total_nanos, unit="ns", utc=True)
-    except KeyError:
-        # Empty data
-        pass
-    else:
-        events_dataframe = events_dataframe[["date", "val"]]
-        events_dataframe = events_dataframe.set_index("date")
-    return events_dataframe
+    df = pl.DataFrame(raw)
+    total_nanos = df["secs"].cast(pl.Int64) * 1_000_000_000 + df["nanos"].cast(pl.Int64)
+    return df.with_columns(
+        total_nanos.cast(pl.Datetime("ns", "UTC")).alias("date")
+    ).drop(["secs", "nanos"])
 
 
 class ArchiverRetrieval(BaseArchiverAppliance):
@@ -195,8 +197,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             pv_list.extend(
                 event.pv
                 for event in events
-                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
-                or not start
+                if (start and event.timestamp >= start) or not start
             )
 
         return pv_list
@@ -240,7 +241,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         start: str | datetime.datetime,
         end: str | datetime.datetime,
         processor: Processor | None = None,
-    ) -> pd.DataFrame:
+    ) -> pl.DataFrame:
         """Retrieve archived data.
 
         Args:
@@ -253,7 +254,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
                 to use. Defaults to None.
 
         Returns:
-            `pandas.DataFrame`
+            `polars.DataFrame`
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         start_time = datetime_from_str(start)
