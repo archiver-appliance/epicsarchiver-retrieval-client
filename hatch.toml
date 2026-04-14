@@ -81,6 +81,7 @@ live = ["sphinx-autobuild docs/source docs/build/html"]
 clean = ["make -C docs clean html"]
 
 [envs.jupyter]
+features = ["all"]
 extra-dependencies = [
   "notebook>=7.1.2",
   "nbval>=0.11.0",
