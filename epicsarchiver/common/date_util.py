@@ -2,15 +2,35 @@
 
 from __future__ import annotations
 
+import datetime as _dt
 from typing import TYPE_CHECKING
 
-from dateutil import parser
 from pytz import UTC
 
 from epicsarchiver.common.validation import ValidationError
 
 if TYPE_CHECKING:
     import datetime
+
+
+_DATE_FORMATS = [
+    "%Y%m%d",
+    "%Y%m%d %H:%M",
+    "%Y%m%d %H:%M:%S",
+    "%Y-%m-%d",
+    "%Y-%m-%dT%H:%M",
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%dT%H:%M:%S.%f",
+    "%Y-%m-%d %H:%M:%S.%f",
+    "%Y-%m-%dT%H:%M%z",
+    "%Y-%m-%d %H:%M%z",
+    "%Y-%m-%dT%H:%M:%S%z",
+    "%Y-%m-%d %H:%M:%S%z",
+    "%Y-%m-%dT%H:%M:%S.%f%z",
+    "%Y-%m-%d %H:%M:%S.%f%z",
+]
 
 
 class DateFormatError(ValidationError):
@@ -26,32 +46,39 @@ class DateFormatError(ValidationError):
 
 
 def datetime_from_str(date_or_str: datetime.datetime | str) -> datetime.datetime:
-    """Formats a date or string to a datetime object.
+    """Parse a date string or normalise a datetime object to a UTC-aware datetime.
 
-    If the input is a string, it attempts to parse it into a datetime object.
-    If the input is already a datetime object, it returns it without timezone info.
+    If the input is a string, it is parsed using a set of known formats.
+    Strings without timezone information are treated as UTC.
+    Strings with timezone information are converted to UTC.
 
-    All timezone information is stripped from the datetime object.
+    If the input is already a datetime object it is normalised to UTC using
+    the same rules (naive → UTC, aware → converted to UTC).
 
     Args:
-        date_or_str: can be a datetime object or string
+        date_or_str: A datetime object or a date/datetime string.
 
     Returns:
-        datetime.datetime: datetime object without timezone info.
+        datetime.datetime: UTC-aware datetime object.
 
     Raises:
         DateFormatError: If the string cannot be parsed into a datetime object.
     """
     if isinstance(date_or_str, str):
-        try:
-            return parser.parse(date_or_str, ignoretz=True)
-        except parser.ParserError as e:
-            raise DateFormatError(date_or_str) from e
-    return date_or_str.replace(tzinfo=None)
+        for fmt in _DATE_FORMATS:
+            try:
+                return set_timezone_utc(_dt.datetime.strptime(date_or_str, fmt))  # noqa: DTZ007
+            except ValueError:  # noqa: PERF203
+                continue
+        raise DateFormatError(date_or_str)
+    return set_timezone_utc(date_or_str)
 
 
 def format_date(at: datetime.datetime) -> str:
     """Format a datetime object to a string in ISO 8601 format with UTC timezone.
+
+    Naive datetimes are assumed to be UTC. Timezone-aware datetimes are
+    converted to UTC before formatting.
 
     Args:
         at (datetime.datetime): The datetime object to format.
@@ -59,7 +86,8 @@ def format_date(at: datetime.datetime) -> str:
     Returns:
         str: Formatted date string in ISO 8601 format with 'Z' suffix.
     """
-    return at.replace(tzinfo=None).isoformat(timespec="microseconds") + "Z"
+    utc = set_timezone_utc(at)
+    return utc.replace(tzinfo=None).isoformat(timespec="microseconds") + "Z"
 
 
 def set_timezone_utc(

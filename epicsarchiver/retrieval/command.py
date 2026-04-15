@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import click
-from dateutil import tz
 from pytz import UTC
 from rich.console import Console
 from rich.table import Table
@@ -318,7 +317,7 @@ def _to_local_timestamp_str(timestamp_ns: int) -> str:
     dt = datetime(1970, 1, 1, tzinfo=UTC) + timedelta(
         microseconds=timestamp_ns // 1_000
     )
-    return str(dt.astimezone(tz.tzlocal()))
+    return str(dt.astimezone())
 
 
 def _val_to_str(event: ArchiveEvent | None) -> str:

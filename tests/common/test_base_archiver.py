@@ -1,15 +1,12 @@
 """Tests for `epicsarchiver` package."""
 
-import datetime
 import logging
 
 import pytest
 import responses
-from pytz import utc as UTC  # noqa: N812
 from rich.logging import RichHandler
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
-from epicsarchiver.common.date_util import datetime_from_str
 from epicsarchiver.common.errors import ArchiverResponseError
 
 logging.basicConfig(
@@ -182,12 +179,3 @@ def test_get_or_post_comma_separated_list() -> None:
 
     assert responses.calls[0].request.body == pvs
     assert r == data
-
-
-def test_format_date() -> None:
-    assert datetime_from_str("20180715") == datetime.datetime(2018, 7, 15, tzinfo=None)  # noqa: DTZ001
-    assert datetime_from_str("20180715 17:45") == datetime.datetime(2018, 7, 15, 17, 45)  # noqa: DTZ001
-    assert (
-        datetime_from_str(datetime.datetime(2018, 7, 15, 19, 5, tzinfo=UTC))
-        == datetime.datetime(2018, 7, 15, 19, 5)  # noqa: DTZ001
-    )

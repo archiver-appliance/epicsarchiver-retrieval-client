@@ -52,7 +52,6 @@ extra-dependencies = [
   "pytest-aiohttp",
   "typing-extensions",
   "types-requests",
-  "types-python-dateutil",
   "types-protobuf",
 ]
 
