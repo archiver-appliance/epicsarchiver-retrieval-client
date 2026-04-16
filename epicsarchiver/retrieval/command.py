@@ -13,6 +13,7 @@ from rich.console import Console
 from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
+from epicsarchiver.common.date_util import ns_to_local_timestamp_str
 from epicsarchiver.common.errors import ArchiverError
 from epicsarchiver.common.validation import ValidationError
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
@@ -307,17 +308,10 @@ def _create_multi_table(
         table.add_column(pv + " Value", justify="right")
     for e in events:
         table.add_row(
-            _to_local_timestamp_str(e[0]),
+            ns_to_local_timestamp_str(e[0]),
             *[_val_to_str(e[1].get(pv)) for pv in pvs],
         )
     return table
-
-
-def _to_local_timestamp_str(timestamp_ns: int) -> str:
-    dt = datetime(1970, 1, 1, tzinfo=UTC) + timedelta(
-        microseconds=timestamp_ns // 1_000
-    )
-    return str(dt.astimezone())
 
 
 def _val_to_str(event: ArchiveEvent | None) -> str:
@@ -341,7 +335,7 @@ def _create_singular_table(
         event = time_event[1].get(pv)
         if event:
             table.add_row(
-                _to_local_timestamp_str(time_event[0]),
+                ns_to_local_timestamp_str(time_event[0]),
                 str(event.val),
                 str(event.status),
                 str(event.severity),

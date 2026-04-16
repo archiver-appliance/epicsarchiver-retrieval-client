@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime as pydt
-from datetime import timedelta
+from typing import TYPE_CHECKING
 
-from pytz import utc as UTC  # noqa: N812
+from epicsarchiver.common.date_util import (
+    NS_PER_S,
+    ns_to_datetime,
+    year_timestamp,
+)
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @dataclass
@@ -57,18 +63,16 @@ class ArchiveEvent:
         """
         return (
             year_timestamp(self.year) + self.secondsintoyear
-        ) * 1_000_000_000 + self.nanos
+        ) * NS_PER_S + self.nanos
 
     @property
-    def timestamp(self) -> pydt:
+    def timestamp(self) -> datetime:
         """UTC datetime (microsecond precision), derived from timestamp_ns.
 
         Returns:
             datetime: UTC datetime
         """
-        return pydt(1970, 1, 1, tzinfo=UTC) + timedelta(
-            microseconds=self.timestamp_ns // 1_000
-        )
+        return ns_to_datetime(self.timestamp_ns)
 
     @property
     def field_values_dict(self) -> dict[str, str]:
@@ -82,35 +86,3 @@ class ArchiveEvent:
         return {
             field.name: field.value or "" for field in self.field_values if field.name
         }
-
-
-def year_timestamp(year: int) -> int:
-    """Generates int timestamp for number of seconds from unix epoch at start of year.
-
-    Args:
-        year (int): year
-
-    Returns:
-        int: seconds from epoch of start of year.
-    """
-    return int(
-        (pydt(year, 1, 1, tzinfo=UTC) - pydt(1970, 1, 1, tzinfo=UTC)).total_seconds(),
-    )
-
-
-def ysn_timestamp(year: int, seconds: int, nanos: int) -> pydt:
-    """Get datetime from year, seconds into year and nanoseconds.
-
-    Precision is truncated to microseconds.
-
-    Args:
-        year (int): year
-        seconds (int): seconds into year
-        nanos (int): nanoseconds
-
-    Returns:
-        datetime: UTC datetime (microsecond precision)
-    """
-    year_start = year_timestamp(year)
-    total_us = (year_start + seconds) * 1_000_000 + nanos // 1_000
-    return pydt(1970, 1, 1, tzinfo=UTC) + timedelta(microseconds=total_us)

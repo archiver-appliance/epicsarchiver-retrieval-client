@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as _dt
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from pytz import UTC
@@ -11,6 +12,17 @@ from epicsarchiver.common.validation import ValidationError
 
 if TYPE_CHECKING:
     import datetime
+
+NS_PER_S = 1_000_000_000
+"""Nanoseconds per second."""
+
+US_PER_S = 1_000_000
+"""Microseconds per second."""
+
+NS_PER_US = 1_000
+"""Nanoseconds per microsecond."""
+
+EPOCH = _dt.datetime(1970, 1, 1, tzinfo=UTC)
 
 
 _DATE_FORMATS = [
@@ -106,3 +118,59 @@ def set_timezone_utc(
         if input_time.tzinfo is None
         else input_time.astimezone(UTC)
     )
+
+
+def year_timestamp(year: int) -> int:
+    """Seconds from Unix epoch at the start of a given year.
+
+    Args:
+        year (int): year
+
+    Returns:
+        int: seconds from epoch of start of year.
+    """
+    return int(
+        (_dt.datetime(year, 1, 1, tzinfo=UTC) - EPOCH).total_seconds(),
+    )
+
+
+def ysn_to_datetime(year: int, seconds: int, nanos: int) -> datetime.datetime:
+    """Get datetime from year, seconds into year and nanoseconds.
+
+    Precision is truncated to microseconds.
+
+    Args:
+        year (int): year
+        seconds (int): seconds into year
+        nanos (int): nanoseconds
+
+    Returns:
+        datetime: UTC datetime (microsecond precision)
+    """
+    year_start = year_timestamp(year)
+    total_us = (year_start + seconds) * US_PER_S + nanos // NS_PER_US
+    return EPOCH + timedelta(microseconds=total_us)
+
+
+def ns_to_datetime(timestamp_ns: int) -> datetime.datetime:
+    """Convert nanosecond epoch timestamp to UTC datetime (microsecond precision).
+
+    Args:
+        timestamp_ns (int): nanoseconds since Unix epoch
+
+    Returns:
+        datetime: UTC datetime (microsecond precision)
+    """
+    return EPOCH + timedelta(microseconds=timestamp_ns // NS_PER_US)
+
+
+def ns_to_local_timestamp_str(timestamp_ns: int) -> str:
+    """Convert nanosecond epoch timestamp to a local timezone string.
+
+    Args:
+        timestamp_ns (int): nanoseconds since Unix epoch
+
+    Returns:
+        str: local timezone datetime string
+    """
+    return str(ns_to_datetime(timestamp_ns).astimezone())
