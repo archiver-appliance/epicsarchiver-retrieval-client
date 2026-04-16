@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 _FIELD_VALUE_DTYPE = pl.List(pl.Struct({"name": pl.Utf8, "value": pl.Utf8}))
 
 
-def _fv_list(fvs: list[FieldValue] | None) -> list[dict[str, str | None]]:
+def _fv_list(fvs: list[FieldValue] | None) -> list[dict[str, str]]:
     return [{"name": fv.name, "value": fv.value} for fv in (fvs or [])]
 
 

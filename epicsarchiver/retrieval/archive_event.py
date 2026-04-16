@@ -23,8 +23,8 @@ class FieldValue:
         FieldValue: Pair of name and value
     """
 
-    name: str | None
-    value: str | None
+    name: str
+    value: str
 
 
 @dataclass
