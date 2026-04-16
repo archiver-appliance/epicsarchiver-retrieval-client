@@ -10,9 +10,8 @@ from pytz import UTC
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 from epicsarchiver.common.date_util import (
-    datetime_from_str,
-    format_date,
-    set_timezone_utc,
+    QueryTimestamp,
+    ensure_utc,
 )
 from epicsarchiver.common.validation import (
     validate_processor,
@@ -91,8 +90,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         params = {
             "pv": pv,
-            "from": format_date(start),
-            "to": format_date(end),
+            "from": QueryTimestamp.from_datetime(start).to_query_string(),
+            "to": QueryTimestamp.from_datetime(end).to_query_string(),
         }
         return self._get(
             self.data_url,
@@ -155,8 +154,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             return query
 
         # Add timezone if missing, otherwise convert to UTC.
-        start = set_timezone_utc(input_time=start) if start else None
-        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
+        start = ensure_utc(start) if start else None
+        end = ensure_utc(end) if end else datetime.datetime.now(tz=UTC)
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
@@ -237,8 +236,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             msg = "polars extra required: pip install py-epicsarchiver[polars]"
             raise ImportError(msg) from exc
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
-        start_time = datetime_from_str(start)
-        end_time = datetime_from_str(end)
+        start_time = QueryTimestamp.from_input(start).datetime
+        end_time = QueryTimestamp.from_input(end).datetime
         metadata, events = self.get_events(pv, start_time, end_time, processor)
         return dataframe_from_events(events, metadata)
 

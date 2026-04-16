@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
-from epicsarchiver.common.date_util import ns_to_local_timestamp_str
+from epicsarchiver.common.date_util import ResponseTimestamp
 from epicsarchiver.common.errors import ArchiverError
 from epicsarchiver.common.validation import ValidationError
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
@@ -308,7 +308,7 @@ def _create_multi_table(
         table.add_column(pv + " Value", justify="right")
     for e in events:
         table.add_row(
-            ns_to_local_timestamp_str(e[0]),
+            ResponseTimestamp(e[0]).to_local_string(),
             *[_val_to_str(e[1].get(pv)) for pv in pvs],
         )
     return table
@@ -335,7 +335,7 @@ def _create_singular_table(
         event = time_event[1].get(pv)
         if event:
             table.add_row(
-                ns_to_local_timestamp_str(time_event[0]),
+                ResponseTimestamp(time_event[0]).to_local_string(),
                 str(event.val),
                 str(event.status),
                 str(event.severity),

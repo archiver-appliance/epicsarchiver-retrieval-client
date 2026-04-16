@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, TypeAlias
 
 from google.protobuf.message import DecodeError
 
-from epicsarchiver.common.date_util import ysn_to_datetime
+from epicsarchiver.common.date_util import ResponseTimestamp
 from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
 from epicsarchiver.retrieval.archive_event import (
     ArchiveEvent,
@@ -166,7 +166,11 @@ def event_timestamp(
     Returns:
         pydt: Output datetime
     """
-    return ysn_to_datetime(year, event.secondsintoyear, event.nano)
+    return ResponseTimestamp.from_yearsecondnanos(
+        year,
+        event.secondsintoyear,
+        event.nano,
+    ).datetime
 
 
 def get_timestamp_from_line_function(

@@ -9,7 +9,7 @@ from polars.testing import assert_frame_equal
 from pytz import UTC
 from responses import matchers
 
-from epicsarchiver.common.date_util import NS_PER_S, year_timestamp
+from epicsarchiver.common.date_util import NANO_PER_SECOND, year_start_epoch_seconds
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
 from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
     ArchiverRetrieval,
@@ -29,7 +29,8 @@ def test_get_data() -> None:
     pv = "mypv"
     events = TEST_EVENTS
     dates_ns = [
-        (year_timestamp(2018) + d.secondsintoyear) * NS_PER_S + d.nano for d in events
+        (year_start_epoch_seconds(2018) + d.secondsintoyear) * NANO_PER_SECOND + d.nano
+        for d in events
     ]
     fv_dtype = pl.List(pl.Struct({"name": pl.Utf8, "value": pl.Utf8}))
     ref_df = pl.DataFrame({

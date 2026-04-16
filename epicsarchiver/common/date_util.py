@@ -13,14 +13,11 @@ from epicsarchiver.common.validation import ValidationError
 if TYPE_CHECKING:
     import datetime
 
-NS_PER_S = 1_000_000_000
-"""Nanoseconds per second."""
+NANO_PER_SECOND = 1_000_000_000
 
-US_PER_S = 1_000_000
-"""Microseconds per second."""
+MICRO_PER_SECOND = 1_000_000
 
-NS_PER_US = 1_000
-"""Nanoseconds per microsecond."""
+NANO_PER_MICROSECOND = 1_000
 
 EPOCH = _dt.datetime(1970, 1, 1, tzinfo=UTC)
 
@@ -57,52 +54,7 @@ class DateFormatError(ValidationError):
         super().__init__(f"Date '{date_str}' is not in a valid format.")
 
 
-def datetime_from_str(date_or_str: datetime.datetime | str) -> datetime.datetime:
-    """Parse a date string or normalise a datetime object to a UTC-aware datetime.
-
-    If the input is a string, it is parsed using a set of known formats.
-    Strings without timezone information are treated as UTC.
-    Strings with timezone information are converted to UTC.
-
-    If the input is already a datetime object it is normalised to UTC using
-    the same rules (naive → UTC, aware → converted to UTC).
-
-    Args:
-        date_or_str: A datetime object or a date/datetime string.
-
-    Returns:
-        datetime.datetime: UTC-aware datetime object.
-
-    Raises:
-        DateFormatError: If the string cannot be parsed into a datetime object.
-    """
-    if isinstance(date_or_str, str):
-        for fmt in _DATE_FORMATS:
-            try:
-                return set_timezone_utc(_dt.datetime.strptime(date_or_str, fmt))  # noqa: DTZ007
-            except ValueError:  # noqa: PERF203
-                continue
-        raise DateFormatError(date_or_str)
-    return set_timezone_utc(date_or_str)
-
-
-def format_date(at: datetime.datetime) -> str:
-    """Format a datetime object to a string in ISO 8601 format with UTC timezone.
-
-    Naive datetimes are assumed to be UTC. Timezone-aware datetimes are
-    converted to UTC before formatting.
-
-    Args:
-        at (datetime.datetime): The datetime object to format.
-
-    Returns:
-        str: Formatted date string in ISO 8601 format with 'Z' suffix.
-    """
-    utc = set_timezone_utc(at)
-    return utc.replace(tzinfo=None).isoformat(timespec="microseconds") + "Z"
-
-
-def set_timezone_utc(
+def ensure_utc(
     input_time: datetime.datetime,
 ) -> datetime.datetime:
     """Add UTC timezone if timezone missing, otherwise convert to UTC.
@@ -111,7 +63,7 @@ def set_timezone_utc(
         input_time (datetime.datetime): A timestamp object.
 
     Returns:
-        input_time (datetime.datetime): A timestamp object with timezone set to UTC.
+        datetime.datetime: A timestamp object with timezone set to UTC.
     """
     return (
         input_time.replace(tzinfo=UTC)
@@ -120,7 +72,7 @@ def set_timezone_utc(
     )
 
 
-def year_timestamp(year: int) -> int:
+def year_start_epoch_seconds(year: int) -> int:
     """Seconds from Unix epoch at the start of a given year.
 
     Args:
@@ -134,43 +86,159 @@ def year_timestamp(year: int) -> int:
     )
 
 
-def ysn_to_datetime(year: int, seconds: int, nanos: int) -> datetime.datetime:
-    """Get datetime from year, seconds into year and nanoseconds.
-
-    Precision is truncated to microseconds.
+def _parse_datetime_str(date_str: str) -> datetime.datetime:
+    """Parse a date string using known formats.
 
     Args:
-        year (int): year
-        seconds (int): seconds into year
-        nanos (int): nanoseconds
+        date_str: A date/datetime string.
 
     Returns:
-        datetime: UTC datetime (microsecond precision)
+        datetime.datetime: UTC-aware datetime.
+
+    Raises:
+        DateFormatError: If the string cannot be parsed.
     """
-    year_start = year_timestamp(year)
-    total_us = (year_start + seconds) * US_PER_S + nanos // NS_PER_US
-    return EPOCH + timedelta(microseconds=total_us)
+    for fmt in _DATE_FORMATS:
+        try:
+            return ensure_utc(
+                _dt.datetime.strptime(date_str, fmt),  # noqa: DTZ007
+            )
+        except ValueError:  # noqa: PERF203
+            continue
+    raise DateFormatError(date_str)
 
 
-def ns_to_datetime(timestamp_ns: int) -> datetime.datetime:
-    """Convert nanosecond epoch timestamp to UTC datetime (microsecond precision).
+class QueryTimestamp:
+    """A microsecond-precision UTC timestamp for archiver queries.
 
-    Args:
-        timestamp_ns (int): nanoseconds since Unix epoch
-
-    Returns:
-        datetime: UTC datetime (microsecond precision)
+    Wraps a UTC-aware datetime. Used for the input flow: user
+    string/datetime to archiver HTTP query parameter.
     """
-    return EPOCH + timedelta(microseconds=timestamp_ns // NS_PER_US)
+
+    __slots__ = ("_dt",)
+
+    def __init__(self, dt: datetime.datetime) -> None:
+        """Create from a UTC-aware datetime.
+
+        Args:
+            dt: UTC-aware datetime
+        """
+        self._dt = dt
+
+    @classmethod
+    def from_input(cls, date_or_str: datetime.datetime | str) -> QueryTimestamp:
+        """Parse user input (string or datetime).
+
+        Strings are parsed using a set of known formats.
+        Strings without timezone information are treated as UTC.
+        Datetimes are normalised to UTC.
+
+        Args:
+            date_or_str: A datetime object or a date/datetime string.
+
+        Returns:
+            QueryTimestamp
+        """
+        if isinstance(date_or_str, str):
+            return cls(_parse_datetime_str(date_or_str))
+        return cls(ensure_utc(date_or_str))
+
+    @classmethod
+    def from_datetime(cls, dt: datetime.datetime) -> QueryTimestamp:
+        """From a datetime (naive assumed UTC, aware converted).
+
+        Args:
+            dt: A datetime object.
+
+        Returns:
+            QueryTimestamp
+        """
+        return cls(ensure_utc(dt))
+
+    @property
+    def datetime(self) -> datetime.datetime:
+        """UTC-aware datetime.
+
+        Returns:
+            datetime.datetime: UTC datetime
+        """
+        return self._dt
+
+    def to_query_string(self) -> str:
+        """ISO 8601 with 'Z' suffix for archiver HTTP params.
+
+        Returns:
+            str: e.g. '2018-07-04T13:00:00.000000Z'
+        """
+        dt = self._dt.replace(tzinfo=None)
+        return dt.isoformat(timespec="microseconds") + "Z"
 
 
-def ns_to_local_timestamp_str(timestamp_ns: int) -> str:
-    """Convert nanosecond epoch timestamp to a local timezone string.
+class ResponseTimestamp:
+    """A nanosecond-precision UTC timestamp from archiver responses.
 
-    Args:
-        timestamp_ns (int): nanoseconds since Unix epoch
-
-    Returns:
-        str: local timezone datetime string
+    Internal representation is nanoseconds since Unix epoch (int).
+    Used for the response flow: archiver data to datetime or
+    display string. Precision is only lost when outputting to
+    datetime (microsecond resolution).
     """
-    return str(ns_to_datetime(timestamp_ns).astimezone())
+
+    __slots__ = ("_ns",)
+
+    def __init__(self, timestamp_ns: int) -> None:
+        """Create from nanosecond epoch timestamp.
+
+        Args:
+            timestamp_ns (int): nanoseconds since Unix epoch
+        """
+        self._ns = timestamp_ns
+
+    @classmethod
+    def from_yearsecondnanos(
+        cls, year: int, seconds: int, nanos: int
+    ) -> ResponseTimestamp:
+        """From archiver PB format.
+
+        Full nanosecond precision is preserved.
+
+        Args:
+            year (int): year
+            seconds (int): seconds into year
+            nanos (int): nanoseconds
+
+        Returns:
+            ResponseTimestamp
+        """
+        year_start = year_start_epoch_seconds(year)
+        total_ns = (year_start + seconds) * NANO_PER_SECOND + nanos
+        return cls(total_ns)
+
+    @property
+    def ns(self) -> int:
+        """Nanoseconds since Unix epoch. Full precision.
+
+        Returns:
+            int: nanoseconds since epoch
+        """
+        return self._ns
+
+    @property
+    def datetime(self) -> datetime.datetime:
+        """UTC-aware datetime (microsecond precision).
+
+        Sub-microsecond nanoseconds are truncated.
+
+        Returns:
+            datetime.datetime: UTC datetime
+        """
+        return EPOCH + timedelta(
+            microseconds=self._ns // NANO_PER_MICROSECOND,
+        )
+
+    def to_local_string(self) -> str:
+        """Local timezone string for display.
+
+        Returns:
+            str: local timezone datetime string
+        """
+        return str(self.datetime.astimezone())

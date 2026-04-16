@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 import polars as pl
 
-from epicsarchiver.common.date_util import NS_PER_S
+from epicsarchiver.common.date_util import NANO_PER_SECOND
 
 if TYPE_CHECKING:
     from epicsarchiver.retrieval.archive_event import (
@@ -96,7 +96,9 @@ def json_to_dataframe(data: Any) -> pl.DataFrame:
             }
         )
     df = pl.DataFrame(raw)
-    total_nanos = df["secs"].cast(pl.Int64) * NS_PER_S + df["nanos"].cast(pl.Int64)
+    total_nanos = df["secs"].cast(pl.Int64) * NANO_PER_SECOND + df["nanos"].cast(
+        pl.Int64
+    )
     return df.with_columns(
         total_nanos.cast(pl.Datetime("ns", "UTC")).alias("date")
     ).drop(["secs", "nanos"])

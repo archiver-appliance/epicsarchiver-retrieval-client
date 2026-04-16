@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from epicsarchiver.common.date_util import (
-    NS_PER_S,
-    ns_to_datetime,
-    year_timestamp,
+    NANO_PER_SECOND,
+    ResponseTimestamp,
+    year_start_epoch_seconds,
 )
 
 if TYPE_CHECKING:
@@ -62,8 +62,8 @@ class ArchiveEvent:
             int: nanoseconds since Unix epoch, compatible with pl.Datetime("ns", "UTC")
         """
         return (
-            year_timestamp(self.year) + self.secondsintoyear
-        ) * NS_PER_S + self.nanos
+            year_start_epoch_seconds(self.year) + self.secondsintoyear
+        ) * NANO_PER_SECOND + self.nanos
 
     @property
     def timestamp(self) -> datetime:
@@ -72,7 +72,7 @@ class ArchiveEvent:
         Returns:
             datetime: UTC datetime
         """
-        return ns_to_datetime(self.timestamp_ns)
+        return ResponseTimestamp(self.timestamp_ns).datetime
 
     @property
     def field_values_dict(self) -> dict[str, str]:
