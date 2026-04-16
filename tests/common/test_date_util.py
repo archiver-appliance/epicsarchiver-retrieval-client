@@ -14,10 +14,6 @@ from epicsarchiver.common.date_util import (
     set_timezone_utc,
 )
 
-# ---------------------------------------------------------------------------
-# datetime_from_str — string inputs
-# ---------------------------------------------------------------------------
-
 
 class TestDatetimeFromStrStrings:
     """String inputs are parsed into UTC-aware datetimes."""
@@ -25,34 +21,55 @@ class TestDatetimeFromStrStrings:
     @pytest.mark.parametrize(
         ("value", "expected"),
         [
-            # compact formats (no separators)
-            ("20180715", datetime.datetime(2018, 7, 15, tzinfo=UTC)),
-            ("20180715 17:45", datetime.datetime(2018, 7, 15, 17, 45, tzinfo=UTC)),
-            (
+            pytest.param(
+                "20180715",
+                datetime.datetime(2018, 7, 15, tzinfo=UTC),
+                id="compact-date",
+            ),
+            pytest.param(
+                "20180715 17:45",
+                datetime.datetime(2018, 7, 15, 17, 45, tzinfo=UTC),
+                id="compact-datetime-hm",
+            ),
+            pytest.param(
                 "20180715 17:45:30",
                 datetime.datetime(2018, 7, 15, 17, 45, 30, tzinfo=UTC),
+                id="compact-datetime-hms",
             ),
-            # ISO date only
-            ("2018-07-15", datetime.datetime(2018, 7, 15, tzinfo=UTC)),
-            # ISO with T separator
-            ("2018-07-15T13:00", datetime.datetime(2018, 7, 15, 13, tzinfo=UTC)),
-            (
+            pytest.param(
+                "2018-07-15",
+                datetime.datetime(2018, 7, 15, tzinfo=UTC),
+                id="iso-date",
+            ),
+            pytest.param(
+                "2018-07-15T13:00",
+                datetime.datetime(2018, 7, 15, 13, tzinfo=UTC),
+                id="iso-T-hm",
+            ),
+            pytest.param(
                 "2018-07-15T13:00:00",
                 datetime.datetime(2018, 7, 15, 13, 0, 0, tzinfo=UTC),
+                id="iso-T-hms",
             ),
-            (
+            pytest.param(
                 "2018-07-15T13:00:00.123456",
                 datetime.datetime(2018, 7, 15, 13, 0, 0, 123456, tzinfo=UTC),
+                id="iso-T-microseconds",
             ),
-            # ISO with space separator
-            ("2018-07-15 13:00", datetime.datetime(2018, 7, 15, 13, tzinfo=UTC)),
-            (
+            pytest.param(
+                "2018-07-15 13:00",
+                datetime.datetime(2018, 7, 15, 13, tzinfo=UTC),
+                id="iso-space-hm",
+            ),
+            pytest.param(
                 "2018-07-15 13:00:00",
                 datetime.datetime(2018, 7, 15, 13, 0, 0, tzinfo=UTC),
+                id="iso-space-hms",
             ),
-            (
+            pytest.param(
                 "2018-07-15 13:00:00.123456",
                 datetime.datetime(2018, 7, 15, 13, 0, 0, 123456, tzinfo=UTC),
+                id="iso-space-microseconds",
             ),
         ],
     )
@@ -92,11 +109,6 @@ class TestDatetimeFromStrStrings:
             datetime_from_str(bad)
 
 
-# ---------------------------------------------------------------------------
-# datetime_from_str — datetime inputs
-# ---------------------------------------------------------------------------
-
-
 class TestDatetimeFromStrDatetimes:
     """datetime inputs are normalised to UTC without loss of time information."""
 
@@ -120,11 +132,6 @@ class TestDatetimeFromStrDatetimes:
         result = datetime_from_str(datetime.datetime(2018, 7, 15, tzinfo=UTC))
         assert result.tzinfo is not None
         assert result.utcoffset() == datetime.timedelta(0)
-
-
-# ---------------------------------------------------------------------------
-# format_date — the UTC timestamp sent to the archiver
-# ---------------------------------------------------------------------------
 
 
 class TestFormatDate:
@@ -153,11 +160,6 @@ class TestFormatDate:
         assert format_date(dt).endswith("Z")
 
 
-# ---------------------------------------------------------------------------
-# End-to-end: user input → archiver timestamp
-# ---------------------------------------------------------------------------
-
-
 class TestInputToArchiverTimestamp:
     """Verify the full pipeline from user input string to archiver URL parameter."""
 
@@ -175,11 +177,6 @@ class TestInputToArchiverTimestamp:
         self, user_input: str, expected_archiver_ts: str
     ) -> None:
         assert format_date(datetime_from_str(user_input)) == expected_archiver_ts
-
-
-# ---------------------------------------------------------------------------
-# set_timezone_utc
-# ---------------------------------------------------------------------------
 
 
 class TestSetTimezoneUtc:
