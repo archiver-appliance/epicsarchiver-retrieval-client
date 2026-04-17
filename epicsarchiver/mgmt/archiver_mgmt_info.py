@@ -45,8 +45,8 @@ class ArchiverMgmtInfo(BaseArchiverAppliance):
     Hold a session to the Archiver Appliance web application and use the mgmt interface.
 
     Args:
-        hostname: EPICS Archiver Appliance hostname [default: localhost]
-        port: EPICS Archiver Appliance management port [default: 17665]
+        hostname: EPICS Archiver Appliance hostname
+        port: EPICS Archiver Appliance management port
 
     Examples:
     .. code-block:: python

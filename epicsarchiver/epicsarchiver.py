@@ -14,8 +14,8 @@ class ArchiverAppliance(ArchiverMgmt, ArchiverRetrieval):
     Hold a session to the Archiver Appliance web application.
 
     Args:
-        hostname: EPICS Archiver Appliance hostname [default: localhost]
-        port: EPICS Archiver Appliance management port [default: 17665]
+        hostname: EPICS Archiver Appliance hostname
+        port: EPICS Archiver Appliance management port
 
     Examples:
 

@@ -49,7 +49,7 @@ def test_get_data() -> None:
     })
     responses.add(
         responses.GET,
-        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
         json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
         status=200,
     )
@@ -90,7 +90,7 @@ def test_search_with_no_time_range() -> None:
     ]
     responses.add(
         responses.GET,
-        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
         json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
         status=200,
     )
@@ -138,7 +138,7 @@ def test_search_with_time_range() -> None:
 
     responses.add(
         responses.GET,
-        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
         json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
         status=200,
     )
@@ -185,7 +185,7 @@ def test_get_events_pb() -> None:
     events = TEST_EVENTS
     responses.add(
         responses.GET,
-        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
         json={"dataRetrievalURL": "http://archiver-01:17668/retrieval"},
         status=200,
     )
@@ -235,7 +235,7 @@ def test_data_url_with_same_archiver_host(host: str) -> None:
     data = {"dataRetrievalURL": "http://archiver-01:17668/retrieval"}
     responses.add(
         responses.GET,
-        f"http://{host}:17665/mgmt/bpl/getApplianceInfo",
+        f"http://{host}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
         json=data,
         status=200,
     )
@@ -253,7 +253,7 @@ def test_data_url_with_no_specific_port() -> None:
     data = {"dataRetrievalURL": "http://archiver-01/foo"}
     responses.add(
         responses.GET,
-        "http://archiver-01.example.com:17665/mgmt/bpl/getApplianceInfo",
+        "http://archiver-01.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
         json=data,
         status=200,
     )

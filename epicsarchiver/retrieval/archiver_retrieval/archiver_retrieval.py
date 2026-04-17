@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 from pytz import UTC
 
-from epicsarchiver.common.base_archiver import BaseArchiverAppliance
+from epicsarchiver.common.base_archiver import DEFAULT_MGMT_PORT, BaseArchiverAppliance
 from epicsarchiver.common.date_util import (
     QueryTimestamp,
     ensure_utc,
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
+DEFAULT_RETRIEVAL_PORT = 17668
 ENDPOINT_GET_DATA = "/data/getData.raw"
 ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
 
@@ -40,8 +41,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
     Hold a session to the Retrieval Archiver Appliance web application.
 
     Args:
-        hostname: EPICS Archiver Appliance hostname [default: localhost]
-        port: EPICS Archiver Appliance management port [default: 17665]
+        hostname: EPICS Archiver Appliance hostname
+        port: EPICS Archiver Appliance management port
 
     Examples:
 
@@ -54,12 +55,12 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = 17665):
+    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_MGMT_PORT):
         """Create Archiver Appliance object.
 
         Args:
-            hostname (str, optional): hostname of archiver. Defaults to "localhost".
-            port (int, optional): port number of mgmt interface. Defaults to 17665.
+            hostname (str, optional): hostname of archiver.
+            port (int, optional): port number of mgmt interface.
         """
         super().__init__(hostname, port)
 

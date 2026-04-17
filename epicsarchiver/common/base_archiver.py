@@ -15,6 +15,7 @@ from epicsarchiver.common.errors import (
 )
 
 LOG: logging.Logger = logging.getLogger(__name__)
+DEFAULT_MGMT_PORT = 17665
 
 
 def mgmt_url(hostname: str, port: int) -> str:
@@ -36,16 +37,16 @@ class BaseArchiverAppliance:
     Hold a session to the Archiver Appliance web application.
 
     Args:
-        hostname: EPICS Archiver Appliance hostname [default: localhost]
-        port: EPICS Archiver Appliance management port [default: 17665]
+        hostname: EPICS Archiver Appliance hostname
+        port: EPICS Archiver Appliance management port
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = 17665):
+    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_MGMT_PORT):
         """Create Archiver Appliance object.
 
         Args:
-            hostname (str, optional): hostname of archiver. Defaults to "localhost".
-            port (int, optional): port number of mgmt interface. Defaults to 17665.
+            hostname (str, optional): hostname of archiver.
+            port (int, optional): port number of mgmt interface.
         """
         self.hostname = hostname
         self.port = port

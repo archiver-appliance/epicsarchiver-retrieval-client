@@ -65,7 +65,7 @@ async def test_get_absolute_endpoint() -> None:
 
 @pytest.mark.asyncio
 async def test_get_return_response() -> None:
-    url = "http://service.example.com:17665/my/endpoint"
+    url = "http://service.example.com:{DEFAULT_MGMT_PORT}/my/endpoint"
     data = {"test": "hello"}
     with aioresponses() as mocked:
         mocked.get(url, body=json.dumps(data), status=200)

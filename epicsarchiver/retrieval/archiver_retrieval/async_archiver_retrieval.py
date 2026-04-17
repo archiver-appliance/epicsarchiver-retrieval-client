@@ -11,6 +11,7 @@ from pytz import UTC
 from typing_extensions import Self
 
 from epicsarchiver.common.async_service import ServiceClient
+from epicsarchiver.common.base_archiver import DEFAULT_MGMT_PORT
 from epicsarchiver.common.date_util import (
     QueryTimestamp,
     ensure_utc,
@@ -40,8 +41,8 @@ class AsyncArchiverRetrieval(ServiceClient):
     Hold a session to the Archiver Appliance server to make retrieval requests.
 
     Args:
-        hostname: EPICS Archiver Appliance hostname [default: localhost]
-        port: EPICS Archiver Appliance management port [default: 17665]
+        hostname: EPICS Archiver Appliance hostname
+        port: EPICS Archiver Appliance management port
 
     Examples:
 
@@ -57,7 +58,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             )
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = 17665):
+    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_MGMT_PORT):
         """Create Async archiver retrieval client.
 
         Args:

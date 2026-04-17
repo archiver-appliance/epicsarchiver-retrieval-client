@@ -18,7 +18,7 @@ LOG: logging.Logger = logging.getLogger(__name__)
     default="localhost",
     type=str,
     envvar="EPICSARCHIVER_HOSTNAME",
-    help="Archiver Appliance hostname or IP [default: localhost]",
+    help="Archiver Appliance hostname or IP",
 )
 @click.pass_context
 def cli(ctx: click.core.Context, hostname: str) -> None:

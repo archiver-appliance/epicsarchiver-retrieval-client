@@ -19,7 +19,7 @@ LOG: logging.Logger = logging.getLogger(__name__)
 def test_epicsarchiver_url() -> None:
     """Test the CLI."""
     archiver = BaseArchiverAppliance()
-    assert archiver.mgmt_url == "http://localhost:17665/mgmt/bpl/"
+    assert archiver.mgmt_url == "http://localhost:{DEFAULT_MGMT_PORT}/mgmt/bpl/"
     archiver = BaseArchiverAppliance("archiver-01.example.com", port=80)
     assert archiver.mgmt_url == "http://archiver-01.example.com:80/mgmt/bpl/"
 
@@ -48,7 +48,7 @@ def test_request_raise_exception() -> None:
 @responses.activate
 def test_get_relative_endpoint() -> None:
     archiver = BaseArchiverAppliance("archiver.example.com")
-    url = "http://archiver.example.com:17665/mgmt/bpl/endpoint"
+    url = "http://archiver.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/endpoint"
     responses.add(
         responses.GET,
         url,
@@ -72,7 +72,7 @@ def test_get_absolute_endpoint() -> None:
 @responses.activate
 def test_get_return_response() -> None:
     archiver = BaseArchiverAppliance()
-    url = "http://archiver.example.com:17665/my/endpoint"
+    url = "http://archiver.example.com:{DEFAULT_MGMT_PORT}/my/endpoint"
     data = {"test": "hello"}
     responses.add(responses.GET, url, json=data, status=200)
     r = archiver._get(url)
@@ -96,7 +96,7 @@ def test_post_relative_endpoint() -> None:
     archiver = BaseArchiverAppliance("archiver.example.com")
     responses.add(
         responses.POST,
-        "http://archiver.example.com:17665/mgmt/bpl/endpoint",
+        "http://archiver.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/endpoint",
         status=201,
     )
     archiver._post("endpoint")
@@ -114,7 +114,7 @@ def test_info() -> None:
     }
     responses.add(
         responses.GET,
-        "http://archiver-01.example.com:17665/mgmt/bpl/getApplianceInfo",
+        "http://archiver-01.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
         json=data,
         status=200,
     )
@@ -132,7 +132,7 @@ def test_identity_and_version() -> None:
     data = {"identity": "appliance0", "version": "v1.0.0"}
     responses.add(
         responses.GET,
-        "http://archiver-01.example.com:17665/mgmt/bpl/getApplianceInfo",
+        "http://archiver-01.example.com:{DEFAULT_MGMT_PORT}/mgmt/bpl/getApplianceInfo",
         json=data,
         status=200,
     )
@@ -151,7 +151,7 @@ def test_get_or_post_single_pv() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        "http://archiver.example.org:17665/mgmt/bpl/endpoint",
+        "http://archiver.example.org:{DEFAULT_MGMT_PORT}/mgmt/bpl/endpoint",
         json=data,
         status=200,
         match=[responses.matchers.query_string_matcher("pv=mypv")],
@@ -167,7 +167,7 @@ def test_get_or_post_comma_separated_list() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.POST,
-        "http://archiver.example.org:17665/mgmt/bpl/endpoint",
+        "http://archiver.example.org:{DEFAULT_MGMT_PORT}/mgmt/bpl/endpoint",
         json=data,
         status=200,
     )

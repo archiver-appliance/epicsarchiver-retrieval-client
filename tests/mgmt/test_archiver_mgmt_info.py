@@ -19,7 +19,7 @@ def test_get_all_expanded_pvs() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllExpandedPVNames",
+        f"http://{TEST_DOMAIN}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getAllExpandedPVNames",
         json=data,
         status=200,
     )
@@ -34,7 +34,7 @@ def test_get_all_pvs_no_argument() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs",
+        f"http://{TEST_DOMAIN}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getAllPVs",
         json=data,
         status=200,
         match=[responses.matchers.query_string_matcher("limit=500")],
@@ -50,7 +50,7 @@ def test_get_all_pvs_with_limit() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs",
+        f"http://{TEST_DOMAIN}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getAllPVs",
         json=data,
         status=200,
         match=[responses.matchers.query_string_matcher("limit=1200")],
@@ -66,7 +66,7 @@ def test_get_all_pvs_with_pv() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs",
+        f"http://{TEST_DOMAIN}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getAllPVs",
         json=data,
         status=200,
         match=[responses.matchers.query_string_matcher("pv=KLYS*&limit=500")],
@@ -82,7 +82,7 @@ def test_get_all_pvs_with_regex() -> None:
     data = ["1", "2", "3"]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getAllPVs",
+        f"http://{TEST_DOMAIN}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getAllPVs",
         json=data,
         status=200,
         match=[responses.matchers.query_string_matcher("regex=foo&limit=500")],
@@ -98,7 +98,7 @@ def test_get_pv_status() -> None:
     data = [{"pvName": "mypv"}]
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVStatus",
+        f"http://{TEST_DOMAIN}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getPVStatus",
         json=data,
         status=200,
         match=[responses.matchers.query_string_matcher("pv=mypv")],
@@ -157,7 +157,7 @@ def test_get_pv_type_info() -> None:
     }
     responses.add(
         responses.GET,
-        f"http://{TEST_DOMAIN}:17665/mgmt/bpl/getPVTypeInfo",
+        f"http://{TEST_DOMAIN}:{DEFAULT_MGMT_PORT}/mgmt/bpl/getPVTypeInfo",
         json=data,
         status=200,
         match=[responses.matchers.query_string_matcher("pv=mypv")],
