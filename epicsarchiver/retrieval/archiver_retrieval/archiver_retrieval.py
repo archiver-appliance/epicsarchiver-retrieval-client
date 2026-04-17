@@ -96,7 +96,6 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         return self._get(
             self.data_url,
             params=params,
-            stream=True,
         )
 
     def _get_matching_pvs(
@@ -122,7 +121,6 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             self._get(
                 self.matching_pvs_url,
                 params=params,
-                stream=True,
             ).json(),
         )
 

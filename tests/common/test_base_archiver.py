@@ -28,23 +28,12 @@ def test_epicsarchiver_url() -> None:
 
 
 @responses.activate
-def test_request_get_status_ok() -> None:
-    archiver = BaseArchiverAppliance()
-    url = "http://test.example.com"
-    data = {"test": "hello"}
-    responses.add(responses.GET, url, json=data, status=200)
-    r = archiver._request("GET", url)
-    assert len(responses.calls) == 1
-    assert r.json() == data
-
-
-@responses.activate
-def test_request_raise_exception() -> None:
+def test_get_raise_exception() -> None:
     archiver = BaseArchiverAppliance()
     url = "http://test.example.com"
     responses.add(responses.GET, url, status=404)
     with pytest.raises(ArchiverResponseError):
-        archiver._request("GET", url)
+        archiver._get(url, params={})
     assert len(responses.calls) == 1
 
 
@@ -57,9 +46,9 @@ def test_get_relative_endpoint() -> None:
         url,
         status=200,
     )
-    archiver._get("endpoint")
+    archiver._get("endpoint", params={})
     assert len(responses.calls) == 1
-    archiver._get("/endpoint")
+    archiver._get("/endpoint", params={})
     assert len(responses.calls) == 2
 
 
@@ -68,7 +57,7 @@ def test_get_absolute_endpoint() -> None:
     archiver = BaseArchiverAppliance("archiver.example.com")
     url = "http://archiver.another.com:17667/this/is/a/test"
     responses.add(responses.GET, url, status=200)
-    archiver._get(url)
+    archiver._get(url, params={})
     assert len(responses.calls) == 1
 
 
@@ -78,67 +67,6 @@ def test_get_return_response() -> None:
     url = "http://archiver.example.com:17665/my/endpoint"
     data = {"test": "hello"}
     responses.add(responses.GET, url, json=data, status=200)
-    r = archiver._get(url)
+    r = archiver._get(url, params={})
     assert len(responses.calls) == 1
     assert r.json() == data
-
-
-@responses.activate
-def test_post_return_response() -> None:
-    archiver = BaseArchiverAppliance()
-    url = "http://test.example.com"
-    data = {"test": "hello"}
-    responses.add(responses.POST, url, json=data, status=201)
-    r = archiver._post(url)
-    assert len(responses.calls) == 1
-    assert r.json() == data
-
-
-@responses.activate
-def test_post_relative_endpoint() -> None:
-    archiver = BaseArchiverAppliance("archiver.example.com")
-    responses.add(
-        responses.POST,
-        f"http://archiver.example.com:{DEFAULT_RETRIEVAL_PORT}/endpoint",
-        status=201,
-    )
-    archiver._post("endpoint")
-    assert len(responses.calls) == 1
-    archiver._post("/endpoint")
-    assert len(responses.calls) == 2
-
-
-@responses.activate
-def test_get_or_post_single_pv() -> None:
-    archiver = BaseArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.GET,
-        f"http://archiver.example.org:{DEFAULT_RETRIEVAL_PORT}/endpoint",
-        json=data,
-        status=200,
-        match=[responses.matchers.query_string_matcher("pv=mypv")],
-    )
-    r = archiver._get_or_post("/endpoint", "mypv")
-    assert len(responses.calls) == 1
-    assert r == data
-
-
-@responses.activate
-def test_get_or_post_comma_separated_list() -> None:
-    archiver = BaseArchiverAppliance("archiver.example.org")
-    data = ["1", "2", "3"]
-    responses.add(
-        responses.POST,
-        f"http://archiver.example.org:{DEFAULT_RETRIEVAL_PORT}/endpoint",
-        json=data,
-        status=200,
-    )
-    pvs = "mypv1,mypv2"
-    r = archiver._get_or_post("/endpoint", pvs)
-    assert (
-        len(responses.calls) == 1
-    )  # ignore for https://github.com/getsentry/responses/pull/690
-
-    assert responses.calls[0].request.body == pvs
-    assert r == data

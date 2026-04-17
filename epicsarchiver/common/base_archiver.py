@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import urllib.parse
-from typing import Any
 
 import requests
 from requests import Response
@@ -49,13 +48,12 @@ class BaseArchiverAppliance:
         """
         return f"ArchiverAppliance({self.hostname}, {self.port})"
 
-    def _request(self, method: str, url: str, **kwargs: Any) -> Response:
+    def _get(self, endpoint: str, params: dict[str, str]) -> Response:
         """Sends a request using the session.
 
         Args:
-            method: HTTP method
-            url: The URL to send the request to
-            **kwargs: Optional keyword arguments
+            endpoint: API endpoint (relative or absolute)
+            params: query parameters to include in the request.
 
         Returns:
             :class:`requests.Response <Response>` object
@@ -64,8 +62,10 @@ class BaseArchiverAppliance:
             ArchiverConnectionError: If there is a connection error.
             ArchiverResponseError: If the response is not successful.
         """
+        url = urllib.parse.urljoin(self._base_url, endpoint.lstrip("/"))
+        LOG.debug("GET url: %s", url)
         try:
-            r = self.session.request(method, url, **kwargs)
+            r = self.session.get(url, params=params, stream=True)
             r.raise_for_status()
         except requests.ConnectionError as e:
             raise ArchiverConnectionError(
@@ -79,48 +79,3 @@ class BaseArchiverAppliance:
             ) from e
         else:
             return r
-
-    def _get(self, endpoint: str, **kwargs: Any) -> Response:
-        r"""Send a GET request to the given endpoint.
-
-        Args:
-            endpoint: API endpoint (relative or absolute)
-            **kwargs: Optional arguments to be sent
-
-        Returns:
-            :class:`requests.Response <Response>` object
-        """
-        url = urllib.parse.urljoin(self._base_url, endpoint.lstrip("/"))
-        LOG.debug("GET url: %s", url)
-        return self._request("GET", url, **kwargs)
-
-    def _post(self, endpoint: str, **kwargs: Any) -> Response:
-        r"""Send a POST request to the given endpoint.
-
-        Args:
-            endpoint: API endpoint (relative or absolute)
-            **kwargs: Optional arguments to be sent
-
-        Returns:
-            :class:`requests.Response <Response>` object
-        """
-        url = urllib.parse.urljoin(self._base_url, endpoint.lstrip("/"))
-        return self._request("POST", url, **kwargs)
-
-    def _get_or_post(self, endpoint: str, pv: str) -> Any:
-        """Send a GET or POST if pv is a comma separated list.
-
-        Args:
-            endpoint (str): API endpoint
-            pv (str): name of the pv. Can be a GLOB wildcards or a list of
-                comma separated names.
-
-        Returns:
-            Any: list of submitted PVs
-        """
-        r = (
-            self._post(endpoint, data=pv)
-            if "," in pv
-            else self._get(endpoint, params={"pv": pv})
-        )
-        return r.json()
