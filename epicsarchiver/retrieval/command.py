@@ -8,13 +8,12 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import click
-from dateutil import tz
-from pandas import Timestamp
 from pytz import UTC
 from rich.console import Console
 from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
+from epicsarchiver.common.date_util import ResponseTimestamp
 from epicsarchiver.common.errors import ArchiverError
 from epicsarchiver.common.validation import ValidationError
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
@@ -28,7 +27,7 @@ from epicsarchiver.retrieval.archiver_retrieval.processor import (
 
 if TYPE_CHECKING:
     from epicsarchiver.epicsarchiver import ArchiverAppliance
-    from epicsarchiver.retrieval.pb import ArchiveEventsMeta
+    from epicsarchiver.retrieval.archive_event import ArchiveEventsMeta
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ DATE_FORMATS = [
 ]
 
 
-AlignedPVEvents = list[tuple[Timestamp, dict[str, ArchiveEvent]]]
+AlignedPVEvents = list[tuple[int, dict[str, ArchiveEvent]]]
 
 
 @click.command(context_settings={"show_default": True})
@@ -309,14 +308,10 @@ def _create_multi_table(
         table.add_column(pv + " Value", justify="right")
     for e in events:
         table.add_row(
-            _to_local_timestamp_str(e[0]),
+            ResponseTimestamp(e[0]).to_local_string(),
             *[_val_to_str(e[1].get(pv)) for pv in pvs],
         )
     return table
-
-
-def _to_local_timestamp_str(timestamp: Timestamp) -> str:
-    return str(timestamp.tz_convert(tz.tzlocal()))
 
 
 def _val_to_str(event: ArchiveEvent | None) -> str:
@@ -340,7 +335,7 @@ def _create_singular_table(
         event = time_event[1].get(pv)
         if event:
             table.add_row(
-                _to_local_timestamp_str(time_event[0]),
+                ResponseTimestamp(time_event[0]).to_local_string(),
                 str(event.val),
                 str(event.status),
                 str(event.severity),
@@ -384,12 +379,12 @@ def _align_events(
     Returns:
         AlignedPVEvents: List of pairs, (timestamp, dict[pv_name, pv_value])
     """
-    data: dict[Timestamp, dict[str, ArchiveEvent]] = {}
+    data: dict[int, dict[str, ArchiveEvent]] = {}
     for pv, events in all_events.items():
         for event in events:
-            if event.pd_timestamp not in data:
-                data[event.pd_timestamp] = {}
-            data[event.pd_timestamp][pv] = event
+            if event.timestamp_ns not in data:
+                data[event.timestamp_ns] = {}
+            data[event.timestamp_ns][pv] = event
 
     return [(timestamp, data[timestamp]) for timestamp in sorted(data.keys())]
 

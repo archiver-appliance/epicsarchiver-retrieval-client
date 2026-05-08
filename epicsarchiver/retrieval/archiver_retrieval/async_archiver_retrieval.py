@@ -11,18 +11,21 @@ from pytz import UTC
 from typing_extensions import Self
 
 from epicsarchiver.common.async_service import ServiceClient
-from epicsarchiver.common.date_util import format_date, set_timezone_utc
+from epicsarchiver.common.date_util import (
+    QueryTimestamp,
+    ensure_utc,
+)
 from epicsarchiver.common.validation import (
     validate_processor,
     validate_pv,
     validate_start_end,
 )
-from epicsarchiver.retrieval.pb import ArchiveEventsData, parse_pb_data
+from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
     from aiohttp import ClientResponse
 
-    from epicsarchiver.retrieval.archive_event import ArchiveEvent
+    from epicsarchiver.retrieval.archive_event import ArchiveEvent, ArchiveEventsData
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
 
 LOG: logging.Logger = logging.getLogger(__name__)
@@ -110,8 +113,8 @@ class AsyncArchiverRetrieval(ServiceClient):
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         params = {
             "pv": pv,
-            "from": format_date(start),
-            "to": format_date(end),
+            "from": QueryTimestamp.from_datetime(start).to_query_string(),
+            "to": QueryTimestamp.from_datetime(end).to_query_string(),
             "fetchLatestMetadata": "true",
         }
         return await self._get(self.data_url, params=params)
@@ -165,8 +168,8 @@ class AsyncArchiverRetrieval(ServiceClient):
             return query
 
         # Add timezone if missing, otherwise convert to UTC.
-        start = set_timezone_utc(input_time=start) if start else None
-        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
+        start = ensure_utc(start) if start else None
+        end = ensure_utc(end) if end else datetime.datetime.now(tz=UTC)
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
@@ -178,8 +181,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             pv_list.extend(
                 event.pv
                 for event in events
-                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
-                or not start
+                if (start and event.timestamp >= start) or not start
             )
 
         return pv_list

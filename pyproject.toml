@@ -26,17 +26,16 @@ classifiers = [
 dynamic = [ "version" ]
 
 dependencies = [
-  "aiohttp>=3",
-  "click>=8",
-  "numpy>=1.24",
-  "pandas<=2.2.3",
   "protobuf>=6",
   "pytz>=2024.1",
-  "requests>=2",
-  "rich>=13",
-  "strictly-typed-pandas>=0.3",
   "typing-extensions>=4.12",
 ]
+
+optional-dependencies.all = [ "py-epicsarchiver[async,cli,polars,sync]" ]
+optional-dependencies.async = [ "aiohttp>=3" ]
+optional-dependencies.cli = [ "click>=8", "rich>=13" ]
+optional-dependencies.polars = [ "polars>=1" ]
+optional-dependencies.sync = [ "requests>=2" ]
 urls.Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
 scripts.epicsarchiver = "epicsarchiver.command:cli"
 

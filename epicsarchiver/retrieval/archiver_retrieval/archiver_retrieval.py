@@ -4,28 +4,27 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, cast
 
-import pandas as pd
 from pytz import UTC
 
 from epicsarchiver.common.base_archiver import BaseArchiverAppliance
 from epicsarchiver.common.date_util import (
-    datetime_from_str,
-    format_date,
-    set_timezone_utc,
+    QueryTimestamp,
+    ensure_utc,
 )
 from epicsarchiver.common.validation import (
     validate_processor,
     validate_pv,
     validate_start_end,
 )
-from epicsarchiver.retrieval.archive_event import ArchiveEvent, dataframe_from_events
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
+    import polars as pl
     from requests import Response
 
+    from epicsarchiver.retrieval.archive_event import ArchiveEventsData
     from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
 
 
@@ -33,33 +32,6 @@ LOG: logging.Logger = logging.getLogger(__name__)
 
 ENDPOINT_GET_DATA = "/data/getData.raw"
 ENDPOINT_GET_MATCHING_PVS = "/bpl/getMatchingPVs"
-
-
-def json_to_dataframe(data: Any) -> pd.DataFrame:
-    """Converts json from the archiver.
-
-    Converts to a dataframe with two
-    columns "date" and "val" and the index is "date".
-
-    Args:
-        data: json from a json archiver request
-
-    Returns:
-        pd.DataFrame
-    """
-    events_dataframe = pd.DataFrame(data[0]["data"])
-    try:
-        total_nanos = (
-            events_dataframe["secs"].multiply(1e9).add(events_dataframe["nanos"])
-        )
-        events_dataframe["date"] = pd.to_datetime(total_nanos, unit="ns", utc=True)
-    except KeyError:
-        # Empty data
-        pass
-    else:
-        events_dataframe = events_dataframe[["date", "val"]]
-        events_dataframe = events_dataframe.set_index("date")
-    return events_dataframe
 
 
 class ArchiverRetrieval(BaseArchiverAppliance):
@@ -118,8 +90,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         params = {
             "pv": pv,
-            "from": format_date(start),
-            "to": format_date(end),
+            "from": QueryTimestamp.from_datetime(start).to_query_string(),
+            "to": QueryTimestamp.from_datetime(end).to_query_string(),
         }
         return self._get(
             self.data_url,
@@ -182,12 +154,12 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             return query
 
         # Add timezone if missing, otherwise convert to UTC.
-        start = set_timezone_utc(input_time=start) if start else None
-        end = set_timezone_utc(input_time=end) if end else datetime.datetime.now(tz=UTC)
+        start = ensure_utc(start) if start else None
+        end = ensure_utc(end) if end else datetime.datetime.now(tz=UTC)
 
         # Set both ends of time range in the data query query to end, then Archiver
         # returns the most recent event prior to end, or an empty result.
-        all_events = [self.get_events(pv, end, end) for pv in query]
+        all_events = [self.get_events(pv, end, end)[1] for pv in query]
 
         # Create list of those PVs with atleast one event within specified time range.
         pv_list: list[str] = []
@@ -195,8 +167,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             pv_list.extend(
                 event.pv
                 for event in events
-                if (start and event.pd_timestamp.to_pydatetime(warn=False) >= start)
-                or not start
+                if (start and event.timestamp >= start) or not start
             )
 
         return pv_list
@@ -207,7 +178,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         start: datetime.datetime,
         end: datetime.datetime,
         processor: Processor | None = None,
-    ) -> list[ArchiveEvent]:
+    ) -> ArchiveEventsData:
         """Retrieve archived data.
 
         Args:
@@ -219,9 +190,8 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             processor (Processor | None, optional): Preprocessor
                 to use. Defaults to None.
 
-
         Returns:
-            list[ArchiveEvent]: requested events from the archiver.
+            ArchiveEventsData: tuple of (metadata, events).
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         validate_pv(pv)
@@ -230,9 +200,9 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         pv_request = processor.calc_pv_name(pv) if processor else pv
         r = self._get_data_raw(pv_request, start, end)
         pb_data = r.content
-        metadata, events = parse_pb_data(pb_data)
-        LOG.debug("Metadata: %s", metadata)
-        return events
+        data = parse_pb_data(pb_data)
+        LOG.debug("Metadata: %s", data[0])
+        return data
 
     def get_data(
         self,
@@ -240,7 +210,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         start: str | datetime.datetime,
         end: str | datetime.datetime,
         processor: Processor | None = None,
-    ) -> pd.DataFrame:
+    ) -> pl.DataFrame:
         """Retrieve archived data.
 
         Args:
@@ -253,16 +223,23 @@ class ArchiverRetrieval(BaseArchiverAppliance):
                 to use. Defaults to None.
 
         Returns:
-            `pandas.DataFrame`
+            `polars.DataFrame`
+
+        Raises:
+            ImportError: If the polars extra is not installed.
         """
+        try:
+            from epicsarchiver.retrieval.dataframe import (  # noqa: PLC0415
+                dataframe_from_events,
+            )
+        except ImportError as exc:
+            msg = "polars extra required: pip install py-epicsarchiver[polars]"
+            raise ImportError(msg) from exc
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
-        start_time = datetime_from_str(start)
-        end_time = datetime_from_str(end)
-        events = self.get_events(pv, start_time, end_time, processor)
-        if not events:
-            return dataframe_from_events([])
-        # Convert events to DataFrame
-        return dataframe_from_events(events)
+        start_time = QueryTimestamp.from_input(start).datetime
+        end_time = QueryTimestamp.from_input(end).datetime
+        metadata, events = self.get_events(pv, start_time, end_time, processor)
+        return dataframe_from_events(events, metadata)
 
     def search(
         self,

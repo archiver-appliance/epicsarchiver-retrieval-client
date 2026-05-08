@@ -24,6 +24,7 @@ all = ["hatch fmt --check", "type-check", "jupyter-check", "docs-check", "hatch 
 python = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
 [envs.hatch-test]
+features = ["all"]
 extra-dependencies = [
   "pytest-asyncio",
   "responses",
@@ -39,6 +40,7 @@ cov-combine = "coverage combine"
 cov-report = "coverage xml"
 
 [envs.types]
+features = ["all"]
 extra-dependencies = [
   "mypy",
   "mypy-protobuf",
@@ -50,7 +52,6 @@ extra-dependencies = [
   "pytest-aiohttp",
   "typing-extensions",
   "types-requests",
-  "types-python-dateutil",
   "types-protobuf",
 ]
 
@@ -60,6 +61,7 @@ check-tests = "mypy --install-types --non-interactive --explicit-package-bases {
 check = ["check-src", "check-tests"]
 
 [envs.docs]
+features = ["all"]
 extra-dependencies = [
   "astroid==3.3.11",          # pin to avoid sphinx [autoapi.not_readable] error
   "sphinx",
@@ -78,6 +80,7 @@ live = ["sphinx-autobuild docs/source docs/build/html"]
 clean = ["make -C docs clean html"]
 
 [envs.jupyter]
+features = ["all"]
 extra-dependencies = [
   "notebook>=7.1.2",
   "nbval>=0.11.0",

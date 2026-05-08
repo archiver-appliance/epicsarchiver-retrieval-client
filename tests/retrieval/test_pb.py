@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 from unittest import mock
 
-import numpy as np
 import pytest
 from pytz import utc as UTC  # noqa: N812
 from rich.logging import RichHandler
@@ -136,9 +135,10 @@ def test_get_iso_timestamp_for_event_has_expected_output() -> None:
 def test_read_sigma_file() -> None:
     _meta, data = pb.read_pb_file("tests/retrieval/samples/sigma_test_pb.pb")
     assert "Sigma" in data[0].pv
-    assert 0.11091079832009144 in np.array(data[0].val)
     assert data[0].year == 2023
-    assert isinstance(data[0].val, list)
+    val = data[0].val
+    assert isinstance(val, list)
+    assert 0.11091079832009144 in val
 
 
 def test_read_faulty_file(caplog: pytest.LogCaptureFixture) -> None:

@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime as pydt
+from typing import TYPE_CHECKING
 
-import pandas as pd
-from pandas import Timestamp
-from pytz import utc as UTC  # noqa: N812
+from epicsarchiver.common.date_util import (
+    NANO_PER_SECOND,
+    ResponseTimestamp,
+    year_start_epoch_seconds,
+)
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @dataclass
@@ -18,8 +23,22 @@ class FieldValue:
         FieldValue: Pair of name and value
     """
 
-    name: str | None
-    value: str | None
+    name: str
+    value: str
+
+
+@dataclass
+class ArchiveEventsMeta:
+    """Metadata about a year's chunk of archived events."""
+
+    pv_name: str
+    pv_type: str
+    element_count: int
+    headers: list[FieldValue]
+    year: int
+
+
+ArchiveEventsData = tuple[dict[int, ArchiveEventsMeta], list["ArchiveEvent"]]
 
 
 @dataclass
@@ -36,25 +55,24 @@ class ArchiveEvent:
     field_values: list[FieldValue] | None
 
     @property
-    def timestamp(self) -> pydt:
-        """Provides a datetime for the archive event.
-
-        This will lose information (the last few decimal places) since
-        datetime does not handle nano seconds.
+    def timestamp_ns(self) -> int:
+        """Nanoseconds since Unix epoch.
 
         Returns:
-            datetime: datetime for event
+            int: nanoseconds since Unix epoch, compatible with pl.Datetime("ns", "UTC")
         """
-        return self.pd_timestamp.to_pydatetime(warn=True)
+        return (
+            year_start_epoch_seconds(self.year) + self.secondsintoyear
+        ) * NANO_PER_SECOND + self.nanos
 
     @property
-    def pd_timestamp(self) -> Timestamp:
-        """Provides a pandas Timestamp for the archive event.
+    def timestamp(self) -> datetime:
+        """UTC datetime (microsecond precision), derived from timestamp_ns.
 
         Returns:
-            datetime: datetime for event
+            datetime: UTC datetime
         """
-        return ysn_timestamp(self.year, self.secondsintoyear, self.nanos)
+        return ResponseTimestamp(self.timestamp_ns).datetime
 
     @property
     def field_values_dict(self) -> dict[str, str]:
@@ -68,49 +86,3 @@ class ArchiveEvent:
         return {
             field.name: field.value or "" for field in self.field_values if field.name
         }
-
-
-def year_timestamp(year: int) -> int:
-    """Generates int timestamp for number of seconds from unix epoch at start of year.
-
-    Args:
-        year (int): year
-
-    Returns:
-        int: seconds from epoch of start of year.
-    """
-    return int(
-        (pydt(year, 1, 1, tzinfo=UTC) - pydt(1970, 1, 1, tzinfo=UTC)).total_seconds(),
-    )
-
-
-def ysn_timestamp(year: int, seconds: int, nanos: int) -> Timestamp:
-    """Get datetime from year, seconds into year and nanoseconds.
-
-    Args:
-        year (int): year
-        seconds (int): seconds into year
-        nanos (int): nanoseconds
-
-    Returns:
-        Timestamp: datetime
-    """
-    year_start = year_timestamp(year)
-
-    return Timestamp((year_start + seconds) * int(1e9) + nanos, tz=UTC)
-
-
-def dataframe_from_events(events: list[ArchiveEvent]) -> pd.DataFrame:
-    """Converts a list of ArchiveEvent to pd.DataFrame.
-
-    Args:
-        events (list[ArchiveEvent]): input events
-
-    Returns:
-        pd.DataFrame: Output dataframe with columns "date", "val"
-          where "date" is index column.
-    """
-    val = pd.DataFrame([event.__dict__ for event in events])
-    val["date"] = [v.pd_timestamp for v in events]
-    val = val[["date", "val"]]
-    return val.set_index("date")
