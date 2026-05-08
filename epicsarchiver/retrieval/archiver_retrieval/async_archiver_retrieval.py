@@ -63,7 +63,7 @@ class AsyncArchiverRetrieval(ServiceClient):
 
         Args:
             hostname (str, optional): hostname of archiver.
-            port (int, optional): port of archiver mgmt.
+            port (int, optional): port of archiver retrieval.
         """
         self.hostname = hostname
         self.port = port

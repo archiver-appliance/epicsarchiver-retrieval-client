@@ -33,7 +33,7 @@ class BaseArchiverAppliance:
 
         Args:
             hostname (str, optional): hostname of archiver.
-            port (int, optional): port number of mgmt interface.
+            port (int, optional): port number of retrieval interface.
         """
         self.hostname = hostname
         self.port = port

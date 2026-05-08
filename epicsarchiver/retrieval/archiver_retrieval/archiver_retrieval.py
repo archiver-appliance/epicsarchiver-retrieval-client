@@ -62,7 +62,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
 
         Args:
             hostname (str, optional): hostname of archiver.
-            port (int, optional): port number of mgmt interface.
+            port (int, optional): port number of retrieval interface.
         """
         super().__init__(hostname, port)
         self._base_url = f"http://{self.hostname}:{self.port}/retrieval"
