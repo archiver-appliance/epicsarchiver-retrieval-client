@@ -5,9 +5,9 @@ requires = [ "hatch-vcs>=0.3", "hatchling>=1.24.2" ]
 
 [project]
 name = "py-epicsarchiver"
-description = "A python script for managing and pulling data from the Archiver Appliance"
+description = "A python library for retrieving data from the EPICS Archiver Appliance."
 readme = "README.md"
-keywords = [  ]
+keywords = [ "archiver", "epics", "retrieval" ]
 authors = [
   { name = "Benjamin Bertrand" },
   { name = "Sky Brewer", email = "sky.brewer@ess.eu" },
