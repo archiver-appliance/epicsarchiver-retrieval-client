@@ -147,7 +147,7 @@ hatch run docs:live
 Regenerate protobuf python api:
 
 ```console
-hatch run protoc-gen
+hatch run types:protoc-gen
 ```
 
 

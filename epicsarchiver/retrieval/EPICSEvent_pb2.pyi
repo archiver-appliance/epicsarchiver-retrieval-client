@@ -3,28 +3,28 @@
 isort:skip_file
 """
 
-import builtins
-import collections.abc
-import google.protobuf.descriptor
-import google.protobuf.internal.containers
-import google.protobuf.internal.enum_type_wrapper
-import google.protobuf.message
+from collections import abc as _abc
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
+import builtins as _builtins
 import sys
-import typing
+import typing as _typing
 
 if sys.version_info >= (3, 10):
-    import typing as typing_extensions
+    from typing import TypeAlias as _TypeAlias
 else:
-    import typing_extensions
+    from typing_extensions import TypeAlias as _TypeAlias
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+DESCRIPTOR: _descriptor.FileDescriptor
 
 class _PayloadType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
+    ValueType = _typing.NewType("ValueType", _builtins.int)
+    V: _TypeAlias = ValueType  # noqa: Y015
 
-class _PayloadTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_PayloadType.ValueType], builtins.type):
-    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+class _PayloadTypeEnumTypeWrapper(_enum_type_wrapper._EnumTypeWrapper[_PayloadType.ValueType], _builtins.type):
+    DESCRIPTOR: _descriptor.EnumDescriptor
     SCALAR_STRING: _PayloadType.ValueType  # 0
     SCALAR_SHORT: _PayloadType.ValueType  # 1
     SCALAR_FLOAT: _PayloadType.ValueType  # 2
@@ -62,679 +62,713 @@ WAVEFORM_BYTE: PayloadType.ValueType  # 11
 WAVEFORM_INT: PayloadType.ValueType  # 12
 WAVEFORM_DOUBLE: PayloadType.ValueType  # 13
 V4_GENERIC_BYTES: PayloadType.ValueType  # 14
-global___PayloadType = PayloadType
+Global___PayloadType: _TypeAlias = PayloadType  # noqa: Y015
 
-@typing.final
-class FieldValue(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class FieldValue(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    NAME_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    name: builtins.str
-    val: builtins.str
+    NAME_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    name: _builtins.str
+    val: _builtins.str
     def __init__(
         self,
         *,
-        name: builtins.str | None = ...,
-        val: builtins.str | None = ...,
+        name: _builtins.str | None = ...,
+        val: _builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["name", b"name", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["name", b"name", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["name", b"name", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["name", b"name", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___FieldValue = FieldValue
+Global___FieldValue: _TypeAlias = FieldValue  # noqa: Y015
 
-@typing.final
-class ScalarString(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ScalarString(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.str
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.str
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.str | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.str | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ScalarString = ScalarString
+Global___ScalarString: _TypeAlias = ScalarString  # noqa: Y015
 
-@typing.final
-class ScalarByte(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ScalarByte(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.bytes
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.bytes
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.bytes | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.bytes | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ScalarByte = ScalarByte
+Global___ScalarByte: _TypeAlias = ScalarByte  # noqa: Y015
 
-@typing.final
-class ScalarShort(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ScalarShort(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.int | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.int | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ScalarShort = ScalarShort
+Global___ScalarShort: _TypeAlias = ScalarShort  # noqa: Y015
 
-@typing.final
-class ScalarInt(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ScalarInt(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.int | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.int | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ScalarInt = ScalarInt
+Global___ScalarInt: _TypeAlias = ScalarInt  # noqa: Y015
 
-@typing.final
-class ScalarEnum(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ScalarEnum(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.int | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.int | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ScalarEnum = ScalarEnum
+Global___ScalarEnum: _TypeAlias = ScalarEnum  # noqa: Y015
 
-@typing.final
-class ScalarFloat(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ScalarFloat(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.float
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.float
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.float | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.float | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ScalarFloat = ScalarFloat
+Global___ScalarFloat: _TypeAlias = ScalarFloat  # noqa: Y015
 
-@typing.final
-class ScalarDouble(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class ScalarDouble(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.float
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.float
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.float | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.float | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___ScalarDouble = ScalarDouble
+Global___ScalarDouble: _TypeAlias = ScalarDouble  # noqa: Y015
 
-@typing.final
-class VectorString(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class VectorString(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def val(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def val(self) -> _containers.RepeatedScalarFieldContainer[_builtins.str]:
         """No packed here as this is available only for primitive fields."""
 
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: collections.abc.Iterable[builtins.str] | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _abc.Iterable[_builtins.str] | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VectorString = VectorString
+Global___VectorString: _TypeAlias = VectorString  # noqa: Y015
 
-@typing.final
-class VectorChar(google.protobuf.message.Message):
+@_typing.final
+class VectorChar(_message.Message):
     """VectorChar is the same as ScalarChar as we use ByteString for both"""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.bytes
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.bytes
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.bytes | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.bytes | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VectorChar = VectorChar
+Global___VectorChar: _TypeAlias = VectorChar  # noqa: Y015
 
-@typing.final
-class VectorShort(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class VectorShort(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def val(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]: ...
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def val(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: collections.abc.Iterable[builtins.int] | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _abc.Iterable[_builtins.int] | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VectorShort = VectorShort
+Global___VectorShort: _TypeAlias = VectorShort  # noqa: Y015
 
-@typing.final
-class VectorInt(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class VectorInt(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def val(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]: ...
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def val(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: collections.abc.Iterable[builtins.int] | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _abc.Iterable[_builtins.int] | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VectorInt = VectorInt
+Global___VectorInt: _TypeAlias = VectorInt  # noqa: Y015
 
-@typing.final
-class VectorEnum(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class VectorEnum(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def val(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]: ...
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def val(self) -> _containers.RepeatedScalarFieldContainer[_builtins.int]: ...
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: collections.abc.Iterable[builtins.int] | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _abc.Iterable[_builtins.int] | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VectorEnum = VectorEnum
+Global___VectorEnum: _TypeAlias = VectorEnum  # noqa: Y015
 
-@typing.final
-class VectorFloat(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class VectorFloat(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def val(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.float]: ...
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def val(self) -> _containers.RepeatedScalarFieldContainer[_builtins.float]: ...
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: collections.abc.Iterable[builtins.float] | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _abc.Iterable[_builtins.float] | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VectorFloat = VectorFloat
+Global___VectorFloat: _TypeAlias = VectorFloat  # noqa: Y015
 
-@typing.final
-class VectorDouble(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+@_typing.final
+class VectorDouble(_message.Message):
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    @property
-    def val(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.float]: ...
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    @_builtins.property
+    def val(self) -> _containers.RepeatedScalarFieldContainer[_builtins.float]: ...
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: collections.abc.Iterable[builtins.float] | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _abc.Iterable[_builtins.float] | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___VectorDouble = VectorDouble
+Global___VectorDouble: _TypeAlias = VectorDouble  # noqa: Y015
 
-@typing.final
-class V4GenericBytes(google.protobuf.message.Message):
+@_typing.final
+class V4GenericBytes(_message.Message):
     """A generic v4 container; we simply store the bytes as obtained from EPICS v4 as the val."""
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    SECONDSINTOYEAR_FIELD_NUMBER: builtins.int
-    NANO_FIELD_NUMBER: builtins.int
-    VAL_FIELD_NUMBER: builtins.int
-    SEVERITY_FIELD_NUMBER: builtins.int
-    STATUS_FIELD_NUMBER: builtins.int
-    REPEATCOUNT_FIELD_NUMBER: builtins.int
-    FIELDVALUES_FIELD_NUMBER: builtins.int
-    FIELDACTUALCHANGE_FIELD_NUMBER: builtins.int
-    USERTAG_FIELD_NUMBER: builtins.int
-    secondsintoyear: builtins.int
-    nano: builtins.int
-    val: builtins.bytes
-    severity: builtins.int
-    status: builtins.int
-    repeatcount: builtins.int
-    fieldactualchange: builtins.bool
-    userTag: builtins.int
+    SECONDSINTOYEAR_FIELD_NUMBER: _builtins.int
+    NANO_FIELD_NUMBER: _builtins.int
+    VAL_FIELD_NUMBER: _builtins.int
+    SEVERITY_FIELD_NUMBER: _builtins.int
+    STATUS_FIELD_NUMBER: _builtins.int
+    REPEATCOUNT_FIELD_NUMBER: _builtins.int
+    FIELDVALUES_FIELD_NUMBER: _builtins.int
+    FIELDACTUALCHANGE_FIELD_NUMBER: _builtins.int
+    USERTAG_FIELD_NUMBER: _builtins.int
+    secondsintoyear: _builtins.int
+    nano: _builtins.int
+    val: _builtins.bytes
+    severity: _builtins.int
+    status: _builtins.int
+    repeatcount: _builtins.int
+    fieldactualchange: _builtins.bool
+    userTag: _builtins.int
     """EPICS V4 user tag"""
-    @property
-    def fieldvalues(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]: ...
+    @_builtins.property
+    def fieldvalues(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]: ...
     def __init__(
         self,
         *,
-        secondsintoyear: builtins.int | None = ...,
-        nano: builtins.int | None = ...,
-        val: builtins.bytes | None = ...,
-        severity: builtins.int | None = ...,
-        status: builtins.int | None = ...,
-        repeatcount: builtins.int | None = ...,
-        fieldvalues: collections.abc.Iterable[global___FieldValue] | None = ...,
-        fieldactualchange: builtins.bool | None = ...,
-        userTag: builtins.int | None = ...,
+        secondsintoyear: _builtins.int | None = ...,
+        nano: _builtins.int | None = ...,
+        val: _builtins.bytes | None = ...,
+        severity: _builtins.int | None = ...,
+        status: _builtins.int | None = ...,
+        repeatcount: _builtins.int | None = ...,
+        fieldvalues: _abc.Iterable[Global___FieldValue] | None = ...,
+        fieldactualchange: _builtins.bool | None = ...,
+        userTag: _builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "userTag", b"userTag", "val", b"val"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "userTag", b"userTag", "val", b"val"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "userTag", b"userTag", "val", b"val"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["fieldactualchange", b"fieldactualchange", "fieldvalues", b"fieldvalues", "nano", b"nano", "repeatcount", b"repeatcount", "secondsintoyear", b"secondsintoyear", "severity", b"severity", "status", b"status", "userTag", b"userTag", "val", b"val"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___V4GenericBytes = V4GenericBytes
+Global___V4GenericBytes: _TypeAlias = V4GenericBytes  # noqa: Y015
 
-@typing.final
-class PayloadInfo(google.protobuf.message.Message):
+@_typing.final
+class PayloadInfo(_message.Message):
     """A payload info is the first line in a chunk of data sent back to the client.
     It tells you how to unmarshall, the pvname and the year for the data
     It also has a lot of optional fields
     """
 
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    DESCRIPTOR: _descriptor.Descriptor
 
-    TYPE_FIELD_NUMBER: builtins.int
-    PVNAME_FIELD_NUMBER: builtins.int
-    YEAR_FIELD_NUMBER: builtins.int
-    ELEMENTCOUNT_FIELD_NUMBER: builtins.int
-    UNUSED00_FIELD_NUMBER: builtins.int
-    UNUSED01_FIELD_NUMBER: builtins.int
-    UNUSED02_FIELD_NUMBER: builtins.int
-    UNUSED03_FIELD_NUMBER: builtins.int
-    UNUSED04_FIELD_NUMBER: builtins.int
-    UNUSED05_FIELD_NUMBER: builtins.int
-    UNUSED06_FIELD_NUMBER: builtins.int
-    UNUSED07_FIELD_NUMBER: builtins.int
-    UNUSED08_FIELD_NUMBER: builtins.int
-    UNUSED09_FIELD_NUMBER: builtins.int
-    HEADERS_FIELD_NUMBER: builtins.int
-    type: global___PayloadType.ValueType
-    pvname: builtins.str
-    year: builtins.int
-    elementCount: builtins.int
-    unused00: builtins.float
+    TYPE_FIELD_NUMBER: _builtins.int
+    PVNAME_FIELD_NUMBER: _builtins.int
+    YEAR_FIELD_NUMBER: _builtins.int
+    ELEMENTCOUNT_FIELD_NUMBER: _builtins.int
+    UNUSED00_FIELD_NUMBER: _builtins.int
+    UNUSED01_FIELD_NUMBER: _builtins.int
+    UNUSED02_FIELD_NUMBER: _builtins.int
+    UNUSED03_FIELD_NUMBER: _builtins.int
+    UNUSED04_FIELD_NUMBER: _builtins.int
+    UNUSED05_FIELD_NUMBER: _builtins.int
+    UNUSED06_FIELD_NUMBER: _builtins.int
+    UNUSED07_FIELD_NUMBER: _builtins.int
+    UNUSED08_FIELD_NUMBER: _builtins.int
+    UNUSED09_FIELD_NUMBER: _builtins.int
+    HEADERS_FIELD_NUMBER: _builtins.int
+    type: Global___PayloadType.ValueType
+    pvname: _builtins.str
+    year: _builtins.int
+    elementCount: _builtins.int
+    unused00: _builtins.float
     """Items from 5 to 14 are no longer to be used.
     Stick these into the headers using the field names
     For example, units comes in as EGU in the headers.
     """
-    unused01: builtins.float
-    unused02: builtins.float
-    unused03: builtins.float
-    unused04: builtins.float
-    unused05: builtins.float
-    unused06: builtins.float
-    unused07: builtins.float
-    unused08: builtins.float
-    unused09: builtins.str
-    @property
-    def headers(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___FieldValue]:
+    unused01: _builtins.float
+    unused02: _builtins.float
+    unused03: _builtins.float
+    unused04: _builtins.float
+    unused05: _builtins.float
+    unused06: _builtins.float
+    unused07: _builtins.float
+    unused08: _builtins.float
+    unused09: _builtins.str
+    @_builtins.property
+    def headers(self) -> _containers.RepeatedCompositeFieldContainer[Global___FieldValue]:
         """End of unused elements"""
 
     def __init__(
         self,
         *,
-        type: global___PayloadType.ValueType | None = ...,
-        pvname: builtins.str | None = ...,
-        year: builtins.int | None = ...,
-        elementCount: builtins.int | None = ...,
-        unused00: builtins.float | None = ...,
-        unused01: builtins.float | None = ...,
-        unused02: builtins.float | None = ...,
-        unused03: builtins.float | None = ...,
-        unused04: builtins.float | None = ...,
-        unused05: builtins.float | None = ...,
-        unused06: builtins.float | None = ...,
-        unused07: builtins.float | None = ...,
-        unused08: builtins.float | None = ...,
-        unused09: builtins.str | None = ...,
-        headers: collections.abc.Iterable[global___FieldValue] | None = ...,
+        type: Global___PayloadType.ValueType | None = ...,
+        pvname: _builtins.str | None = ...,
+        year: _builtins.int | None = ...,
+        elementCount: _builtins.int | None = ...,
+        unused00: _builtins.float | None = ...,
+        unused01: _builtins.float | None = ...,
+        unused02: _builtins.float | None = ...,
+        unused03: _builtins.float | None = ...,
+        unused04: _builtins.float | None = ...,
+        unused05: _builtins.float | None = ...,
+        unused06: _builtins.float | None = ...,
+        unused07: _builtins.float | None = ...,
+        unused08: _builtins.float | None = ...,
+        unused09: _builtins.str | None = ...,
+        headers: _abc.Iterable[Global___FieldValue] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing.Literal["elementCount", b"elementCount", "pvname", b"pvname", "type", b"type", "unused00", b"unused00", "unused01", b"unused01", "unused02", b"unused02", "unused03", b"unused03", "unused04", b"unused04", "unused05", b"unused05", "unused06", b"unused06", "unused07", b"unused07", "unused08", b"unused08", "unused09", b"unused09", "year", b"year"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing.Literal["elementCount", b"elementCount", "headers", b"headers", "pvname", b"pvname", "type", b"type", "unused00", b"unused00", "unused01", b"unused01", "unused02", b"unused02", "unused03", b"unused03", "unused04", b"unused04", "unused05", b"unused05", "unused06", b"unused06", "unused07", b"unused07", "unused08", b"unused08", "unused09", b"unused09", "year", b"year"]) -> None: ...
+    _HasFieldArgType: _TypeAlias = _typing.Literal["elementCount", b"elementCount", "pvname", b"pvname", "type", b"type", "unused00", b"unused00", "unused01", b"unused01", "unused02", b"unused02", "unused03", b"unused03", "unused04", b"unused04", "unused05", b"unused05", "unused06", b"unused06", "unused07", b"unused07", "unused08", b"unused08", "unused09", b"unused09", "year", b"year"]  # noqa: Y015
+    def HasField(self, field_name: _HasFieldArgType) -> _builtins.bool: ...
+    _ClearFieldArgType: _TypeAlias = _typing.Literal["elementCount", b"elementCount", "headers", b"headers", "pvname", b"pvname", "type", b"type", "unused00", b"unused00", "unused01", b"unused01", "unused02", b"unused02", "unused03", b"unused03", "unused04", b"unused04", "unused05", b"unused05", "unused06", b"unused06", "unused07", b"unused07", "unused08", b"unused08", "unused09", b"unused09", "year", b"year"]  # noqa: Y015
+    def ClearField(self, field_name: _ClearFieldArgType) -> None: ...
 
-global___PayloadInfo = PayloadInfo
+Global___PayloadInfo: _TypeAlias = PayloadInfo  # noqa: Y015
