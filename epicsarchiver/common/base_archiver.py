@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import urllib.parse
-from typing import Any
 
 import requests
 from requests import Response
@@ -16,18 +15,7 @@ from epicsarchiver.common.errors import (
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
-
-def mgmt_url(hostname: str, port: int) -> str:
-    """Generate the mgmt url from a hostname and a port number.
-
-    Args:
-        hostname (str): fqdn of service
-        port (int): Port number
-
-    Returns:
-        str: Completed url, for example "http://localhost:17665/mgmt/bpl/"
-    """
-    return f"http://{hostname}:{port}/mgmt/bpl/"
+DEFAULT_RETRIEVAL_PORT = 17668
 
 
 class BaseArchiverAppliance:
@@ -36,22 +24,20 @@ class BaseArchiverAppliance:
     Hold a session to the Archiver Appliance web application.
 
     Args:
-        hostname: EPICS Archiver Appliance hostname [default: localhost]
-        port: EPICS Archiver Appliance management port [default: 17665]
+        hostname: EPICS Archiver Appliance hostname
+        port: EPICS Archiver Appliance retrieval port
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = 17665):
+    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_RETRIEVAL_PORT):
         """Create Archiver Appliance object.
 
         Args:
-            hostname (str, optional): hostname of archiver. Defaults to "localhost".
-            port (int, optional): port number of mgmt interface. Defaults to 17665.
+            hostname (str, optional): hostname of archiver.
+            port (int, optional): port number of retrieval interface.
         """
         self.hostname = hostname
         self.port = port
-        self.mgmt_url = mgmt_url(hostname, port)
-        self._info: dict[str, str] = {}
-        self._data_retrieval_url: str | None = None
+        self._base_url: str = f"http://{hostname}:{port}"
         self.session = requests.Session()
 
     def __repr__(self) -> str:
@@ -62,13 +48,12 @@ class BaseArchiverAppliance:
         """
         return f"ArchiverAppliance({self.hostname}, {self.port})"
 
-    def _request(self, method: str, *args: Any, **kwargs: Any) -> Response:
+    def _get(self, endpoint: str, params: dict[str, str]) -> Response:
         """Sends a request using the session.
 
         Args:
-            method: HTTP method
-            *args: Optional arguments
-            **kwargs: Optional keyword arguments
+            endpoint: API endpoint (relative or absolute)
+            params: query parameters to include in the request.
 
         Returns:
             :class:`requests.Response <Response>` object
@@ -77,82 +62,20 @@ class BaseArchiverAppliance:
             ArchiverConnectionError: If there is a connection error.
             ArchiverResponseError: If the response is not successful.
         """
+        url = urllib.parse.urljoin(self._base_url, endpoint.lstrip("/"))
+        LOG.debug("GET url: %s", url)
         try:
-            r = self.session.request(method, *args, **kwargs)
+            r = self.session.get(url, params=params, stream=True)
             r.raise_for_status()
         except requests.ConnectionError as e:
             raise ArchiverConnectionError(
-                base_url=self.mgmt_url,
+                base_url=url,
             ) from e
         except requests.HTTPError as e:
             raise ArchiverResponseError(
-                base_url=self.mgmt_url,
-                url=args[0] if args else None,
+                base_url=url,
+                url=url,
                 response=e.response.text if e.response else None,
             ) from e
         else:
             return r
-
-    def _get(self, endpoint: str, **kwargs: Any) -> Response:
-        r"""Send a GET request to the given endpoint.
-
-        Args:
-            endpoint: API endpoint (relative or absolute)
-            **kwargs: Optional arguments to be sent
-
-        Returns:
-            :class:`requests.Response <Response>` object
-        """
-        url = urllib.parse.urljoin(self.mgmt_url, endpoint.lstrip("/"))
-        LOG.debug("GET url: %s", url)
-        return self._request("GET", url, **kwargs)
-
-    def _post(self, endpoint: str, **kwargs: Any) -> Response:
-        r"""Send a POST request to the given endpoint.
-
-        Args:
-            endpoint: API endpoint (relative or absolute)
-            **kwargs: Optional arguments to be sent
-
-        Returns:
-            :class:`requests.Response <Response>` object
-        """
-        url = urllib.parse.urljoin(self.mgmt_url, endpoint.lstrip("/"))
-        return self._request("POST", url, **kwargs)
-
-    @property
-    def info(self) -> dict[str, str]:
-        """EPICS Archiver Appliance information."""
-        if not self._info:
-            # http://slacmshankar.github.io/epicsarchiver_docs/api/org/epics/archiverappliance/mgmt/bpl/GetApplianceInfo.html
-            r = self._get("/getApplianceInfo")
-            self._info = r.json()
-        return self._info
-
-    @property
-    def identity(self) -> str | None:
-        """EPICS Archiver Appliance identity."""
-        return self.info.get("identity")
-
-    @property
-    def version(self) -> str | None:
-        """EPICS Archiver Appliance version."""
-        return self.info.get("version")
-
-    def _get_or_post(self, endpoint: str, pv: str) -> Any:
-        """Send a GET or POST if pv is a comma separated list.
-
-        Args:
-            endpoint (str): API endpoint
-            pv (str): name of the pv. Can be a GLOB wildcards or a list of
-                comma separated names.
-
-        Returns:
-            Any: list of submitted PVs
-        """
-        r = (
-            self._post(endpoint, data=pv)
-            if "," in pv
-            else self._get(endpoint, params={"pv": pv})
-        )
-        return r.json()

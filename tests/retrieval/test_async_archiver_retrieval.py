@@ -1,10 +1,8 @@
 import datetime
-import json
 import logging
-from urllib.parse import quote
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from aioresponses import aioresponses
 from pytz import UTC
 from rich.logging import RichHandler
 
@@ -27,204 +25,152 @@ logging.basicConfig(
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
+def make_response_mock(body: bytes) -> MagicMock:
+    mock = MagicMock()
+    mock.content.read = AsyncMock(return_value=body)
+    return mock
+
+
 @pytest.mark.asyncio
 async def test_get_events_pb() -> None:
-    with aioresponses() as mocked:
-        host = "archiver.example.org"
-        pv = "mypv"
-        events = TEST_EVENTS
-        app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
+    host = "archiver.example.org"
+    pv = "mypv"
+    events = TEST_EVENTS
+    start = datetime.datetime(2018, 8, 25, 17, 45, tzinfo=UTC)
+    end = datetime.datetime(2018, 8, 25, 18, 45, tzinfo=UTC)
 
-        mocked.get(
-            app_info_url,
-            body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
-        )
-        data_request_url = f"http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z&fetchLatestMetadata=true"
-        mocked.get(
-            data_request_url,
-            body=create_pb_bytes(
-                events,
-                PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018),
-            ),
-        )
-        async with AsyncArchiverRetrieval(host) as archiver:
-            res_data = await archiver.get_events(
-                pv,
-                datetime.datetime(2018, 8, 25, 17, 45, tzinfo=UTC),
-                datetime.datetime(2018, 8, 25, 18, 45, tzinfo=UTC),
-            )
-            mocked.assert_any_call(app_info_url)
-            mocked.assert_any_call(data_request_url)
+    pb_body = create_pb_bytes(
+        events, PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018)
+    )
 
-            assert res_data == [
-                ArchiveEvent(
-                    pv,
-                    e.val,
-                    e.secondsintoyear,
-                    2018,
-                    e.nano,
-                    e.severity,
-                    e.status,
-                    [to_field_value(f) for f in e.fieldvalues],
-                )
-                for e in events
-            ]
+    async with AsyncArchiverRetrieval(host) as archiver:
+        archiver._get = AsyncMock(return_value=make_response_mock(pb_body))  # type: ignore[method-assign]
+        res_data = await archiver.get_events(pv, start, end)
+
+    archiver._get.assert_called_once()
+    assert res_data == [
+        ArchiveEvent(
+            pv,
+            e.val,
+            e.secondsintoyear,
+            2018,
+            e.nano,
+            e.severity,
+            e.status,
+            [to_field_value(f) for f in e.fieldvalues],
+        )
+        for e in events
+    ]
 
 
 @pytest.mark.asyncio
 async def test_search_with_no_time_range() -> None:
-    with aioresponses() as mocked:
-        host = "archiver.example.org"
-        query = "(?i)^qu[h-j]ck:.*:fox-[1-8]$"
-        app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
+    host = "archiver.example.org"
+    query = "(?i)^qu[h-j]ck:.*:fox-[1-8]$"
 
-        ref_pv_list = [
-            "Quick:Brown:Fox-1",
-            "Quick:Brown:Fox-2",
-            "Quick:Brown:Fox-3",
-            "Quick:Brown:Fox-4",
-            "Quick:Brown:Fox-5",
-            "Quick:Brown:Fox-6",
-            "Quick:Brown:Fox-7",
-            "Quick:Brown:Fox-8",
-        ]
+    ref_pv_list = [
+        "Quick:Brown:Fox-1",
+        "Quick:Brown:Fox-2",
+        "Quick:Brown:Fox-3",
+        "Quick:Brown:Fox-4",
+        "Quick:Brown:Fox-5",
+        "Quick:Brown:Fox-6",
+        "Quick:Brown:Fox-7",
+        "Quick:Brown:Fox-8",
+    ]
 
-        mocked.get(
-            app_info_url,
-            body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
+    async with AsyncArchiverRetrieval(host) as archiver:
+        archiver._get_json = AsyncMock(return_value=ref_pv_list)  # type: ignore[method-assign]
+        resp_data = await archiver.search(
+            query=query,
+            start=None,
+            end=None,
+            limit=500,
         )
-        data_request_url = f"http://archiver-01:17668/retrieval/bpl/getMatchingPVs?regex={quote(query)}&limit=500"
-        mocked.get(
-            data_request_url,
-            body=json.dumps(ref_pv_list),
-        )
-        async with AsyncArchiverRetrieval(host) as archiver:
-            resp_data = await archiver.search(
-                query=query,
-                start=None,
-                end=None,
-                limit=500,
-            )
-            mocked.assert_any_call(app_info_url)
-            mocked.assert_any_call(data_request_url)
 
-            assert resp_data == ref_pv_list
+    archiver._get_json.assert_called_once()
+    assert resp_data == ref_pv_list
 
 
 @pytest.mark.asyncio
 async def test_search_with_time_range() -> None:
-    with aioresponses() as mocked:
-        host = "archiver.example.org"
-        query = "(?i)^qu[h-j]ck:.*:fox-[1-8]$"
-        app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
-        start = datetime.datetime(2026, 1, 6, 2, 49, 0, tzinfo=UTC)
-        end = datetime.datetime(2026, 1, 6, 2, 50, 0, tzinfo=UTC)
-        events = TEST_EVENTS_2
+    host = "archiver.example.org"
+    query = "(?i)^qu[h-j]ck:.*:fox-[1-8]$"
+    start = datetime.datetime(2026, 1, 6, 2, 49, 0, tzinfo=UTC)
+    end = datetime.datetime(2026, 1, 6, 2, 50, 0, tzinfo=UTC)
+    events = TEST_EVENTS_2
 
-        # The intial query for pv names returns a list of pvs
-        ref_pv_list_initial = [
-            "Quick:Brown:Fox-1",
-            "Quick:Brown:Fox-2",
-            "Quick:Brown:Fox-3",
-            "Quick:Brown:Fox-4",
-            "Quick:Brown:Fox-5",
-            "Quick:Brown:Fox-6",
-            "Quick:Brown:Fox-7",
-            "Quick:Brown:Fox-8",
-        ]
-        # Subsequent data queries will have timestamps that will be checked to see if
-        # they are in given range, only one event qualifies
-        ref_pv_list_final = ["Quick:Brown:Fox-8"]
+    ref_pv_list_initial = [
+        "Quick:Brown:Fox-1",
+        "Quick:Brown:Fox-2",
+        "Quick:Brown:Fox-3",
+        "Quick:Brown:Fox-4",
+        "Quick:Brown:Fox-5",
+        "Quick:Brown:Fox-6",
+        "Quick:Brown:Fox-7",
+        "Quick:Brown:Fox-8",
+    ]
+    ref_pv_list_final = ["Quick:Brown:Fox-8"]
 
-        mocked.get(
-            app_info_url,
-            body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
+    pb_by_pv = {
+        pv: create_pb_bytes(
+            [event], PayloadInfo(type=SCALAR_DOUBLE, pvname=pv, year=2026)
         )
+        for pv, event in zip(ref_pv_list_initial, events, strict=True)
+    }
 
-        matching_pvs_url = (
-            "http://archiver-01:17668/retrieval/bpl/getMatchingPVs?"
-            f"regex={quote(query)}&limit=500"
-        )
-        mocked.get(
-            matching_pvs_url,
-            body=json.dumps(ref_pv_list_initial),
-        )
-
-        data_request_url = (
-            "http://archiver-01:17668/retrieval/data/getData.raw?"
-            "pv={pv}&from=2026-01-06T02%3A50%3A00.000000Z&"
-            "to=2026-01-06T02%3A50%3A00.000000Z&fetchLatestMetadata=true"
-        )
-        for pv, event in zip(ref_pv_list_initial, events, strict=True):
-            mocked.get(
-                data_request_url.format(pv=quote(pv)),
-                body=create_pb_bytes(
-                    [event],
-                    PayloadInfo(type=SCALAR_DOUBLE, pvname=pv, year=2026),
-                ),
+    async with AsyncArchiverRetrieval(host) as archiver:
+        archiver._get_json = AsyncMock(return_value=ref_pv_list_initial)  # type: ignore[method-assign]
+        archiver._get = AsyncMock(  # type: ignore[method-assign]
+            side_effect=lambda _url, params=None: make_response_mock(
+                pb_by_pv[params["pv"]]
             )
+        )
+        resp_data = await archiver.search(
+            query=query,
+            start=start,
+            end=end,
+            limit=500,
+        )
 
-        async with AsyncArchiverRetrieval(host) as archiver:
-            resp_data = await archiver.search(
-                query=query,
-                start=start,
-                end=end,
-                limit=500,
-            )
-            mocked.assert_any_call(app_info_url)
-            mocked.assert_any_call(matching_pvs_url)
-
-            for pv in ref_pv_list_initial:
-                mocked.assert_any_call(data_request_url.format(pv=quote(pv)))
-
-            assert resp_data == ref_pv_list_final
+    archiver._get_json.assert_called_once()
+    assert resp_data == ref_pv_list_final
 
 
 @pytest.mark.asyncio
 async def test_get_all_events_pb() -> None:
-    with aioresponses() as mocked:
-        host = "archiver.example.org"
-        pvs = {"mypv1", "mypv2"}
-        events = TEST_EVENTS
-        app_info_url = f"http://{host}:17665/mgmt/bpl/getApplianceInfo"
+    host = "archiver.example.org"
+    pvs = {"mypv1", "mypv2"}
+    events = TEST_EVENTS
 
-        mocked.get(
-            app_info_url,
-            body=json.dumps({"dataRetrievalURL": "http://archiver-01:17668/retrieval"}),
+    async with AsyncArchiverRetrieval(host) as archiver:
+        archiver._get = AsyncMock(  # type: ignore[method-assign]
+            side_effect=lambda _url, params=None: make_response_mock(
+                create_pb_bytes(
+                    events, PayloadInfo(type=SCALAR_INT, pvname=params["pv"], year=2018)
+                )
+            )
         )
-        data_request_url = "http://archiver-01:17668/retrieval/data/getData.raw?pv={pv}&from=2018-08-25T17%3A45%3A00.000000Z&to=2018-08-25T18%3A45%3A00.000000Z&fetchLatestMetadata=true"
-        for pv in pvs:
-            mocked.get(
-                data_request_url.format(pv=pv),
-                body=create_pb_bytes(
-                    events,
-                    PayloadInfo(type=SCALAR_INT, pvname=pv, year=2018),
-                ),
-            )
+        res_data = await archiver.get_all_events(
+            pvs,
+            datetime.datetime(2018, 8, 25, 17, 45, tzinfo=UTC),
+            datetime.datetime(2018, 8, 25, 18, 45, tzinfo=UTC),
+        )
 
-        async with AsyncArchiverRetrieval(host) as archiver:
-            res_data = await archiver.get_all_events(
-                pvs,
-                datetime.datetime(2018, 8, 25, 17, 45, tzinfo=UTC),
-                datetime.datetime(2018, 8, 25, 18, 45, tzinfo=UTC),
+    assert archiver._get.call_count == len(pvs)
+    assert res_data == {
+        pv: [
+            ArchiveEvent(
+                pv,
+                e.val,
+                e.secondsintoyear,
+                2018,
+                e.nano,
+                e.severity,
+                e.status,
+                [to_field_value(f) for f in e.fieldvalues],
             )
-            mocked.assert_any_call(app_info_url)
-            for pv in pvs:
-                mocked.assert_any_call(data_request_url.format(pv=pv))
-
-            assert res_data == {
-                pv: [
-                    ArchiveEvent(
-                        pv,
-                        e.val,
-                        e.secondsintoyear,
-                        2018,
-                        e.nano,
-                        e.severity,
-                        e.status,
-                        [to_field_value(f) for f in e.fieldvalues],
-                    )
-                    for e in events
-                ]
-                for pv in pvs
-            }
+            for e in events
+        ]
+        for pv in pvs
+    }

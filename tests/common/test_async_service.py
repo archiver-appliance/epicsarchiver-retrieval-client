@@ -8,6 +8,7 @@ from aioresponses import aioresponses
 from rich.logging import RichHandler
 
 from epicsarchiver.common.async_service import ServiceClient
+from epicsarchiver.common.base_archiver import DEFAULT_RETRIEVAL_PORT
 from epicsarchiver.common.errors import ArchiverResponseError
 
 logging.basicConfig(
@@ -65,11 +66,12 @@ async def test_get_absolute_endpoint() -> None:
 
 @pytest.mark.asyncio
 async def test_get_return_response() -> None:
-    url = "http://service.example.com:17665/my/endpoint"
+    url = f"http://service.example.com:{DEFAULT_RETRIEVAL_PORT}/my/endpoint"
     data = {"test": "hello"}
     with aioresponses() as mocked:
         mocked.get(url, body=json.dumps(data), status=200)
-        async with ServiceClient("http://service.example.com:17665") as service:
+        base_url = f"http://service.example.com:{DEFAULT_RETRIEVAL_PORT}"
+        async with ServiceClient(base_url) as service:
             r = await service._get("/my/endpoint")
             mocked.assert_any_call(url)
             assert await r.json() == data
