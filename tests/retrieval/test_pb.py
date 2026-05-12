@@ -1,6 +1,7 @@
 import logging
 import math
 from datetime import datetime
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -10,6 +11,7 @@ from rich.logging import RichHandler
 from epicsarchiver import ArchiveEvent
 from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
 from epicsarchiver.retrieval import pb
+from tests.retrieval.fake_data import TEST_EVENTS, create_pb_bytes
 
 TIMESTAMP_2001 = 978307200
 TIMESTAMP_INACCURACY = 1e-6
@@ -278,3 +280,18 @@ def test_read_another_faulty_file(caplog: pytest.LogCaptureFixture) -> None:
     assert any(e.year == 2024 for e in data)
     assert any(e.year == 2025 for e in data)
     assert caplog.records == []
+
+
+def test_split_pb_chunks_single_year_matches_sample(tmp_path: Path) -> None:
+
+    info = ee.PayloadInfo(type=ee.SCALAR_INT, pvname="mypv", year=2018)
+    sample_bytes = create_pb_bytes(TEST_EVENTS, info)
+
+    chunks = pb.split_pb_chunks(sample_bytes)
+    assert len(chunks) == 1
+
+    _info, chunk_bytes = chunks[0]
+    out_file = tmp_path / "output.pb"
+    out_file.write_bytes(chunk_bytes)
+
+    assert out_file.read_bytes() == sample_bytes.strip()
