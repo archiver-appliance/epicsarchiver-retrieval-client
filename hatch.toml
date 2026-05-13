@@ -14,7 +14,6 @@ include = ["/epicsarchiver", "/tests"]
 packages = ["epicsarchiver"]
 
 [envs.default.scripts]
-protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/retrieval/EPICSEvent.proto"
 docs-check = "hatch run docs:check"
 type-check = "hatch run types:check"
 jupyter-check = "hatch run jupyter:check"
@@ -59,6 +58,7 @@ extra-dependencies = [
 check-src = "mypy --install-types --non-interactive {args:./epicsarchiver}"
 check-tests = "mypy --install-types --non-interactive --explicit-package-bases {args:./tests}"
 check = ["check-src", "check-tests"]
+protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/retrieval/EPICSEvent.proto"
 
 [envs.docs]
 features = ["all"]
