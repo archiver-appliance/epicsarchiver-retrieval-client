@@ -37,7 +37,7 @@ optional-dependencies.cli = [ "click>=8", "rich>=13" ]
 optional-dependencies.polars = [ "polars>=1" ]
 optional-dependencies.sync = [ "requests>=2" ]
 urls.Source = "https://github.com/archiver-appliance/epicsarchiver-retrieval-client"
-scripts.epicsarchiver = "epicsarchiver.command:cli"
+scripts.arch-retrieval = "epicsarchiver.command:cli"
 
 [tool.ruff]
 extend = "ruff.toml"
