@@ -7,7 +7,7 @@ Python package to interact with the [EPICS Archiver Appliance](https://epicsarch
 
 ## Installation
 
-The epicsarchvier-retrieval-client can be installed using artifactory PyPI repository:
+The epicsarchvier-retrieval-client can be installed using:
 
 ```console
 pip install epicsarchiver-retrieval-client
