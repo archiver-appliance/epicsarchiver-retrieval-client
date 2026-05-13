@@ -231,7 +231,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
                 dataframe_from_events,
             )
         except ImportError as exc:
-            msg = "polars extra required: pip install py-epicsarchiver[polars]"
+            msg = "polars extra required: pip install epicsarchiver-retrieval-client[polars]"
             raise ImportError(msg) from exc
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         start_time = QueryTimestamp.from_input(start).datetime

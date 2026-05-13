@@ -1,20 +1,20 @@
 # Python EPICS Archiver Appliance library
 
-![pipeline status](https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/pipeline.svg)
-![code coverage](https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/coverage.svg)
+![pipeline status](https://gitlab.esss.lu.se/ics-infrastructure/epicsarchiver-retrieval-client/badges/master/pipeline.svg)
+![code coverage](https://gitlab.esss.lu.se/ics-infrastructure/epicsarchiver-retrieval-client/badges/master/coverage.svg)
 
 
 Python package to interact with the [EPICS Archiver Appliance](https://slacmshankar.github.io/epicsarchiver_docs/).
 
-- [Documentation](http://ics-software.pages.esss.lu.se/py-epicsarchiver/index.html)
-- [Repository](https://gitlab.esss.lu.se/ics-software/py-epicsarchiver)
+- [Documentation](http://ics-software.pages.esss.lu.se/epicsarchiver-retrieval-client/index.html)
+- [Repository](https://gitlab.esss.lu.se/ics-software/epicsarchiver-retrieval-client)
 
 ## Installation
 
-py-epicsarchiver can be installed using artifactory PyPI repository:
+epicsarchiver-retrieval-client can be installed using artifactory PyPI repository:
 
 ```console
-pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install epicsarchiver-retrieval-client -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 ```
 
 The core package has minimal dependencies (protobuf + pytz) and is sufficient for parsing `.pb` files
@@ -30,13 +30,13 @@ and working with `ArchiveEvent` objects directly. Heavy dependencies are opt-in 
 
 ```console
 # Everything (recommended for most users)
-pip install "py-epicsarchiver[all]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install "epicsarchiver-retrieval-client[all]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 
 # Core only — parse local .pb files, no HTTP clients or DataFrames
-pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install epicsarchiver-retrieval-client -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 
 # Sync retrieval with DataFrame output
-pip install "py-epicsarchiver[polars,sync]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install "epicsarchiver-retrieval-client[polars,sync]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 ```
 
 ## Quick start

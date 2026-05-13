@@ -11,7 +11,7 @@ from importlib.metadata import version as get_version
 project = "epicsarchiver"
 copyright = "2024, European Spallation Source ERIC"  # noqa: A001
 authors = ["Benjamin Bertrand", "Sky Brewer"]
-release = get_version("py-epicsarchiver")
+release = get_version("epicsarchiver-retrieval-client")
 version = ".".join(release.split(".")[0:2])
 
 

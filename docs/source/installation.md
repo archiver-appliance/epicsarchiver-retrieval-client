@@ -5,7 +5,7 @@
 
 ## Optional extras
 
-py-epicsarchiver has a minimal core (protobuf + pytz) that is sufficient for parsing `.pb` files
+epicsarchiver-retrieval-client has a minimal core (protobuf + pytz) that is sufficient for parsing `.pb` files
 and working with `ArchiveEvent` objects directly. Heavy dependencies are opt-in:
 
 | Extra | Installs | Unlocks |
@@ -20,16 +20,16 @@ and working with `ArchiveEvent` objects directly. Heavy dependencies are opt-in:
 
 ```console
 # Full install — recommended for most users
-pip install "py-epicsarchiver[all]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install "epicsarchiver-retrieval-client[all]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 
 # Core only — parse local .pb files; no HTTP clients, no DataFrames, no CLI
-pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install epicsarchiver-retrieval-client -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 
 # Sync retrieval with DataFrame output
-pip install "py-epicsarchiver[polars,sync]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install "epicsarchiver-retrieval-client[polars,sync]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 
 # Async retrieval with DataFrame output
-pip install "py-epicsarchiver[polars,async]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install "epicsarchiver-retrieval-client[polars,async]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
 ```
 
 To avoid passing the PyPI repository URL on every command, create a `~/.pip/pip.conf`:
