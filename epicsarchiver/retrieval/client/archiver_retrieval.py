@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from requests import Response
 
     from epicsarchiver.retrieval.archive_event import ArchiveEventsData
-    from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
+    from epicsarchiver.retrieval.client.processor import Processor
 
 
 LOG: logging.Logger = logging.getLogger(__name__)

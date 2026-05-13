@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import datetime
 
-    from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
+    from epicsarchiver.retrieval.client.processor import Processor
 
 
 class ValidationError(Exception):

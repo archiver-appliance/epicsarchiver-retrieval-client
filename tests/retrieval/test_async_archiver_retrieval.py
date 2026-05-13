@@ -7,7 +7,7 @@ from pytz import UTC
 from rich.logging import RichHandler
 
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
-from epicsarchiver.retrieval.archiver_retrieval.async_archiver_retrieval import (
+from epicsarchiver.retrieval.client.async_archiver_retrieval import (
     AsyncArchiverRetrieval,
 )
 from epicsarchiver.retrieval.EPICSEvent_pb2 import (

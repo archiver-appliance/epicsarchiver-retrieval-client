@@ -1,4 +1,4 @@
-from epicsarchiver.retrieval.archiver_retrieval.processor import (
+from epicsarchiver.retrieval.client.processor import (
     Processor,
     ProcessorName,
 )

@@ -17,10 +17,10 @@ from epicsarchiver.common.date_util import ResponseTimestamp
 from epicsarchiver.common.errors import ArchiverError
 from epicsarchiver.common.validation import ValidationError
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
-from epicsarchiver.retrieval.archiver_retrieval.async_archiver_retrieval import (
+from epicsarchiver.retrieval.client.async_archiver_retrieval import (
     AsyncArchiverRetrieval,
 )
-from epicsarchiver.retrieval.archiver_retrieval.processor import (
+from epicsarchiver.retrieval.client.processor import (
     Processor,
     ProcessorName,
 )
