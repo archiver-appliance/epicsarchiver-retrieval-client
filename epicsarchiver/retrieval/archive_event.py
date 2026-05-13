@@ -70,7 +70,7 @@ class ArchiveEvent:
         """UTC datetime (microsecond precision), derived from timestamp_ns.
 
         Returns:
-            datetime: UTC datetime
+            datetime.datetime: UTC datetime
         """
         return ResponseTimestamp(self.timestamp_ns).datetime
 
