@@ -1,6 +1,12 @@
-from collections.abc import Sequence
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 import epicsarchiver.retrieval.EPICSEvent_pb2 as ee
+from epicsarchiver.retrieval.archive_event import ArchiveEvent, FieldValue
 from epicsarchiver.retrieval.EPICSEvent_pb2 import ScalarDouble, ScalarInt
 from epicsarchiver.retrieval.pb import EeEvent, escape_bytes
 
@@ -124,3 +130,23 @@ TEST_EVENTS_2 = [
         fieldvalues=[ee.FieldValue(name="EGU", val="degC")],
     ),
 ]
+
+
+def make_archive_event(  # noqa: PLR0913, PLR0917
+    pv: str = "TEST:PV",
+    val: float | str = 42,
+    secondsintoyear: int = 100,
+    year: int = 2024,
+    nanos: int = 0,
+    severity: int = 0,
+    status: int = 0,
+    field_values: list[FieldValue] | None = None,
+) -> ArchiveEvent:
+    """Create an ArchiveEvent with sensible defaults for use in tests.
+
+    Returns:
+        ArchiveEvent: new event with the given fields.
+    """
+    return ArchiveEvent(
+        pv, val, secondsintoyear, year, nanos, severity, status, field_values
+    )

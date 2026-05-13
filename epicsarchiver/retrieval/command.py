@@ -9,11 +9,8 @@ from typing import TYPE_CHECKING
 
 import click
 from pytz import UTC
-from rich.console import Console
-from rich.table import Table
 
 from epicsarchiver.common.command import handle_debug
-from epicsarchiver.common.date_util import ResponseTimestamp
 from epicsarchiver.common.errors import ArchiverError
 from epicsarchiver.common.validation import ValidationError
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
@@ -24,10 +21,12 @@ from epicsarchiver.retrieval.client.processor import (
     Processor,
     ProcessorName,
 )
+from epicsarchiver.write.search_format import SearchTable
+from epicsarchiver.write.table_format import FormatTable
 
 if TYPE_CHECKING:
     from epicsarchiver.epicsarchiver import ArchiverAppliance
-    from epicsarchiver.retrieval.archive_event import ArchiveEventsMeta
+    from epicsarchiver.retrieval.archive_event import ArchiveEvent, ArchiveEventsMeta
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -39,9 +38,6 @@ DATE_FORMATS = [
     "%Y-%m-%dT%H:%M:%S.%f",
     "%Y-%m-%d %H:%M:%S.%f",
 ]
-
-
-AlignedPVEvents = list[tuple[int, dict[str, ArchiveEvent]]]
 
 
 @click.command(context_settings={"show_default": True})
@@ -97,7 +93,7 @@ def get(  # noqa: PLR0917, PLR0913
     bin_size: int | None,
     debug: bool,  # noqa: FBT001, ARG001
 ) -> None:
-    """Print out data from an archiver cluster.
+    """Print out data from an archiver cluster as a table.
 
     ARGUMENT pvs What pvs to get data of.
 
@@ -115,41 +111,34 @@ def get(  # noqa: PLR0917, PLR0913
         else None
     )
     LOG.debug("PVs to fetch data from %s", pvs)
-    events: AlignedPVEvents = []
     try:
-        meta = None
-        if len(pvs) == 1:
-            meta, events = asyncio.run(
-                _single_fetch_events(archiver, pvs[0], start, end, processor=processor)
-            )
-        else:
-            events = asyncio.run(
-                _multi_fetch_events(
-                    archiver, list(pvs), start, end, processor=processor
-                )
-            )
+        meta, events = asyncio.run(
+            _fetch_events(archiver, pvs, start, end, processor=processor)
+        )
     except ArchiverError as exc:
         LOG.error("Error fetching data from archiver: %s", exc)  # noqa: TRY400
         LOG.debug("Exception traceback", exc_info=exc)
         ctx.exit(1)
+        return
     except ValidationError as exc:
         LOG.error("Validation error: %s", exc)  # noqa: TRY400
         LOG.debug("Exception traceback", exc_info=exc)
         ctx.exit(1)
+        return
 
     if not events:
         LOG.info("No events found for the given time period and PVs.")
         ctx.exit(0)
+        return
 
-    table_title = _table_title(pvs, start, end, processor)
-    table_caption = _table_caption(_meta_field_values(meta) if meta else None)
-    table = (
-        _create_multi_table(pvs, table_title, events)
-        if len(pvs) > 1
-        else _create_singular_table(pvs[0], table_title, table_caption, events)
-    )
-    console = Console()
-    console.print(table)
+    FormatTable(
+        events=events,
+        pvs=pvs,
+        start=start,
+        end=end,
+        processor=processor,
+        meta=meta,
+    ).write()
     ctx.exit(0)
 
 
@@ -227,194 +216,37 @@ def search(  # noqa: PLR0917, PLR0913
     except ArchiverError:
         LOG.exception("Error fetching data from archiver")
         ctx.exit(1)
+        return
 
     if not pv_name_list:
         LOG.info("No PVs found.")
         ctx.exit(0)
+        return
 
-    table_title = _search_table_title(pv_name_list, start, end)
-    table = _create_pv_name_table(pv_list=pv_name_list, title=table_title)
-
-    console = Console()
-    console.print(table)
-
+    SearchTable(pvs=pv_name_list, start=start, end=end).write()
     ctx.exit(0)
 
 
-def _meta_field_values(meta: dict[int, ArchiveEventsMeta]) -> dict[int, dict[str, str]]:
-    return {
-        year: {
-            field.name: field.value or ""
-            for field in field_values_dict.headers
-            if field.name
-        }
-        for year, field_values_dict in meta.items()
-    }
-
-
-def _table_caption(
-    field_values: dict[int, dict[str, str]] | None,
-) -> str | None:
-    if field_values:
-        caption = ""
-        for year, field_values_dict in field_values.items():
-            caption += f"Field Values {year}\n"
-            caption += "\n".join(
-                f"{key}: {value}" for key, value in field_values_dict.items()
-            )
-        return caption
-    return None
-
-
-def _search_table_title(
-    pvs: list[str],
-    start: datetime | None,
-    end: datetime | None,
-) -> str:
-    table_title = f"Found {(len_pvs := len(pvs))} PV{'s' if len_pvs > 1 else ''}"
-    if start and end:
-        table_title += f" between {start} and {end}"
-    elif start:
-        table_title += f" from {start} until now"
-    elif end:
-        table_title += f" before {end}"
-    return table_title
-
-
-def _table_title(
-    pvs: tuple[str],
-    start: datetime,
-    end: datetime,
-    processor: Processor | None,
-) -> str:
-    table_title = f"Period {start} - {end}"
-    if len(pvs) == 1:
-        table_title = f"{pvs[0]} {table_title}"
-    if processor:
-        table_title += f" Processor {processor.processor_name}"
-        if processor.bin_size:
-            table_title += f", {processor.bin_size} seconds"
-    return table_title
-
-
-def _create_multi_table(
-    pvs: tuple[str],
-    title: str,
-    events: AlignedPVEvents,
-) -> Table:
-    table = Table(title=title)
-    table.add_column("Time", justify="left")
-    for pv in pvs:
-        table.add_column(pv + " Value", justify="right")
-    for e in events:
-        table.add_row(
-            ResponseTimestamp(e[0]).to_local_string(),
-            *[_val_to_str(e[1].get(pv)) for pv in pvs],
-        )
-    return table
-
-
-def _val_to_str(event: ArchiveEvent | None) -> str:
-    if event:
-        return str(event.val)
-    return ""
-
-
-def _create_singular_table(
-    pv: str,
-    title: str,
-    caption: str | None,
-    events: AlignedPVEvents,
-) -> Table:
-    table = Table(title=title, caption=caption, caption_justify="left")
-    table.add_column("Time", justify="left")
-    table.add_column("Value", justify="right")
-    table.add_column("Status", justify="right")
-    table.add_column("Severity", justify="right")
-    for time_event in events:
-        event = time_event[1].get(pv)
-        if event:
-            table.add_row(
-                ResponseTimestamp(time_event[0]).to_local_string(),
-                str(event.val),
-                str(event.status),
-                str(event.severity),
-            )
-    return table
-
-
-def _create_pv_name_table(
-    pv_list: list[str],
-    title: str,
-) -> Table:
-    table = Table(title=title)
-    table.add_column("PV name", justify="left")
-    for pv in pv_list:
-        table.add_row(pv)
-    return table
-
-
-def filtered_event_field_values(fields: list[str], event: ArchiveEvent) -> list[str]:
-    """Provide a list of field values for the given event.
-
-    Args:
-        fields (list[str]): Input field names to filter
-        event (ArchiveEvent): Event to filter
-
-    Returns:
-        list[str]: Field values for the given event
-    """
-    LOG.debug("fields %s", event.field_values_dict)
-    return [str(event.field_values_dict.get(field, "")) for field in fields]
-
-
-def _align_events(
-    all_events: dict[str, list[ArchiveEvent]],
-) -> AlignedPVEvents:
-    """Align events from multiple PVs by timestamp.
-
-    Args:
-        all_events (dict[str, list[ArchiveEvent]]): Events per PV with PV name as key
-
-    Returns:
-        AlignedPVEvents: List of pairs, (timestamp, dict[pv_name, pv_value])
-    """
-    data: dict[int, dict[str, ArchiveEvent]] = {}
-    for pv, events in all_events.items():
-        for event in events:
-            if event.timestamp_ns not in data:
-                data[event.timestamp_ns] = {}
-            data[event.timestamp_ns][pv] = event
-
-    return [(timestamp, data[timestamp]) for timestamp in sorted(data.keys())]
-
-
-async def _multi_fetch_events(
+async def _fetch_events(
     archiver: ArchiverAppliance,
-    pvs: list[str],
+    pvs: tuple[str, ...],
     start: datetime,
     end: datetime,
     processor: Processor | None,
-) -> AlignedPVEvents:
+) -> tuple[dict[int, ArchiveEventsMeta] | None, list[ArchiveEvent]]:
     async with AsyncArchiverRetrieval(archiver.hostname, archiver.port) as a_retrieval:
+        if len(pvs) == 1:
+            return await a_retrieval.get_archive_data(
+                pvs[0], start, end, processor=processor
+            )
         all_events = await a_retrieval.get_all_events(
             set(pvs), start, end, processor=processor
         )
-        return _align_events(all_events)
-
-
-async def _single_fetch_events(
-    archiver: ArchiverAppliance,
-    pv: str,
-    start: datetime,
-    end: datetime,
-    processor: Processor | None,
-) -> tuple[dict[int, ArchiveEventsMeta], AlignedPVEvents]:
-    async with AsyncArchiverRetrieval(archiver.hostname, archiver.port) as a_retrieval:
-        meta, events = await a_retrieval.get_archive_data(
-            pv, start, end, processor=processor
+        events = sorted(
+            (e for pv_events in all_events.values() for e in pv_events),
+            key=lambda e: e.timestamp_ns,
         )
-        return meta, _align_events({pv: events})
+        return None, events
 
 
 async def _pv_name_search(
