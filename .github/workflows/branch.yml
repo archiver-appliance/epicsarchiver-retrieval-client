@@ -1,0 +1,10 @@
+name: Branch Push
+
+on:
+  push:
+    branches-ignore:
+      - master
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_ci.yml
