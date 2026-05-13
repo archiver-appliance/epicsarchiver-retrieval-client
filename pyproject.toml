@@ -47,8 +47,8 @@ log_cli = true
 log_cli_level = "DEBUG"
 
 [tool.coverage.paths]
-epicsarchiver = [ "epicsarchiver", "*/epicsarchiver-retrieval-client/epicsarchiver" ]
-tests = [ "tests", "*/epicsarchiver/tests" ]
+epicsarchiver = [ "epicsarchiver" ]
+tests = [ "tests" ]
 
 [tool.coverage.report]
 exclude_lines = [ "no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:" ]
