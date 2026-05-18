@@ -3,6 +3,7 @@ source = "vcs"
 
 [version.raw-options]
 git_describe_command = ["git", "describe", "--dirty", "--tags", "--long"]
+local_scheme = "no-local-version"
 
 [build.hooks.vcs]
 version-file = "epicsarchiver/_version.py"
