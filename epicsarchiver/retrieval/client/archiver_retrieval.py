@@ -69,7 +69,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         self.data_url: str = self._base_url + ENDPOINT_GET_DATA
         self.matching_pvs_url: str = self._base_url + ENDPOINT_GET_MATCHING_PVS
 
-    def _get_data_raw(
+    def get_data_raw(
         self,
         pv: str,
         start: datetime.datetime,
@@ -196,7 +196,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         validate_start_end(start, end)
         validate_processor(processor)
         pv_request = processor.calc_pv_name(pv) if processor else pv
-        r = self._get_data_raw(pv_request, start, end)
+        r = self.get_data_raw(pv_request, start, end)
         pb_data = r.content
         data = parse_pb_data(pb_data)
         LOG.debug("Metadata: %s", data[0])
