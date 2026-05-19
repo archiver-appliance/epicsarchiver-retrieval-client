@@ -148,4 +148,8 @@ hatch run types:protoc-gen
 
 ## License
 
-Distributed under the terms of the [MIT license](LICENSE),
+Distributed under the terms of the [MIT license][license]
+
+<!-- sphinx-include-end -->
+
+[license]: LICENSE
