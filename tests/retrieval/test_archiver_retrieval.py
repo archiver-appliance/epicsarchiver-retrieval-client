@@ -35,6 +35,7 @@ def test_get_data() -> None:
     fv_dtype = pl.List(pl.Struct({"name": pl.Utf8, "value": pl.Utf8}))
     ref_df = pl.DataFrame({
         "date": pl.Series(dates_ns, dtype=pl.Datetime("ns", "UTC")),
+        "pv": pl.Series([pv for _ in TEST_EVENTS], dtype=pl.Utf8),
         "val": [e.val for e in TEST_EVENTS],
         "severity": pl.Series([e.severity for e in TEST_EVENTS], dtype=pl.Int32),
         "status": pl.Series([e.status for e in TEST_EVENTS], dtype=pl.Int32),
