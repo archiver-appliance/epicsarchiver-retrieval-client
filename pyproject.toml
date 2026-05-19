@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 requires = [ "hatch-vcs>=0.3", "hatchling>=1.24.2" ]
 
 [project]
-name = "py-epicsarchiver"
+name = "epicsarchiver-retrieval-client"
 description = "A python library for retrieving data from the EPICS Archiver Appliance."
 readme = "README.md"
 keywords = [ "archiver", "epics", "retrieval" ]
@@ -31,13 +31,13 @@ dependencies = [
   "typing-extensions>=4.12",
 ]
 
-optional-dependencies.all = [ "py-epicsarchiver[async,cli,polars,sync]" ]
+optional-dependencies.all = [ "epicsarchiver-retrieval-client[async,cli,polars,sync]" ]
 optional-dependencies.async = [ "aiohttp>=3" ]
 optional-dependencies.cli = [ "click>=8", "rich>=13" ]
 optional-dependencies.polars = [ "polars>=1" ]
 optional-dependencies.sync = [ "requests>=2" ]
-urls.Source = "https://gitlab.esss.lu.se/ics-software/py-epicsarchiver"
-scripts.epicsarchiver = "epicsarchiver.command:cli"
+urls.Source = "https://github.com/archiver-appliance/epicsarchiver-retrieval-client"
+scripts.arch-retrieval = "epicsarchiver.command:cli"
 
 [tool.ruff]
 extend = "ruff.toml"
@@ -47,8 +47,8 @@ log_cli = true
 log_cli_level = "DEBUG"
 
 [tool.coverage.paths]
-epicsarchiver = [ "epicsarchiver", "*/py-epicsarchiver/epicsarchiver" ]
-tests = [ "tests", "*/epicsarchiver/tests" ]
+epicsarchiver = [ "epicsarchiver" ]
+tests = [ "tests" ]
 
 [tool.coverage.report]
 exclude_lines = [ "no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:" ]

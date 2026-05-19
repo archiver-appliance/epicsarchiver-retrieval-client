@@ -3,6 +3,7 @@ source = "vcs"
 
 [version.raw-options]
 git_describe_command = ["git", "describe", "--dirty", "--tags", "--long"]
+local_scheme = "no-local-version"
 
 [build.hooks.vcs]
 version-file = "epicsarchiver/_version.py"
@@ -84,7 +85,8 @@ features = ["all"]
 extra-dependencies = [
   "notebook>=7.1.2",
   "nbval>=0.11.0",
-  "matplotlib>=3.8.3"
+  "matplotlib>=3.8.3",
+  "responses>=0.25",
 ]
 
 [envs.jupyter.scripts]

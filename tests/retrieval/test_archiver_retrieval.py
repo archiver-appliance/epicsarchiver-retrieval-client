@@ -11,7 +11,7 @@ from responses import matchers
 from epicsarchiver.common.base_archiver import DEFAULT_RETRIEVAL_PORT
 from epicsarchiver.common.date_util import NANO_PER_SECOND, year_start_epoch_seconds
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
-from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
+from epicsarchiver.retrieval.client.archiver_retrieval import (
     ArchiverRetrieval,
 )
 from epicsarchiver.retrieval.EPICSEvent_pb2 import (

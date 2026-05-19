@@ -1,20 +1,16 @@
 # Python EPICS Archiver Appliance library
 
-![pipeline status](https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/pipeline.svg)
-![code coverage](https://gitlab.esss.lu.se/ics-infrastructure/py-epicsarchiver/badges/master/coverage.svg)
+Python package to interact with the [EPICS Archiver Appliance](https://epicsarchiver.readthedocs.io/en/latest/).
 
-
-Python package to interact with the [EPICS Archiver Appliance](https://slacmshankar.github.io/epicsarchiver_docs/).
-
-- [Documentation](http://ics-software.pages.esss.lu.se/py-epicsarchiver/index.html)
-- [Repository](https://gitlab.esss.lu.se/ics-software/py-epicsarchiver)
+- [Documentation](https://epicsarchiver-retrieval-client.readthedocs.io/en/latest/)
+- [Repository](https://github.com/archiver-appliance/epicsarchiverap)
 
 ## Installation
 
-py-epicsarchiver can be installed using artifactory PyPI repository:
+The epicsarchiver-retrieval-client can be installed using:
 
 ```console
-pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install epicsarchiver-retrieval-client
 ```
 
 The core package has minimal dependencies (protobuf + pytz) and is sufficient for parsing `.pb` files
@@ -30,13 +26,13 @@ and working with `ArchiveEvent` objects directly. Heavy dependencies are opt-in 
 
 ```console
 # Everything (recommended for most users)
-pip install "py-epicsarchiver[all]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install "epicsarchiver-retrieval-client[all]"
 
 # Core only — parse local .pb files, no HTTP clients or DataFrames
-pip install py-epicsarchiver -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install epicsarchiver-retrieval-client[all]
 
 # Sync retrieval with DataFrame output
-pip install "py-epicsarchiver[polars,sync]" -i https://artifactory.esss.lu.se/artifactory/api/pypi/pypi-virtual/simple
+pip install "epicsarchiver-retrieval-client[polars,sync]"
 ```
 
 ## Quick start
@@ -150,7 +146,10 @@ Regenerate protobuf python api:
 hatch run types:protoc-gen
 ```
 
-
 ## License
 
-Distributed under the terms of the [MIT license][license],
+Distributed under the terms of the [MIT license][license]
+
+<!-- sphinx-include-end -->
+
+[license]: LICENSE

@@ -1,0 +1,13 @@
+name: Merge to Master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  ci:
+    uses: ./.github/workflows/_ci.yml
+
+  build:
+    uses: ./.github/workflows/_build.yml

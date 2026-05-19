@@ -1,6 +1,6 @@
 """Polars DataFrame utilities for archived events.
 
-Requires the [polars] extra: pip install py-epicsarchiver[polars]
+Requires the [polars] extra: pip install epicsarchiver-retrieval-client[polars]
 """
 
 from __future__ import annotations

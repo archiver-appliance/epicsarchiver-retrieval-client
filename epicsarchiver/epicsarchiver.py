@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from epicsarchiver.retrieval.archiver_retrieval.archiver_retrieval import (
+from epicsarchiver.retrieval.client.archiver_retrieval import (
     ArchiverRetrieval,
 )
 

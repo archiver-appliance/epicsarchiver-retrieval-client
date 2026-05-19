@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from requests import Response
 
     from epicsarchiver.retrieval.archive_event import ArchiveEventsData
-    from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
+    from epicsarchiver.retrieval.client.processor import Processor
 
 
 LOG: logging.Logger = logging.getLogger(__name__)
@@ -231,7 +231,10 @@ class ArchiverRetrieval(BaseArchiverAppliance):
                 dataframe_from_events,
             )
         except ImportError as exc:
-            msg = "polars extra required: pip install py-epicsarchiver[polars]"
+            msg = (
+                "polars extra required: "
+                "   pip install epicsarchiver-retrieval-client[polars]"
+            )
             raise ImportError(msg) from exc
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         start_time = QueryTimestamp.from_input(start).datetime

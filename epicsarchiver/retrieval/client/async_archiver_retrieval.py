@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from aiohttp import ClientResponse
 
     from epicsarchiver.retrieval.archive_event import ArchiveEvent, ArchiveEventsData
-    from epicsarchiver.retrieval.archiver_retrieval.processor import Processor
+    from epicsarchiver.retrieval.client.processor import Processor
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
