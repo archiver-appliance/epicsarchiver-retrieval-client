@@ -26,7 +26,7 @@ import math
 import re
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias, cast
 
 from google.protobuf.message import DecodeError
 
@@ -255,11 +255,16 @@ def _event_from_line(
     event = TYPE_MAPPINGS[event_type]()
     try:
         event.ParseFromString(unescaped)
-    except DecodeError:
-        LOG.exception(
-            "Error parsing line %s with unescaped bytes: %s", line_number, unescaped
-        )
-        return None
+    except DecodeError as exc:
+        event = _try_recover_truncated_event(event_type, unescaped, line_number, pv)
+        if event is None:
+            LOG.warning(
+                "Error parsing line %s with unescaped bytes: %s (%s)",
+                line_number,
+                unescaped,
+                exc,
+            )
+            return None
     val = event.val
     if isinstance(
         event,
@@ -290,6 +295,38 @@ def _event_from_line(
         event.status,
         [to_field_value(f) for f in event.fieldvalues],
     )
+
+
+def _try_recover_truncated_event(
+    event_type: int,
+    unescaped: bytes,
+    line_number: int,
+    pv: str,
+) -> EeEvent | None:
+    r"""Try to recover an event truncated by an unescaped 0x0a byte (archiver bug).
+
+    When a protobuf varint value byte equals 0x0a, split(b"\n") truncates the
+    event there, leaving the orphaned field tag as the last byte. We detect any
+    varint-wire-type tag at end-of-line and retry with NL_BYTE appended.
+
+    Returns:
+        The recovered event on success, None if not applicable or recovery fails.
+    """
+    if not unescaped or unescaped[-1] == 0 or (unescaped[-1] & 0x07) != 0:
+        return None
+    event = cast("EeEvent", TYPE_MAPPINGS[event_type]())
+    try:
+        event.ParseFromString(unescaped + NL_BYTE)
+    except DecodeError:
+        return None
+    LOG.warning(
+        "Recovered truncated event at line %s for PV %s "
+        "(archiver sent 0x0a unescaped after field tag 0x%02x)",
+        line_number,
+        pv,
+        unescaped[-1],
+    )
+    return event
 
 
 def parse_pb_data(

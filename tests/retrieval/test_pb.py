@@ -147,10 +147,12 @@ def test_read_faulty_file(caplog: pytest.LogCaptureFixture) -> None:
         _meta, data = pb.read_pb_file("tests/retrieval/samples/faulty_file.pb")
     assert "MEBT-010:PwrC-PSCV-004:Cur-R" in data[0].pv
     assert data[0].year == 2025
-    assert len(data) == 6
+    assert len(data) == 7  # line 3 recovered (was 6)
     assert isinstance(data[0].val, float)
+    assert data[3].status == 10  # TIMEOUT alarm recovered with correct status
+    assert data[3].severity == 3
     captured_log = caplog.text
-    assert "Error parsing line 3" in captured_log
+    assert "Recovered truncated event at line 3" in captured_log
 
 
 def test_parse_pb_data_empty_bytes_returns_empty() -> None:
@@ -226,6 +228,44 @@ def test_event_from_line_inf_value_logs_warning(
     assert len(events) == 1
     assert math.isinf(events[0].val)  # type: ignore[arg-type]
     assert "Non-finite" in caplog.text
+
+
+def test_event_from_line_recovers_unescaped_timeout_status(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    info = ee.PayloadInfo(type=ee.SCALAR_ENUM, pvname="TIMEOUT:PV", year=2025)
+    # status=10 (TIMEOUT) encodes as \x28\x0a in protobuf. The archiver bug stores
+    # \x0a unescaped, so split(b"\n") treats it as a line separator. The event line
+    # is left ending with \x28 (field-5 tag) with no value byte.
+    e = ee.ScalarEnum(secondsintoyear=100, nano=0, val=1, severity=3, status=10)
+    event_raw = e.SerializeToString()  # contains unescaped \x0a for status value
+    raw = pb.escape_bytes(info.SerializeToString()) + b"\n" + event_raw
+    with caplog.at_level(logging.WARNING):
+        _meta, events = pb.parse_pb_data(raw)
+    assert len(events) == 1
+    assert events[0].val == 1
+    assert events[0].status == 10
+    assert events[0].severity == 3
+    assert "Recovered" in caplog.text
+
+
+def test_event_from_line_recovers_unescaped_non_status_varint_byte(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # Test _try_recover_truncated_event directly with a non-status varint field.
+    # severity=10 (COMM alarm) encodes as \x20\x0a; drop the \x0a to simulate the
+    # archiver bug leaving orphaned tag \x20 (wire type 0, not status field \x28).
+    full = ee.ScalarInt(secondsintoyear=100, nano=0, val=42, severity=10)
+    full_bytes = full.SerializeToString()
+    truncated = full_bytes[:-1]  # drop the 0x0a severity value byte
+    assert truncated[-1] & 0x07 == 0  # wire type 0 — varint tag
+    assert truncated[-1] != 0x28  # not the status tag (covered by separate test)
+    with caplog.at_level(logging.WARNING):
+        result = pb._try_recover_truncated_event(5, truncated, 7, "COMM:PV")
+    assert result is not None
+    assert result.severity == 10
+    assert result.val == 42
+    assert "0x20" in caplog.text
 
 
 def test_read_another_faulty_file(caplog: pytest.LogCaptureFixture) -> None:
