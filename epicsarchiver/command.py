@@ -29,3 +29,4 @@ def cli(ctx: click.core.Context, hostname: str) -> None:
 cli.add_command(retrieval.get)
 cli.add_command(retrieval.export)
 cli.add_command(retrieval.search)
+cli.add_command(retrieval.read_pb)

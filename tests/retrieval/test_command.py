@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,8 +10,11 @@ from click.testing import CliRunner
 
 from epicsarchiver.common.errors import ArchiverError
 from epicsarchiver.retrieval import EPICSEvent_pb2 as ee
-from epicsarchiver.retrieval.command import export, get, search
+from epicsarchiver.retrieval.command import export, get, read_pb, search
 from tests.retrieval.fake_data import TEST_EVENTS, create_pb_bytes, make_archive_event
+
+_SAMPLES = Path(__file__).parent / "samples"
+_SIGMA_PB = _SAMPLES / "sigma_test_pb.pb"
 
 _MOCK_ARCHIVER = MagicMock(hostname="archiver.example.org", port=17668)
 _START = "2024-01-01 00:00:00"
@@ -26,6 +30,23 @@ def runner() -> CliRunner:
 def pb_bytes() -> bytes:
     info = ee.PayloadInfo(type=ee.SCALAR_INT, pvname="MY:PV", year=2018)
     return create_pb_bytes(TEST_EVENTS, info)
+
+
+# ── read_pb ────────────────────────────────────────────────────────────────
+
+
+def test_read_pb_sigma_sample_exits_0(runner: CliRunner) -> None:
+    result = runner.invoke(read_pb, [str(_SIGMA_PB)], obj={})
+    assert result.exit_code == 0, result.output
+
+
+def test_read_pb_no_events_exits_0(runner: CliRunner, tmp_path: Path) -> None:
+    empty_pb = tmp_path / "empty.pb"
+    info = ee.PayloadInfo(type=ee.SCALAR_INT, pvname="EMPTY:PV", year=2024)
+    empty_pb.write_bytes(create_pb_bytes([], info))
+    with patch("epicsarchiver.retrieval.command.read_pb_file", return_value=({}, [])):
+        result = runner.invoke(read_pb, [str(empty_pb)], obj={})
+    assert result.exit_code == 0
 
 
 # ── get ────────────────────────────────────────────────────────────────────

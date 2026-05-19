@@ -22,7 +22,7 @@ from epicsarchiver.retrieval.client.processor import (
     Processor,
     ProcessorName,
 )
-from epicsarchiver.retrieval.pb import parse_pb_data
+from epicsarchiver.retrieval.pb import parse_pb_data, read_pb_file
 from epicsarchiver.write.export_format import Format, write_events
 from epicsarchiver.write.search_format import SearchTable
 from epicsarchiver.write.table_format import FormatTable
@@ -260,6 +260,48 @@ def export(  # noqa: PLR0917, PLR0913
             )
             raise click.UsageError(msg) from err
 
+    ctx.exit(0)
+
+
+@click.command()
+@click.option(
+    "--debug",
+    is_flag=True,
+    callback=handle_debug,
+    help="Turn on debug logging",
+)
+@click.argument("file", type=click.Path(exists=True, dir_okay=False, readable=True))
+@click.pass_context
+def read_pb(
+    ctx: click.core.Context,
+    file: str,
+    debug: bool,  # noqa: FBT001, ARG001
+) -> None:
+    r"""Display events from a local PB file.
+
+    ARGUMENT file Path to the .pb file to read.
+
+    Example usage:
+
+    \b
+        arch-retrieval read-pb MY_PV_2026.pb
+
+    """
+    meta, events = read_pb_file(file)
+
+    if not events:
+        LOG.info("No events found in %s", file)
+        ctx.exit(0)
+        return
+
+    FormatTable(
+        events=events,
+        pvs=(events[0].pv,),
+        start=events[0].timestamp,
+        end=events[-1].timestamp,
+        processor=None,
+        meta=meta,
+    ).write()
     ctx.exit(0)
 
 
