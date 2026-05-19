@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import collections
 import logging
+import math
 import re
 from collections import OrderedDict
 from pathlib import Path
@@ -271,6 +272,14 @@ def _event_from_line(
     ):  # Note purposefully not including all Vectortypes here
         vector_val = list(val)
         val = vector_val
+    elif isinstance(event, ee.ScalarDouble | ee.ScalarFloat) and not math.isfinite(val):
+        LOG.warning(
+            "Non-finite value %s at line %s for PV %s "
+            "(kept; callers must handle NaN/inf)",
+            val,
+            line_number,
+            pv,
+        )
     return ArchiveEvent(
         pv,
         val,

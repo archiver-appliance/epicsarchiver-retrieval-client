@@ -1,4 +1,5 @@
 import logging
+import math
 from datetime import datetime
 from unittest import mock
 
@@ -191,6 +192,40 @@ def test_parse_pb_data_trailing_newline_does_not_produce_extra_events() -> None:
     )
     _meta, events = pb.parse_pb_data(raw)
     assert len(events) == 1
+
+
+def test_event_from_line_nan_value_logs_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    info = ee.PayloadInfo(type=ee.SCALAR_DOUBLE, pvname="NAN:PV", year=2025)
+    e_nan = ee.ScalarDouble(secondsintoyear=100, nano=0, val=float("nan"))
+    raw = (
+        pb.escape_bytes(info.SerializeToString())
+        + b"\n"
+        + pb.escape_bytes(e_nan.SerializeToString())
+    )
+    with caplog.at_level(logging.WARNING):
+        _meta, events = pb.parse_pb_data(raw)
+    assert len(events) == 1
+    assert math.isnan(events[0].val)  # type: ignore[arg-type]
+    assert "Non-finite" in caplog.text
+
+
+def test_event_from_line_inf_value_logs_warning(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    info = ee.PayloadInfo(type=ee.SCALAR_FLOAT, pvname="INF:PV", year=2025)
+    e_inf = ee.ScalarFloat(secondsintoyear=200, nano=0, val=float("inf"))
+    raw = (
+        pb.escape_bytes(info.SerializeToString())
+        + b"\n"
+        + pb.escape_bytes(e_inf.SerializeToString())
+    )
+    with caplog.at_level(logging.WARNING):
+        _meta, events = pb.parse_pb_data(raw)
+    assert len(events) == 1
+    assert math.isinf(events[0].val)  # type: ignore[arg-type]
+    assert "Non-finite" in caplog.text
 
 
 def test_read_another_faulty_file(caplog: pytest.LogCaptureFixture) -> None:
