@@ -191,3 +191,15 @@ def test_parse_pb_data_trailing_newline_does_not_produce_extra_events() -> None:
     )
     _meta, events = pb.parse_pb_data(raw)
     assert len(events) == 1
+
+
+def test_read_another_faulty_file(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.WARNING, logger="epicsarchiver.retrieval.pb"):
+        meta, data = pb.read_pb_file("tests/retrieval/samples/another_faulty_file.pb")
+    assert "HBL-020RFC:Cryo-PLC-210:ReadyCryo" in data[0].pv
+    assert len(data) == 27
+    assert 2024 in meta
+    assert 2025 in meta
+    assert any(e.year == 2024 for e in data)
+    assert any(e.year == 2025 for e in data)
+    assert caplog.records == []
