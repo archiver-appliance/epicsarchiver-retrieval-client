@@ -150,3 +150,44 @@ def test_read_faulty_file(caplog: pytest.LogCaptureFixture) -> None:
     assert isinstance(data[0].val, float)
     captured_log = caplog.text
     assert "Error parsing line 3" in captured_log
+
+
+def test_parse_pb_data_empty_bytes_returns_empty() -> None:
+    meta, events = pb.parse_pb_data(b"")
+    assert events == []
+    assert meta == {}
+
+
+def test_parse_pb_data_whitespace_only_returns_empty() -> None:
+    meta, events = pb.parse_pb_data(b"\n\n")
+    assert events == []
+    assert meta == {}
+
+
+def test_parse_pb_data_constant_zero_enum() -> None:
+    info = ee.PayloadInfo(type=ee.SCALAR_ENUM, pvname="ZERO:PV", year=2024)
+    event_zero = ee.ScalarEnum(secondsintoyear=100, nano=0, val=0, severity=0, status=0)
+    raw = (
+        pb.escape_bytes(info.SerializeToString())
+        + b"\n"
+        + pb.escape_bytes(event_zero.SerializeToString())
+    )
+    meta, events = pb.parse_pb_data(raw)
+    assert len(events) == 1
+    assert events[0].val == 0
+    assert events[0].pv == "ZERO:PV"
+    assert 2024 in meta
+
+
+def test_parse_pb_data_trailing_newline_does_not_produce_extra_events() -> None:
+    info = ee.PayloadInfo(type=ee.SCALAR_INT, pvname="mypv", year=2018)
+    raw = (
+        pb.escape_bytes(info.SerializeToString())
+        + b"\n"
+        + pb.escape_bytes(
+            ee.ScalarInt(secondsintoyear=100, nano=0, val=42).SerializeToString()
+        )
+        + b"\n"
+    )
+    _meta, events = pb.parse_pb_data(raw)
+    assert len(events) == 1

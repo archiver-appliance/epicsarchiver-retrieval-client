@@ -213,22 +213,25 @@ def _break_up_chunks(
         collections.OrderedDict()
     )
     for chunk_index, chunk in enumerate(chunks):
+        if not chunk:
+            continue
         lines = chunk.split(b"\n")
         chunk_info = ee.PayloadInfo()
         chunk_info.ParseFromString(unescape_bytes(lines[0]))
         LOG.debug("line 0 bytes: %s", lines[0])
         chunk_year = chunk_info.year  # pylint: disable=no-member
+        event_lines = [line for line in lines[1:] if line]
         LOG.debug(
             "Year %s, Chunk Index %s: %s events in chunk",
             chunk_year,
             chunk_index,
-            len(lines) - 1,
+            len(event_lines),
         )
         if chunk_year in year_chunks:
             _, ls = year_chunks[chunk_year]
-            ls.extend(lines[1:])
+            ls.extend(event_lines)
         else:
-            year_chunks[chunk_year] = chunk_info, lines[1:]
+            year_chunks[chunk_year] = chunk_info, event_lines
     return year_chunks
 
 
