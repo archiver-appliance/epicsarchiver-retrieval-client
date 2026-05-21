@@ -14,6 +14,9 @@ include = ["/epicsarchiver", "/tests"]
 [build.targets.wheel]
 packages = ["epicsarchiver"]
 
+[envs.default]
+features = ["all"]
+
 [envs.default.scripts]
 docs-check = "hatch run docs:check"
 type-check = "hatch run types:check"
