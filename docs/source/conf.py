@@ -70,8 +70,8 @@ myst_enable_extensions = [
     "colon_fence",
 ]
 
-# Don't execute notebooks in documentation building
-nb_execution_mode = "off"
+# Execute notebooks at build time using fake archiver data (no real server needed)
+nb_execution_mode = "auto"
 
 # Ignore highlighting ansi in notebooks
 supress_warnings = ["misc.highlighting_failure"]
