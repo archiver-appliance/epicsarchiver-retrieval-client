@@ -137,13 +137,13 @@ hatch fmt
 Run local docs:
 
 ```console
-hatch run docs:live
+hatch run dev:docs-live
 ```
 
 Regenerate protobuf python api:
 
 ```console
-hatch run types:protoc-gen
+hatch run dev:protoc-gen
 ```
 
 ## License
