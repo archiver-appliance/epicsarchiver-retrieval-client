@@ -40,8 +40,8 @@ pip install "epicsarchiver-retrieval-client[polars,sync]"
 The package also installs a command line tool. Used to fetch data from the archiver and display in the terminal.
 
 ```console
-$ epicsarchiver get --help
-Usage: epicsarchiver get [OPTIONS] PVS...
+$ arch-retrieval get --help
+Usage: arch-retrieval get [OPTIONS] PVS...
 
   Print out data from an archiver cluster.
 
@@ -51,7 +51,7 @@ Usage: epicsarchiver get [OPTIONS] PVS...
 
   .. code-block:: console
 
-      epicsarchiver --hostname archiver-01.example.com get PV_NAME1 PV_NAME2
+      arch-retrieval --hostname archiver-01.example.com get PV_NAME1 PV_NAME2
 
 Options:
   --debug                         Turn on debug logging
