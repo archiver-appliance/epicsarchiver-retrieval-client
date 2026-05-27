@@ -22,10 +22,11 @@ from __future__ import annotations
 
 import collections
 import logging
+import math
 import re
 from collections import OrderedDict
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias, cast
 
 from google.protobuf.message import DecodeError
 
@@ -213,22 +214,25 @@ def _break_up_chunks(
         collections.OrderedDict()
     )
     for chunk_index, chunk in enumerate(chunks):
+        if not chunk:
+            continue
         lines = chunk.split(b"\n")
         chunk_info = ee.PayloadInfo()
         chunk_info.ParseFromString(unescape_bytes(lines[0]))
         LOG.debug("line 0 bytes: %s", lines[0])
         chunk_year = chunk_info.year  # pylint: disable=no-member
+        event_lines = [line for line in lines[1:] if line]
         LOG.debug(
             "Year %s, Chunk Index %s: %s events in chunk",
             chunk_year,
             chunk_index,
-            len(lines) - 1,
+            len(event_lines),
         )
         if chunk_year in year_chunks:
             _, ls = year_chunks[chunk_year]
-            ls.extend(lines[1:])
+            ls.extend(event_lines)
         else:
-            year_chunks[chunk_year] = chunk_info, lines[1:]
+            year_chunks[chunk_year] = chunk_info, event_lines
     return year_chunks
 
 
@@ -251,11 +255,16 @@ def _event_from_line(
     event = TYPE_MAPPINGS[event_type]()
     try:
         event.ParseFromString(unescaped)
-    except DecodeError:
-        LOG.exception(
-            "Error parsing line %s with unescaped bytes: %s", line_number, unescaped
-        )
-        return None
+    except DecodeError as exc:
+        event = _try_recover_truncated_event(event_type, unescaped, line_number, pv)
+        if event is None:
+            LOG.warning(
+                "Error parsing line %s with unescaped bytes: %s (%s)",
+                line_number,
+                unescaped,
+                exc,
+            )
+            return None
     val = event.val
     if isinstance(
         event,
@@ -268,6 +277,14 @@ def _event_from_line(
     ):  # Note purposefully not including all Vectortypes here
         vector_val = list(val)
         val = vector_val
+    elif isinstance(event, ee.ScalarDouble | ee.ScalarFloat) and not math.isfinite(val):
+        LOG.warning(
+            "Non-finite value %s at line %s for PV %s "
+            "(kept; callers must handle NaN/inf)",
+            val,
+            line_number,
+            pv,
+        )
     return ArchiveEvent(
         pv,
         val,
@@ -278,6 +295,38 @@ def _event_from_line(
         event.status,
         [to_field_value(f) for f in event.fieldvalues],
     )
+
+
+def _try_recover_truncated_event(
+    event_type: int,
+    unescaped: bytes,
+    line_number: int,
+    pv: str,
+) -> EeEvent | None:
+    r"""Try to recover an event truncated by an unescaped 0x0a byte (archiver bug).
+
+    When a protobuf varint value byte equals 0x0a, split(b"\n") truncates the
+    event there, leaving the orphaned field tag as the last byte. We detect any
+    varint-wire-type tag at end-of-line and retry with NL_BYTE appended.
+
+    Returns:
+        The recovered event on success, None if not applicable or recovery fails.
+    """
+    if not unescaped or unescaped[-1] == 0 or (unescaped[-1] & 0x07) != 0:
+        return None
+    event = cast("EeEvent", TYPE_MAPPINGS[event_type]())
+    try:
+        event.ParseFromString(unescaped + NL_BYTE)
+    except DecodeError:
+        return None
+    LOG.warning(
+        "Recovered truncated event at line %s for PV %s "
+        "(archiver sent 0x0a unescaped after field tag 0x%02x)",
+        line_number,
+        pv,
+        unescaped[-1],
+    )
+    return event
 
 
 def parse_pb_data(
