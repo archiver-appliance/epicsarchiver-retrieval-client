@@ -29,7 +29,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install hatch
-      - run: hatch run types:check
+      - run: hatch run dev:type-check
 
   lint-docs:
     runs-on: ubuntu-latest
@@ -42,7 +42,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install hatch
-      - run: hatch run docs:check
+      - run: hatch run dev:docs-check
 
   jupyter-check:
     runs-on: ubuntu-latest
@@ -55,7 +55,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install hatch
-      - run: hatch run jupyter-check
+      - run: hatch run dev:jupyter-check
 
   test:
     runs-on: ubuntu-latest

@@ -14,11 +14,14 @@ include = ["/epicsarchiver", "/tests"]
 [build.targets.wheel]
 packages = ["epicsarchiver"]
 
+[envs.default]
+features = ["all"]
+
 [envs.default.scripts]
-docs-check = "hatch run docs:check"
-type-check = "hatch run types:check"
-jupyter-check = "hatch run jupyter:check"
-all = ["hatch fmt --check", "type-check", "jupyter-check", "docs-check", "hatch test"]
+docs-check = "hatch run dev:docs-check"
+type-check = "hatch run dev:type-check"
+jupyter-check = "hatch run dev:jupyter-check"
+all = "hatch run dev:all"
 
 [[envs.hatch-test.matrix]]
 python = ["3.10", "3.11", "3.12", "3.13", "3.14"]
@@ -39,32 +42,23 @@ run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"
 cov-combine = "coverage combine"
 cov-report = "coverage xml"
 
-[envs.types]
+[envs.dev]
 features = ["all"]
 extra-dependencies = [
+  # type checking
   "mypy",
   "mypy-protobuf",
   "pytest==8.4.2",         # pin to avoid errors in mypy tests
   "pytest-asyncio",
-  "responses",
+  "responses>=0.25",
   "aioresponses",
   "pytest-mock",
   "pytest-aiohttp",
   "typing-extensions",
   "types-requests",
   "types-protobuf",
-]
-
-[envs.types.scripts]
-check-src = "mypy --install-types --non-interactive {args:./epicsarchiver}"
-check-tests = "mypy --install-types --non-interactive --explicit-package-bases {args:./tests}"
-check = ["check-src", "check-tests"]
-protoc-gen = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/retrieval/EPICSEvent.proto"
-
-[envs.docs]
-features = ["all"]
-extra-dependencies = [
-  "astroid==3.3.11",          # pin to avoid sphinx [autoapi.not_readable] error
+  # docs
+  "astroid==3.3.11",       # pin to avoid sphinx [autoapi.not_readable] error
   "sphinx",
   "sphinx-copybutton>=0.5.1",
   "sphinx-click",
@@ -72,25 +66,23 @@ extra-dependencies = [
   "sphinx-autoapi>=3.6.0",
   "sphinx_rtd_theme",
   "myst_nb",
-]
-
-[envs.docs.scripts]
-build = ["make -C docs html"]
-check = ['make -C docs html SPHINXOPTS="-W --keep-going"']
-live = ["sphinx-autobuild docs/source docs/build/html"]
-clean = ["make -C docs clean html"]
-
-[envs.jupyter]
-features = ["all"]
-extra-dependencies = [
+  "matplotlib>=3.8.3",
+  # jupyter
   "notebook>=7.1.2",
   "nbval>=0.11.0",
-  "matplotlib>=3.8.3",
-  "responses>=0.25",
 ]
 
-[envs.jupyter.scripts]
-check = ['py.test --nbval tests/jupyter/']
+[envs.dev.scripts]
+type-check-src   = "mypy --install-types --non-interactive {args:./epicsarchiver}"
+type-check-tests = "mypy --install-types --non-interactive --explicit-package-bases {args:./tests}"
+type-check       = ["type-check-src", "type-check-tests"]
+protoc-gen       = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/retrieval/EPICSEvent.proto"
+docs-build       = "make -C docs html"
+docs-check       = 'make -C docs html SPHINXOPTS="-W --keep-going"'
+docs-live        = "sphinx-autobuild docs/source docs/build/html"
+docs-clean       = "make -C docs clean html"
+jupyter-check    = "py.test --nbval tests/jupyter/"
+all              = ["hatch fmt --check", "type-check", "jupyter-check", "docs-check", "hatch test"]
 
 [envs.hatch-static-analysis]
 dependencies = ["ruff==0.15.0"]

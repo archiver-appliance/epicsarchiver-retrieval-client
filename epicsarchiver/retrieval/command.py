@@ -105,7 +105,7 @@ def get(  # noqa: PLR0917, PLR0913
 
     .. code-block:: console
 
-        epicsarchiver --hostname archiver-01.example.com get PV_NAME1 PV_NAME2
+        arch-retrieval --hostname archiver-01.example.com get PV_NAME1 PV_NAME2
 
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
@@ -203,13 +203,13 @@ def search(  # noqa: PLR0917, PLR0913
 
     .. code-block:: console
 
-        epicsarchiver --hostname archiver-01.example.com search         \
+        arch-retrieval --hostname archiver-01.example.com search         \
         "PBI-APTM02:Ctrl-ECAT-100:.*Temp1[2-4].*"
 
-        epicsarchiver --hostname archiver-01.example.com search         \
+        arch-retrieval --hostname archiver-01.example.com search         \
         "PBI-APTM02:.*" -s "2026-01-06 02:50:00"
 
-        epicsarchiver --hostname archiver-01.example.com search         \
+        arch-retrieval --hostname archiver-01.example.com search         \
         "(?i)mbl-060RFC:.*:tempambient" -s "2026-01-05"  -e "2026-01-06"
 
     """

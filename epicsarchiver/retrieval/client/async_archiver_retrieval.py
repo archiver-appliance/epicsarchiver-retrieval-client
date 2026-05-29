@@ -68,7 +68,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         self.hostname = hostname
         self.port = port
 
-        super().__init__(f"https://{hostname}:{port}/retrieval")
+        super().__init__(f"http://{hostname}:{port}/retrieval")
 
         self.data_url: str = ""
         self.matching_pvs_url: str = ""
