@@ -283,7 +283,8 @@ def read_pb(
 
     Example usage:
 
-    \b
+    .. code-block:: console
+
         arch-retrieval read-pb MY_PV_2026.pb
 
     """
