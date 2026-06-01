@@ -80,7 +80,7 @@ DATE_FORMATS = [
     """,
 )
 @click.option(
-    "--bin_size",
+    "--bin-size",
     "-b",
     type=int,
     help="Bin size (mostly in seconds) for preprocessor.",
@@ -178,7 +178,7 @@ def get(  # noqa: PLR0917, PLR0913
     help="PreProcessor to use.",
 )
 @click.option(
-    "--bin_size",
+    "--bin-size",
     "-b",
     type=int,
     help="Bin size (mostly in seconds) for preprocessor.",
