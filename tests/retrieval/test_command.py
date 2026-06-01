@@ -32,172 +32,157 @@ def pb_bytes() -> bytes:
     return create_pb_bytes(TEST_EVENTS, info)
 
 
-# ── read_pb ────────────────────────────────────────────────────────────────
+class TestReadPb:
+    def test_sigma_sample_exits_0(self, runner: CliRunner) -> None:
+        result = runner.invoke(read_pb, [str(_SIGMA_PB)], obj={})
+        assert result.exit_code == 0, result.output
+
+    def test_no_events_exits_0(self, runner: CliRunner, tmp_path: Path) -> None:
+        empty_pb = tmp_path / "empty.pb"
+        info = ee.PayloadInfo(type=ee.SCALAR_INT, pvname="EMPTY:PV", year=2024)
+        empty_pb.write_bytes(create_pb_bytes([], info))
+        with patch(
+            "epicsarchiver.retrieval.command.read_pb_file", return_value=({}, [])
+        ):
+            result = runner.invoke(read_pb, [str(empty_pb)], obj={})
+        assert result.exit_code == 0
 
 
-def test_read_pb_sigma_sample_exits_0(runner: CliRunner) -> None:
-    result = runner.invoke(read_pb, [str(_SIGMA_PB)], obj={})
-    assert result.exit_code == 0, result.output
+class TestGet:
+    def test_displays_table_exits_0(self, runner: CliRunner) -> None:
+        events = [make_archive_event("MY:PV"), make_archive_event("MY:PV", val=2)]
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_events",
+            new=AsyncMock(return_value=(None, events)),
+        ):
+            result = runner.invoke(
+                get,
+                ["--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0, result.output
+
+    def test_no_events_exits_0(self, runner: CliRunner) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_events",
+            new=AsyncMock(return_value=(None, [])),
+        ):
+            result = runner.invoke(
+                get,
+                ["--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0
+
+    def test_get_archiver_error_exits_1(self, runner: CliRunner) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_events",
+            new=AsyncMock(side_effect=ArchiverError("boom")),
+        ):
+            result = runner.invoke(
+                get,
+                ["--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 1
 
 
-def test_read_pb_no_events_exits_0(runner: CliRunner, tmp_path: Path) -> None:
-    empty_pb = tmp_path / "empty.pb"
-    info = ee.PayloadInfo(type=ee.SCALAR_INT, pvname="EMPTY:PV", year=2024)
-    empty_pb.write_bytes(create_pb_bytes([], info))
-    with patch("epicsarchiver.retrieval.command.read_pb_file", return_value=({}, [])):
-        result = runner.invoke(read_pb, [str(empty_pb)], obj={})
-    assert result.exit_code == 0
+class TestSearch:
+    def test_displays_results_exits_0(self, runner: CliRunner) -> None:
+        pvs = ["MY:PV:1", "MY:PV:2", "MY:PV:3"]
+        with patch(
+            "epicsarchiver.retrieval.command._pv_name_search",
+            new=AsyncMock(return_value=pvs),
+        ):
+            result = runner.invoke(
+                search,
+                ["MY:PV:.*"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0
+
+    def test_no_results_exits_0(self, runner: CliRunner) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._pv_name_search",
+            new=AsyncMock(return_value=[]),
+        ):
+            result = runner.invoke(
+                search,
+                ["NOTHING:.*"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0
 
 
-# ── get ────────────────────────────────────────────────────────────────────
+class TestExport:
+    def test_json_exits_0(self, runner: CliRunner, pb_bytes: bytes) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_raw_pb",
+            new=AsyncMock(return_value=pb_bytes),
+        ):
+            result = runner.invoke(
+                export,
+                ["--format", "json", "--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0, result.output
 
+    def test_csv_exits_0(self, runner: CliRunner, pb_bytes: bytes) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_raw_pb",
+            new=AsyncMock(return_value=pb_bytes),
+        ):
+            result = runner.invoke(
+                export,
+                ["--format", "csv", "--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0, result.output
 
-def test_get_displays_table_exits_0(runner: CliRunner) -> None:
-    events = [make_archive_event("MY:PV"), make_archive_event("MY:PV", val=2)]
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_events",
-        new=AsyncMock(return_value=(None, events)),
-    ):
-        result = runner.invoke(
-            get,
-            ["--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0, result.output
+    def test_pb_exits_0(self, runner: CliRunner, pb_bytes: bytes) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_raw_pb",
+            new=AsyncMock(return_value=pb_bytes),
+        ):
+            result = runner.invoke(
+                export,
+                ["--format", "pb", "--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0, result.output
 
+    def test_no_data_exits_0(self, runner: CliRunner) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_raw_pb",
+            new=AsyncMock(return_value=b""),
+        ):
+            result = runner.invoke(
+                export,
+                ["--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0
 
-def test_get_no_events_exits_0(runner: CliRunner) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_events",
-        new=AsyncMock(return_value=(None, [])),
-    ):
-        result = runner.invoke(
-            get,
-            ["--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0
+    def test_parquet_exits_0(self, runner: CliRunner, pb_bytes: bytes) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_raw_pb",
+            new=AsyncMock(return_value=pb_bytes),
+        ):
+            result = runner.invoke(
+                export,
+                ["--format", "parquet", "--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 0, result.output
 
-
-def test_get_archiver_error_exits_1(runner: CliRunner) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_events",
-        new=AsyncMock(side_effect=ArchiverError("boom")),
-    ):
-        result = runner.invoke(
-            get,
-            ["--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 1
-
-
-# ── search ─────────────────────────────────────────────────────────────────
-
-
-def test_search_displays_results_exits_0(runner: CliRunner) -> None:
-    pvs = ["MY:PV:1", "MY:PV:2", "MY:PV:3"]
-    with patch(
-        "epicsarchiver.retrieval.command._pv_name_search",
-        new=AsyncMock(return_value=pvs),
-    ):
-        result = runner.invoke(
-            search,
-            ["MY:PV:.*"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0
-
-
-def test_search_no_results_exits_0(runner: CliRunner) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._pv_name_search",
-        new=AsyncMock(return_value=[]),
-    ):
-        result = runner.invoke(
-            search,
-            ["NOTHING:.*"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0
-
-
-# ── export ─────────────────────────────────────────────────────────────────
-
-
-def test_export_json_exits_0(runner: CliRunner, pb_bytes: bytes) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_raw_pb",
-        new=AsyncMock(return_value=pb_bytes),
-    ):
-        result = runner.invoke(
-            export,
-            ["--format", "json", "--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0, result.output
-
-
-def test_export_csv_exits_0(runner: CliRunner, pb_bytes: bytes) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_raw_pb",
-        new=AsyncMock(return_value=pb_bytes),
-    ):
-        result = runner.invoke(
-            export,
-            ["--format", "csv", "--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0, result.output
-
-
-def test_export_pb_exits_0(runner: CliRunner, pb_bytes: bytes) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_raw_pb",
-        new=AsyncMock(return_value=pb_bytes),
-    ):
-        result = runner.invoke(
-            export,
-            ["--format", "pb", "--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0, result.output
-
-
-def test_export_no_data_exits_0(runner: CliRunner) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_raw_pb",
-        new=AsyncMock(return_value=b""),
-    ):
-        result = runner.invoke(
-            export,
-            ["--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0
-
-
-def test_export_parquet_exits_0(runner: CliRunner, pb_bytes: bytes) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_raw_pb",
-        new=AsyncMock(return_value=pb_bytes),
-    ):
-        result = runner.invoke(
-            export,
-            ["--format", "parquet", "--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 0, result.output
-
-
-def test_export_archiver_error_exits_1(runner: CliRunner) -> None:
-    with patch(
-        "epicsarchiver.retrieval.command._fetch_raw_pb",
-        new=AsyncMock(side_effect=ArchiverError("boom")),
-    ):
-        result = runner.invoke(
-            export,
-            ["--start", _START, "--end", _END, "MY:PV"],
-            obj={"archiver": _MOCK_ARCHIVER},
-        )
-    assert result.exit_code == 1
+    def test_archiver_error_exits_1(self, runner: CliRunner) -> None:
+        with patch(
+            "epicsarchiver.retrieval.command._fetch_raw_pb",
+            new=AsyncMock(side_effect=ArchiverError("boom")),
+        ):
+            result = runner.invoke(
+                export,
+                ["--start", _START, "--end", _END, "MY:PV"],
+                obj={"archiver": _MOCK_ARCHIVER},
+            )
+        assert result.exit_code == 1
