@@ -247,7 +247,7 @@ def export(  # noqa: PLR0917, PLR0913
         ctx.exit(0)
         return
 
-    if fmt == Format.PB:
+    if fmt is Format.PB:
         sys.stdout.buffer.write(raw_bytes)
     else:
         meta, events = parse_pb_data(raw_bytes)
