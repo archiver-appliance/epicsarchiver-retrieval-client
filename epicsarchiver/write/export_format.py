@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, auto
 from typing import IO, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from epicsarchiver.retrieval.archive_event import ArchiveEvent, ArchiveEventsMeta
 
 
-class Format(str, Enum):
+class Format(Enum):
     """Supported machine-readable output formats for the export command."""
 
-    JSON = "json"
-    CSV = "csv"
-    ARROW = "arrow"
-    PARQUET = "parquet"
-    PB = "pb"
+    JSON = auto()
+    CSV = auto()
+    ARROW = auto()
+    PARQUET = auto()
+    PB = auto()
 
 
 def write_events(

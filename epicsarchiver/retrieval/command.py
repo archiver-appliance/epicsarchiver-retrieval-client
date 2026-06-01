@@ -186,8 +186,8 @@ def get(  # noqa: PLR0917, PLR0913
 @click.option(
     "--format",
     "output_format",
-    type=click.Choice([f.value for f in Format], case_sensitive=False),
-    default=Format.JSON.value,
+    type=click.Choice([f.name for f in Format], case_sensitive=False),
+    default=Format.JSON.name,
     show_default=True,
     help="Output format, written to stdout.",
 )
@@ -219,7 +219,7 @@ def export(  # noqa: PLR0917, PLR0913
 
     """
     archiver: ArchiverAppliance = ctx.obj["archiver"]
-    fmt = Format(output_format)
+    fmt = Format[output_format.upper()]
     processor = (
         Processor(ProcessorName[processor_name.upper()], bin_size)
         if processor_name
@@ -255,7 +255,7 @@ def export(  # noqa: PLR0917, PLR0913
             write_events(sys.stdout.buffer, fmt, events=events, meta=meta)
         except ImportError as err:
             msg = (
-                f"--format {fmt.value} requires the [polars] extra: "
+                f"--format {fmt.name} requires the [polars] extra: "
                 "pip install epicsarchiver-retrieval-client[polars]"
             )
             raise click.UsageError(msg) from err
