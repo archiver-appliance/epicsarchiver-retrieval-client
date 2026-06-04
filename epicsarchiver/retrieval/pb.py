@@ -385,6 +385,30 @@ def get_iso_timestamp_for_event(
     return event_timestamp(year, event).isoformat()
 
 
+def split_pb_chunks(raw_data: bytes) -> list[tuple[ee.PayloadInfo, bytes]]:
+    """Split raw endpoint data into per-year (PayloadInfo, chunk_bytes) pairs.
+
+    The archiver endpoint may return data spanning multiple years as chunks
+    separated by double newlines. Each returned chunk is a self-contained PB
+    file: an escaped PayloadInfo line followed by escaped event lines.
+
+    Args:
+        raw_data: Raw bytes from the archiver getData endpoint
+
+    Returns:
+        List of (PayloadInfo, chunk_bytes) tuples, one per year
+    """
+    result = []
+    for raw_chunk in raw_data.split(b"\n\n"):
+        chunk = raw_chunk.strip()
+        if not chunk:
+            continue
+        info = ee.PayloadInfo()
+        info.ParseFromString(unescape_bytes(chunk.split(b"\n")[0]))
+        result.append((info, chunk))
+    return result
+
+
 def read_pb_file(filename: str) -> ArchiveEventsData:
     """Read an unescaped protobuf file and produce a list of events from file.
 

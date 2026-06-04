@@ -90,11 +90,12 @@ class AsyncArchiverRetrieval(ServiceClient):
         self.matching_pvs_url = self.base_url + ENDPOINT_GET_MATCHING_PVS
         return self
 
-    async def _get_data_raw(
+    async def get_data_raw(
         self,
         pv: str,
         start: datetime.datetime,
         end: datetime.datetime,
+        fetch_latest_metadata: bool = True,  # noqa: FBT001, FBT002
     ) -> ClientResponse:
         """Fetch raw response from archiver data retrieval URL.
 
@@ -102,17 +103,19 @@ class AsyncArchiverRetrieval(ServiceClient):
             pv (str): PV data requested for.
             start (datetime.datetime): Start time of period.
             end (datetime.datetime): End time of period.
+            fetch_latest_metadata (bool): Include latest EGU metadata in response.
 
         Returns:
             ClientResponse: Raw response from the archiver.
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
-        params = {
+        params: dict[str, str] = {
             "pv": pv,
             "from": QueryTimestamp.from_datetime(start).to_query_string(),
             "to": QueryTimestamp.from_datetime(end).to_query_string(),
-            "fetchLatestMetadata": "true",
         }
+        if fetch_latest_metadata:
+            params["fetchLatestMetadata"] = "true"
         return await self._get(self.data_url, params=params)
 
     async def _get_matching_pvs(
@@ -230,7 +233,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         validate_processor(processor)
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         pv_request = processor.calc_pv_name(pv) if processor else pv
-        r = await self._get_data_raw(pv_request, start, end)
+        r = await self.get_data_raw(pv_request, start, end)
         pb_data = await r.content.read()
         return parse_pb_data(pb_data)
 

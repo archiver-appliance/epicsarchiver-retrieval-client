@@ -29,6 +29,7 @@ def _fv_list(fvs: list[FieldValue] | None) -> list[dict[str, str]]:
 @dataclass
 class _EventColumns:
     date: list[int]
+    pv: list[str]
     val: list[Any]
     severity: list[int]
     status: list[int]
@@ -43,6 +44,7 @@ class _EventColumns:
             yr: _fv_list(m.headers) for yr, m in metadata.items()
         }
         date_column = []
+        pv_column = []
         val_column = []
         severity_column = []
         status_column = []
@@ -50,6 +52,7 @@ class _EventColumns:
         headers_column = []
         for e in events:
             date_column.append(e.timestamp_ns)
+            pv_column.append(e.pv)
             val_column.append(e.val)
             severity_column.append(e.severity)
             status_column.append(e.status)
@@ -57,6 +60,7 @@ class _EventColumns:
             headers_column.append(cached_headers.get(e.year, []))
         return _EventColumns(
             date=date_column,
+            pv=pv_column,
             val=val_column,
             severity=severity_column,
             status=status_column,
@@ -77,13 +81,14 @@ def dataframe_from_events(
             when provided, populates the "headers" column.
 
     Returns:
-        pl.DataFrame: columns "date", "val", "severity", "status",
+        pl.DataFrame: columns "date", "pv", "val", "severity", "status",
             "field_values", "headers".
     """
     if not events:
         return pl.DataFrame(
             schema={
                 "date": pl.Datetime("ns", "UTC"),
+                "pv": pl.Utf8,
                 "val": pl.Null,
                 "severity": pl.Int32,
                 "status": pl.Int32,
@@ -97,6 +102,7 @@ def dataframe_from_events(
 
     return pl.DataFrame({
         "date": pl.Series(event_columns.date, dtype=pl.Datetime("ns", "UTC")),
+        "pv": pl.Series(event_columns.pv, dtype=pl.Utf8),
         "val": event_columns.val,
         "severity": pl.Series(event_columns.severity, dtype=pl.Int32),
         "status": pl.Series(event_columns.status, dtype=pl.Int32),
