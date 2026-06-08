@@ -4,7 +4,11 @@ This file only contains a selection of the most common options. For a full
 list see the documentation:
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
+import os
+import sys
 from importlib.metadata import version as get_version
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "notebooks"))
 
 # -- Project information -----------------------------------------------------
 
