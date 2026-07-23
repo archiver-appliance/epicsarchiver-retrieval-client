@@ -2,8 +2,9 @@
 
 import logging
 
+import httpx
 import pytest
-import responses
+import respx
 from rich.logging import RichHandler
 
 from epicsarchiver.common.base_archiver import (
@@ -27,46 +28,42 @@ def test_epicsarchiver_url() -> None:
     assert archiver._base_url == "http://archiver-01.example.com:80"
 
 
-@responses.activate
+@respx.mock
 def test_get_raise_exception() -> None:
     archiver = BaseArchiverAppliance()
     url = "http://test.example.com"
-    responses.add(responses.GET, url, status=404)
+    route = respx.get(url).mock(return_value=httpx.Response(404))
     with pytest.raises(ArchiverResponseError):
         archiver._get(url, params={})
-    assert len(responses.calls) == 1
+    assert route.call_count == 1
 
 
-@responses.activate
+@respx.mock
 def test_get_relative_endpoint() -> None:
     archiver = BaseArchiverAppliance("archiver.example.com", port=17665)
     url = "http://archiver.example.com:17665/endpoint"
-    responses.add(
-        responses.GET,
-        url,
-        status=200,
-    )
+    route = respx.get(url).mock(return_value=httpx.Response(200))
     archiver._get("endpoint", params={})
-    assert len(responses.calls) == 1
+    assert route.call_count == 1
     archiver._get("/endpoint", params={})
-    assert len(responses.calls) == 2
+    assert route.call_count == 2
 
 
-@responses.activate
+@respx.mock
 def test_get_absolute_endpoint() -> None:
     archiver = BaseArchiverAppliance("archiver.example.com")
     url = "http://archiver.another.com:17667/this/is/a/test"
-    responses.add(responses.GET, url, status=200)
+    route = respx.get(url).mock(return_value=httpx.Response(200))
     archiver._get(url, params={})
-    assert len(responses.calls) == 1
+    assert route.call_count == 1
 
 
-@responses.activate
+@respx.mock
 def test_get_return_response() -> None:
     archiver = BaseArchiverAppliance()
     url = "http://archiver.example.com:17665/my/endpoint"
     data = {"test": "hello"}
-    responses.add(responses.GET, url, json=data, status=200)
+    route = respx.get(url).mock(return_value=httpx.Response(200, json=data))
     r = archiver._get(url, params={})
-    assert len(responses.calls) == 1
+    assert route.call_count == 1
     assert r.json() == data

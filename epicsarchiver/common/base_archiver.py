@@ -4,15 +4,20 @@ from __future__ import annotations
 
 import logging
 import urllib.parse
+from typing import TYPE_CHECKING
 
 import httpx
-import requests
-from requests import Response
+from httpx import Response
 
 from epicsarchiver.common.errors import (
     ArchiverConnectionError,
     ArchiverResponseError,
 )
+
+if TYPE_CHECKING:
+    from types import TracebackType
+
+    from typing_extensions import Self
 
 LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -29,19 +34,27 @@ class BaseArchiverAppliance:
     Args:
         hostname: EPICS Archiver Appliance hostname
         port: EPICS Archiver Appliance retrieval port
+        timeout: timeout applied to every request
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_RETRIEVAL_PORT):
+    def __init__(
+        self,
+        hostname: str = "localhost",
+        port: int = DEFAULT_RETRIEVAL_PORT,
+        timeout: httpx.Timeout | float | None = DEFAULT_TIMEOUT,
+    ):
         """Create Archiver Appliance object.
 
         Args:
             hostname (str, optional): hostname of archiver.
             port (int, optional): port number of retrieval interface.
+            timeout (httpx.Timeout | float | None, optional): timeout applied to
+                every request. Set to None to disable timeouts.
         """
         self.hostname = hostname
         self.port = port
         self._base_url: str = f"http://{hostname}:{port}"
-        self.session = requests.Session()
+        self.session = httpx.Client(timeout=timeout, follow_redirects=True)
 
     def __repr__(self) -> str:
         """String representation of Archiver Appliance.
@@ -51,6 +64,27 @@ class BaseArchiverAppliance:
         """
         return f"ArchiverAppliance({self.hostname}, {self.port})"
 
+    def close(self) -> None:
+        """Close the client (closes the session)."""
+        self.session.close()
+
+    def __enter__(self) -> Self:
+        """Enter the context manager.
+
+        Returns:
+            Self: self
+        """
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """Exit the context manager, closes the session."""
+        self.close()
+
     def _get(self, endpoint: str, params: dict[str, str]) -> Response:
         """Sends a request using the session.
 
@@ -59,7 +93,7 @@ class BaseArchiverAppliance:
             params: query parameters to include in the request.
 
         Returns:
-            :class:`requests.Response <Response>` object
+            :class:`httpx.Response <Response>` object
 
         Raises:
             ArchiverConnectionError: If there is a connection error.
@@ -68,17 +102,17 @@ class BaseArchiverAppliance:
         url = urllib.parse.urljoin(self._base_url, endpoint.lstrip("/"))
         LOG.debug("GET url: %s", url)
         try:
-            r = self.session.get(url, params=params, stream=True)
+            r = self.session.get(url, params=params)
             r.raise_for_status()
-        except requests.ConnectionError as e:
-            raise ArchiverConnectionError(
-                base_url=url,
-            ) from e
-        except requests.HTTPError as e:
+        except httpx.HTTPStatusError as e:
             raise ArchiverResponseError(
                 base_url=url,
                 url=url,
-                response=e.response.text if e.response else None,
+                response=e.response.text,
+            ) from e
+        except httpx.TransportError as e:
+            raise ArchiverConnectionError(
+                base_url=url,
             ) from e
         else:
             return r
