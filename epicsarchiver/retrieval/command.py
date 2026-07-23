@@ -437,4 +437,4 @@ async def _fetch_raw_pb(  # noqa: PLR0913, PLR0917
         response = await a_retrieval.get_data_raw(
             pv_request, start, end, fetch_latest_metadata=fetch_latest_metadata
         )
-        return await response.content.read()
+        return response.content

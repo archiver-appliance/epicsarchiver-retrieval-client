@@ -31,6 +31,7 @@ features = ["all"]
 extra-dependencies = [
   "pytest-asyncio",
   "responses",
+  "respx",
   "pytest-mock",
   "pytest-aiohttp",
 ]
@@ -51,6 +52,7 @@ extra-dependencies = [
   "pytest==8.4.2",         # pin to avoid errors in mypy tests
   "pytest-asyncio",
   "responses>=0.25",
+  "respx",
   "pytest-mock",
   "pytest-aiohttp",
   "typing-extensions",

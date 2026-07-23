@@ -1,12 +1,10 @@
-"""Tests for `ServiceClient`."""
+"""Tests for `service` package."""
 
 import logging
-from unittest.mock import AsyncMock
 
+import httpx
 import pytest
-from aiohttp import web
-from pytest_aiohttp import AiohttpClient
-from pytest_mock import MockerFixture
+import respx
 from rich.logging import RichHandler
 
 from epicsarchiver.common.async_service import ServiceClient
@@ -20,84 +18,86 @@ logging.basicConfig(
 LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def _make_app() -> web.Application:
-    app = web.Application()
-
-    async def get_handler(_request: web.Request) -> web.Response:  # noqa: RUF029 keep mocking async
-        return web.json_response({"method": "GET"})
-
-    async def post_handler(_request: web.Request) -> web.Response:  # noqa: RUF029 keep mocking async
-        return web.json_response({"method": "POST"})
-
-    app.router.add_get("/data", get_handler)
-    app.router.add_post("/data", post_handler)
-    return app
-
-
-def _mock_response(data: object = None) -> AsyncMock:
-    response = AsyncMock()
-    if data is not None:
-        response.json = AsyncMock(return_value=data)
-    return response
-
-
-@pytest.fixture
-def mock_session(mocker: MockerFixture) -> AsyncMock:
-    session = AsyncMock()
-    session.close = AsyncMock()
-    mocker.patch(
-        "epicsarchiver.common.async_service.ClientSession", return_value=session
-    )
-    return session
-
-
-# --- Real HTTP tests ---
+@pytest.mark.asyncio
+@respx.mock
+async def test_request_get_status_ok() -> None:
+    url = "http://localhost"
+    service = ServiceClient(url)
+    data = {"test": "hello"}
+    respx.get(url).mock(return_value=httpx.Response(200, json=data))
+    r = await service._get("/")
+    assert r.json() == data
+    await service.close()
 
 
 @pytest.mark.asyncio
-async def test_get_returns_response(aiohttp_client: AiohttpClient) -> None:
-    client = await aiohttp_client(_make_app())
-    async with ServiceClient(str(client.make_url("/"))) as service:
-        response = await service._get("/data")
-        assert await response.json() == {"method": "GET"}
+@respx.mock
+async def test_request_raise_exception() -> None:
+    url = "http://test.example.com"
+    respx.get(url).mock(return_value=httpx.Response(404))
+    with pytest.raises(ArchiverResponseError):
+        async with ServiceClient(url) as service:
+            await service._get(url)
 
 
+@pytest.mark.parametrize(
+    "endpoint",
+    ["endpoint", "/endpoint"],
+)
 @pytest.mark.asyncio
-async def test_post_returns_response(aiohttp_client: AiohttpClient) -> None:
-    client = await aiohttp_client(_make_app())
-    async with ServiceClient(str(client.make_url("/"))) as service:
-        response = await service._post("/data")
-        assert await response.json() == {"method": "POST"}
-
-
-@pytest.mark.asyncio
-async def test_404_raises_archiver_response_error(
-    aiohttp_client: AiohttpClient,
-) -> None:
-    client = await aiohttp_client(_make_app())
-    async with ServiceClient(str(client.make_url("/"))) as service:
-        with pytest.raises(ArchiverResponseError):
-            await service._get("/missing")
-
-
-# --- URL construction tests (mock-based) ---
-
-
-@pytest.mark.parametrize("endpoint", ["endpoint", "/endpoint"])
-@pytest.mark.asyncio
-async def test_get_relative_endpoint(endpoint: str, mock_session: AsyncMock) -> None:
-    expected_url = f"http://service.example.com:{DEFAULT_RETRIEVAL_PORT}/endpoint"
-    mock_session.get = AsyncMock(return_value=_mock_response())
-    url = f"http://service.example.com:{DEFAULT_RETRIEVAL_PORT}"
-    async with ServiceClient(url) as service:
+@respx.mock
+async def test_get_relative_endpoint(endpoint: str) -> None:
+    url = "http://service.example.com/endpoint"
+    route = respx.get(url).mock(return_value=httpx.Response(200))
+    async with ServiceClient("http://service.example.com") as service:
         await service._get(endpoint)
-        assert mock_session.get.call_args[0][0] == expected_url
+        assert route.call_count == 1
 
 
 @pytest.mark.asyncio
-async def test_get_absolute_endpoint(mock_session: AsyncMock) -> None:
+@respx.mock
+async def test_get_absolute_endpoint() -> None:
     url = "http://service.another.com:17667/this/is/a/test"
-    mock_session.get = AsyncMock(return_value=_mock_response())
+    route = respx.get(url).mock(return_value=httpx.Response(200))
     async with ServiceClient("http://service.example.com") as service:
         await service._get(url)
-        assert mock_session.get.call_args[0][0] == url
+        assert route.call_count == 1
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_get_return_response() -> None:
+    url = f"http://service.example.com:{DEFAULT_RETRIEVAL_PORT}/my/endpoint"
+    data = {"test": "hello"}
+    route = respx.get(url).mock(return_value=httpx.Response(200, json=data))
+    base_url = f"http://service.example.com:{DEFAULT_RETRIEVAL_PORT}"
+    async with ServiceClient(base_url) as service:
+        r = await service._get("/my/endpoint")
+        assert route.call_count == 1
+        assert r.json() == data
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_post_return_response() -> None:
+    url = "http://test.example.com"
+    data = {"test": "hello"}
+    route = respx.post(url).mock(return_value=httpx.Response(200, json=data))
+    async with ServiceClient("test.example.com") as service:
+        r = await service._post(url)
+        assert route.call_count == 1
+        assert r.json() == data
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    ["endpoint", "/endpoint"],
+)
+@pytest.mark.asyncio
+@respx.mock
+async def test_post_relative_endpoint(endpoint: str) -> None:
+    url = "http://service.example.com/endpoint"
+    route = respx.post(url).mock(return_value=httpx.Response(200))
+    async with ServiceClient("http://service.example.com") as service:
+        await service._post(endpoint)
+        assert route.call_count == 1

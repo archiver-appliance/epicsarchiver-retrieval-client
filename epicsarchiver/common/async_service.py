@@ -6,14 +6,11 @@ import logging
 import urllib.parse
 from typing import TYPE_CHECKING, Any
 
-from aiohttp import (
-    ClientConnectionError,
-    ClientResponse,
-    ClientResponseError,
-    ClientSession,
-)
+import httpx
+from httpx import Response
 from typing_extensions import Self
 
+from epicsarchiver.common.base_archiver import DEFAULT_TIMEOUT
 from epicsarchiver.common.errors import (
     ArchiverConnectionError,
     ArchiverResponseError,
@@ -32,26 +29,39 @@ class ServiceClient:
     For doing basic GET POST http calls.
     """
 
-    def __init__(self, base_url: str) -> None:
-        """Create Service object."""
+    def __init__(
+        self,
+        base_url: str,
+        timeout: httpx.Timeout | float | None = DEFAULT_TIMEOUT,
+    ) -> None:
+        """Create Service object.
+
+        Args:
+            base_url: base url of the service.
+            timeout: timeout applied to every request. Set to None to disable
+                timeouts.
+        """
         self.base_url = base_url
-        self._session: ClientSession | None = None
+        self._timeout = timeout
+        self._session: httpx.AsyncClient | None = None
 
     @property
-    def session(self) -> ClientSession:
-        """Return the aiohttp session.
+    def session(self) -> httpx.AsyncClient:
+        """Return the httpx async client.
 
         Returns:
-            ClientSession: The session.
+            httpx.AsyncClient: The session.
         """
         if not self._session:
-            self._session = ClientSession()
+            self._session = httpx.AsyncClient(
+                timeout=self._timeout, follow_redirects=True
+            )
         return self._session
 
     async def close(self) -> None:
         """Close the Service (closes the session)."""
         if self._session is not None:
-            await self._session.close()
+            await self._session.aclose()
 
     async def __aenter__(self) -> Self:
         """Asynchronous enter.
@@ -72,7 +82,7 @@ class ServiceClient:
 
     async def _get(
         self, endpoint: str, params: Mapping[str, str] | None = None
-    ) -> ClientResponse:
+    ) -> Response:
         """Send a GET request to the given endpoint.
 
         Args:
@@ -80,7 +90,7 @@ class ServiceClient:
             params: parameters to be sent
 
         Returns:
-            :class:`ClientResponse` object
+            :class:`httpx.Response <Response>` object
 
         Raises:
             ArchiverConnectionError: If there is a connection error.
@@ -89,19 +99,20 @@ class ServiceClient:
         url = urllib.parse.urljoin(self.base_url, endpoint.lstrip("/"))
         LOG.debug("GET url: %s", url)
         try:
-            return await self.session.get(
-                url, params=params, raise_for_status=True, ssl=False
-            )
-        except ClientConnectionError as e:
-            raise ArchiverConnectionError(
-                base_url=self.base_url,
-            ) from e
-        except ClientResponseError as e:
+            response = await self.session.get(url, params=params)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
             raise ArchiverResponseError(
                 base_url=self.base_url,
                 url=url,
-                response=e.message or None,
+                response=e.response.text or None,
             ) from e
+        except httpx.TransportError as e:
+            raise ArchiverConnectionError(
+                base_url=self.base_url,
+            ) from e
+        else:
+            return response
 
     async def _get_json(
         self, endpoint: str, params: Mapping[str, str] | None = None
@@ -113,10 +124,10 @@ class ServiceClient:
             params: parameters to be sent
 
         Returns:
-            :class:`ClientResponse` object
+            The decoded json body.
         """
-        async with await self._get(endpoint, params=params) as response:
-            return await response.json()
+        response = await self._get(endpoint, params=params)
+        return response.json()
 
     async def _post(
         self,
@@ -124,7 +135,7 @@ class ServiceClient:
         params: Mapping[str, str] | None = None,
         data: Any = None,
         json: Any = None,
-    ) -> ClientResponse:
+    ) -> Response:
         r"""Send a POST request to the given endpoint.
 
         Args:
@@ -134,7 +145,7 @@ class ServiceClient:
             json: Alternative to data
 
         Returns:
-            :class:`ClientResponse` object
+            :class:`httpx.Response <Response>` object
 
         Raises:
             ArchiverConnectionError: If there is a connection error.
@@ -143,16 +154,17 @@ class ServiceClient:
         url = urllib.parse.urljoin(self.base_url, endpoint.lstrip("/"))
         LOG.debug("POST url: %s", url)
         try:
-            return await self.session.post(
-                url, raise_for_status=True, params=params, data=data, json=json
-            )
-        except ClientConnectionError as e:
-            raise ArchiverConnectionError(
-                base_url=self.base_url,
-            ) from e
-        except ClientResponseError as e:
+            response = await self.session.post(url, params=params, data=data, json=json)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
             raise ArchiverResponseError(
                 base_url=self.base_url,
                 url=url,
-                response=e.message or None,
+                response=e.response.text or None,
             ) from e
+        except httpx.TransportError as e:
+            raise ArchiverConnectionError(
+                base_url=self.base_url,
+            ) from e
+        else:
+            return response

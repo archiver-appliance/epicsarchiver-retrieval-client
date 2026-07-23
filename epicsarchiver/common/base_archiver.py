@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import urllib.parse
 
+import httpx
 import requests
 from requests import Response
 
@@ -16,6 +17,8 @@ from epicsarchiver.common.errors import (
 LOG: logging.Logger = logging.getLogger(__name__)
 
 DEFAULT_RETRIEVAL_PORT = 17668
+
+DEFAULT_TIMEOUT = httpx.Timeout(60.0, connect=5.0)
 
 
 class BaseArchiverAppliance:

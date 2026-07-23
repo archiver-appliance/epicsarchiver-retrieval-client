@@ -44,4 +44,7 @@ def handle_debug(
         datefmt="[%X]",
         handlers=[RichHandler(rich_tracebacks=tracebacks)],
     )
+    if not debug:
+        # httpx logs every request at INFO, which is noise in normal CLI output.
+        logging.getLogger("httpx").setLevel(logging.WARNING)
     return debug
