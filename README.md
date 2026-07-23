@@ -13,14 +13,13 @@ The epicsarchiver-retrieval-client can be installed using:
 pip install epicsarchiver-retrieval-client
 ```
 
-The core package has minimal dependencies (protobuf + pytz) and is sufficient for parsing `.pb` files
-and working with `ArchiveEvent` objects directly. Heavy dependencies are opt-in via extras:
+The core package has a small dependency set (httpx + protobuf + pytz) and covers both the synchronous
+`ArchiverRetrieval` and async `AsyncArchiverRetrieval` clients, as well as parsing `.pb` files and
+working with `ArchiveEvent` objects directly. Heavy dependencies are opt-in via extras:
 
 | Extra | Installs | Use when |
 |-------|----------|----------|
 | `[polars]` | polars | you want `get_data()` to return a `DataFrame` |
-| `[sync]` | requests | you want the synchronous `ArchiverRetrieval` client |
-| `[async]` | aiohttp | you want the async `AsyncArchiverRetrieval` client |
 | `[cli]` | click, rich | you want the `epicsarchiver` command-line tool |
 | `[all]` | everything above | full functionality |
 
@@ -28,11 +27,11 @@ and working with `ArchiveEvent` objects directly. Heavy dependencies are opt-in 
 # Everything (recommended for most users)
 pip install "epicsarchiver-retrieval-client[all]"
 
-# Core only — parse local .pb files, no HTTP clients or DataFrames
-pip install epicsarchiver-retrieval-client[all]
+# Core only — retrieval clients and .pb parsing, no DataFrames or CLI
+pip install epicsarchiver-retrieval-client
 
-# Sync retrieval with DataFrame output
-pip install "epicsarchiver-retrieval-client[polars,sync]"
+# Retrieval with DataFrame output
+pip install "epicsarchiver-retrieval-client[polars]"
 ```
 
 ## Quick start
@@ -75,7 +74,7 @@ Note you can also specify a hostname for the archiver either with an environment
 export EPICSARCHIVER_HOSTNAME=archiver-01.example.com
 ````
 
-To fetch data using the Python library (requires `[polars,sync]`):
+To fetch data using the Python library (`get_data` requires `[polars]`):
 
 ```python
 from epicsarchiver import ArchiverAppliance
