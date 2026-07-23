@@ -2,7 +2,6 @@ import datetime
 import logging
 from unittest.mock import AsyncMock
 
-import httpx
 import pytest
 from pytz import UTC
 from rich.logging import RichHandler
