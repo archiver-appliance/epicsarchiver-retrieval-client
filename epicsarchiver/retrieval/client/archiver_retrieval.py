@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, cast
 
 from pytz import UTC
 
-from epicsarchiver.common.base_archiver import (
+from epicsarchiver.common.client import (
     DEFAULT_RETRIEVAL_PORT,
     DEFAULT_TIMEOUT,
     BaseArchiverAppliance,
@@ -74,10 +74,13 @@ class ArchiverRetrieval(BaseArchiverAppliance):
             timeout (httpx.Timeout | float | None, optional): timeout applied to
                 every request. Set to None to disable timeouts.
         """
-        super().__init__(hostname, port, timeout)
-        self._base_url = f"http://{self.hostname}:{self.port}/retrieval"
-        self.data_url: str = self._base_url + ENDPOINT_GET_DATA
-        self.matching_pvs_url: str = self._base_url + ENDPOINT_GET_MATCHING_PVS
+        self.hostname = hostname
+        self.port = port
+
+        super().__init__(f"http://{hostname}:{port}/retrieval", timeout)
+
+        self.data_url: str = self.base_url + ENDPOINT_GET_DATA
+        self.matching_pvs_url: str = self.base_url + ENDPOINT_GET_MATCHING_PVS
 
     def get_data_raw(
         self,

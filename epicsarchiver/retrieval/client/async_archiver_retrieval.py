@@ -10,8 +10,11 @@ from typing import TYPE_CHECKING, cast
 from pytz import UTC
 from typing_extensions import Self
 
-from epicsarchiver.common.async_service import ServiceClient
-from epicsarchiver.common.base_archiver import DEFAULT_RETRIEVAL_PORT, DEFAULT_TIMEOUT
+from epicsarchiver.common.client import (
+    DEFAULT_RETRIEVAL_PORT,
+    DEFAULT_TIMEOUT,
+    ServiceClient,
+)
 from epicsarchiver.common.date_util import (
     QueryTimestamp,
     ensure_utc,

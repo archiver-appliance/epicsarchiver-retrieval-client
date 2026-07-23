@@ -1,4 +1,4 @@
-"""Tests for `service` package."""
+"""Tests for `epicsarchiver` package."""
 
 import logging
 
@@ -7,8 +7,11 @@ import pytest
 import respx
 from rich.logging import RichHandler
 
-from epicsarchiver.common.async_service import ServiceClient
-from epicsarchiver.common.base_archiver import DEFAULT_RETRIEVAL_PORT
+from epicsarchiver.common.client import (
+    DEFAULT_RETRIEVAL_PORT,
+    BaseArchiverAppliance,
+    ServiceClient,
+)
 from epicsarchiver.common.errors import ArchiverResponseError
 
 logging.basicConfig(
@@ -16,6 +19,57 @@ logging.basicConfig(
     handlers=[RichHandler(rich_tracebacks=True)],
 )
 LOG: logging.Logger = logging.getLogger(__name__)
+
+
+@respx.mock
+def test_get_raise_exception() -> None:
+    archiver = BaseArchiverAppliance("http://localhost")
+    url = "http://test.example.com"
+    route = respx.get(url).mock(return_value=httpx.Response(404))
+    with pytest.raises(ArchiverResponseError):
+        archiver._get(url, params={})
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_get_relative_endpoint() -> None:
+    archiver = BaseArchiverAppliance("http://archiver.example.com:17665")
+    url = "http://archiver.example.com:17665/endpoint"
+    route = respx.get(url).mock(return_value=httpx.Response(200))
+    archiver._get("endpoint", params={})
+    assert route.call_count == 1
+    archiver._get("/endpoint", params={})
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_get_absolute_endpoint() -> None:
+    archiver = BaseArchiverAppliance("http://archiver.example.com")
+    url = "http://archiver.another.com:17667/this/is/a/test"
+    route = respx.get(url).mock(return_value=httpx.Response(200))
+    archiver._get(url, params={})
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_get_return_response() -> None:
+    archiver = BaseArchiverAppliance("http://localhost")
+    url = "http://archiver.example.com:17665/my/endpoint"
+    data = {"test": "hello"}
+    route = respx.get(url).mock(return_value=httpx.Response(200, json=data))
+    r = archiver._get(url, params={})
+    assert route.call_count == 1
+    assert r.json() == data
+
+
+@respx.mock
+def test_context_manager_closes_session() -> None:
+    url = "http://archiver.example.com"
+    respx.get(url).mock(return_value=httpx.Response(200))
+    with BaseArchiverAppliance(url) as archiver:
+        archiver._get("/")
+        session = archiver.session
+    assert session.is_closed
 
 
 @pytest.mark.asyncio
@@ -46,7 +100,7 @@ async def test_request_raise_exception() -> None:
 )
 @pytest.mark.asyncio
 @respx.mock
-async def test_get_relative_endpoint(endpoint: str) -> None:
+async def test_async_get_relative_endpoint(endpoint: str) -> None:
     url = "http://service.example.com/endpoint"
     route = respx.get(url).mock(return_value=httpx.Response(200))
     async with ServiceClient("http://service.example.com") as service:
@@ -56,7 +110,7 @@ async def test_get_relative_endpoint(endpoint: str) -> None:
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_get_absolute_endpoint() -> None:
+async def test_async_get_absolute_endpoint() -> None:
     url = "http://service.another.com:17667/this/is/a/test"
     route = respx.get(url).mock(return_value=httpx.Response(200))
     async with ServiceClient("http://service.example.com") as service:
@@ -66,7 +120,7 @@ async def test_get_absolute_endpoint() -> None:
 
 @pytest.mark.asyncio
 @respx.mock
-async def test_get_return_response() -> None:
+async def test_async_get_return_response() -> None:
     url = f"http://service.example.com:{DEFAULT_RETRIEVAL_PORT}/my/endpoint"
     data = {"test": "hello"}
     route = respx.get(url).mock(return_value=httpx.Response(200, json=data))

@@ -6,7 +6,7 @@ import respx
 from polars.testing import assert_frame_equal
 from pytz import UTC
 
-from epicsarchiver.common.base_archiver import DEFAULT_RETRIEVAL_PORT
+from epicsarchiver.common.client import DEFAULT_RETRIEVAL_PORT
 from epicsarchiver.common.date_util import NANO_PER_SECOND, year_start_epoch_seconds
 from epicsarchiver.retrieval.archive_event import ArchiveEvent
 from epicsarchiver.retrieval.client.archiver_retrieval import (
@@ -19,6 +19,17 @@ from epicsarchiver.retrieval.EPICSEvent_pb2 import (
 )
 from epicsarchiver.retrieval.pb import to_field_value
 from tests.retrieval.fake_data import TEST_EVENTS, TEST_EVENTS_2, create_pb_bytes
+
+
+def test_retrieval_urls() -> None:
+    archiver = ArchiverRetrieval()
+    assert archiver.base_url == f"http://localhost:{DEFAULT_RETRIEVAL_PORT}/retrieval"
+    archiver = ArchiverRetrieval("archiver-01.example.com", port=80)
+    assert archiver.base_url == "http://archiver-01.example.com:80/retrieval"
+    assert (
+        archiver.data_url
+        == "http://archiver-01.example.com:80/retrieval/data/getData.raw"
+    )
 
 
 @respx.mock
