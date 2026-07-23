@@ -30,7 +30,6 @@ python = ["3.10", "3.11", "3.12", "3.13", "3.14"]
 features = ["all"]
 extra-dependencies = [
   "pytest-asyncio",
-  "responses",
   "respx",
   "pytest-mock",
 ]
@@ -50,11 +49,9 @@ extra-dependencies = [
   "numpy<2.4",               # newer NumPy stubs require Python 3.12 syntax
   "pytest==8.4.2",         # pin to avoid errors in mypy tests
   "pytest-asyncio",
-  "responses>=0.25",
   "respx",
   "pytest-mock",
   "typing-extensions",
-  "types-requests",
   "types-protobuf",
   "types-pytz",
   # docs

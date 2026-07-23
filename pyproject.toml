@@ -32,10 +32,9 @@ dependencies = [
   "typing-extensions>=4.12",
 ]
 
-optional-dependencies.all = [ "epicsarchiver-retrieval-client[cli,polars,sync]" ]
+optional-dependencies.all = [ "epicsarchiver-retrieval-client[cli,polars]" ]
 optional-dependencies.cli = [ "click>=8", "rich>=13" ]
 optional-dependencies.polars = [ "polars>=1" ]
-optional-dependencies.sync = [ "requests>=2" ]
 urls.Source = "https://github.com/archiver-appliance/epicsarchiver-retrieval-client"
 scripts.arch-retrieval = "epicsarchiver.command:cli"
 
