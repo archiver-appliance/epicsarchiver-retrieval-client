@@ -13,6 +13,8 @@ import polars as pl
 from epicsarchiver.common.date_util import NANO_PER_SECOND
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from epicsarchiver.retrieval.archive_event import (
         ArchiveEvent,
         ArchiveEventsMeta,
@@ -22,8 +24,52 @@ if TYPE_CHECKING:
 _FIELD_VALUE_DTYPE = pl.List(pl.Struct({"name": pl.Utf8, "value": pl.Utf8}))
 
 
-def _fv_list(fvs: list[FieldValue] | None) -> list[dict[str, str]]:
-    return [{"name": fv.name, "value": fv.value} for fv in (fvs or [])]
+def _field_value_column(
+    field_value_lists: Sequence[Sequence[FieldValue] | None],
+) -> pl.Series:
+    """Build a list-of-struct column.
+
+    Returns:
+        A Polars list-of-struct Series with one value for each input list.
+    """
+    event_indices: list[int] = []
+    names: list[str] = []
+    values: list[str] = []
+    for event_index, field_values in enumerate(field_value_lists):
+        for field_value in field_values or []:
+            event_indices.append(event_index)
+            names.append(field_value.name)
+            values.append(field_value.value)
+
+    if not event_indices:
+        return pl.repeat(
+            pl.lit([], dtype=_FIELD_VALUE_DTYPE),
+            len(field_value_lists),
+            eager=True,
+        )
+
+    grouped_field_values = (
+        pl
+        .DataFrame({
+            "event_index": event_indices,
+            "name": names,
+            "value": values,
+        })
+        .group_by("event_index", maintain_order=True)
+        .agg(pl.struct("name", "value").alias("field_values"))
+    )
+    return (
+        pl
+        .DataFrame({
+            "event_index": pl.Series(
+                range(len(field_value_lists)),
+                dtype=pl.Int64,
+            )
+        })
+        .join(grouped_field_values, on="event_index", how="left")
+        .get_column("field_values")
+        .fill_null(pl.lit([], dtype=_FIELD_VALUE_DTYPE))
+    )
 
 
 @dataclass
@@ -33,16 +79,14 @@ class _EventColumns:
     val: list[Any]
     severity: list[int]
     status: list[int]
-    field_values: list[list[dict[str, str]]]
-    headers: list[list[dict[str, str]]]
+    field_values: list[list[FieldValue] | None]
+    headers: list[list[FieldValue]]
 
     @staticmethod
     def from_list(
         events: list[ArchiveEvent], metadata: dict[int, ArchiveEventsMeta]
     ) -> _EventColumns:
-        cached_headers: dict[int, list[dict[str, str]]] = {
-            yr: _fv_list(m.headers) for yr, m in metadata.items()
-        }
+        cached_headers = {yr: m.headers for yr, m in metadata.items()}
         date_column = []
         pv_column = []
         val_column = []
@@ -56,7 +100,7 @@ class _EventColumns:
             val_column.append(e.val)
             severity_column.append(e.severity)
             status_column.append(e.status)
-            field_values_column.append(_fv_list(e.field_values))
+            field_values_column.append(e.field_values)
             headers_column.append(cached_headers.get(e.year, []))
         return _EventColumns(
             date=date_column,
@@ -106,14 +150,8 @@ def dataframe_from_events(
         "val": event_columns.val,
         "severity": pl.Series(event_columns.severity, dtype=pl.Int32),
         "status": pl.Series(event_columns.status, dtype=pl.Int32),
-        "field_values": pl.Series(
-            event_columns.field_values,
-            dtype=_FIELD_VALUE_DTYPE,
-        ),
-        "headers": pl.Series(
-            event_columns.headers,
-            dtype=_FIELD_VALUE_DTYPE,
-        ),
+        "field_values": _field_value_column(event_columns.field_values),
+        "headers": _field_value_column(event_columns.headers),
     })
 
 
