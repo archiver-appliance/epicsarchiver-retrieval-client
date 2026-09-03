@@ -48,6 +48,7 @@ extra-dependencies = [
   # type checking
   "mypy",
   "mypy-protobuf",
+  "numpy<2.4",               # newer NumPy stubs require Python 3.12 syntax
   "pytest==8.4.2",         # pin to avoid errors in mypy tests
   "pytest-asyncio",
   "responses>=0.25",
@@ -73,8 +74,8 @@ extra-dependencies = [
 ]
 
 [envs.dev.scripts]
-type-check-src   = "mypy --install-types --non-interactive {args:./epicsarchiver}"
-type-check-tests = "mypy --install-types --non-interactive --explicit-package-bases {args:./tests}"
+type-check-src   = "mypy {args:./epicsarchiver}"
+type-check-tests = "mypy --explicit-package-bases {args:./tests}"
 type-check       = ["type-check-src", "type-check-tests"]
 protoc-gen       = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/retrieval/EPICSEvent.proto"
 docs-build       = "make -C docs html"
