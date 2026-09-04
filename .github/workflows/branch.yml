@@ -7,10 +7,10 @@ on:
 
 jobs:
   ci:
-    uses: ./.github/workflows/_ci.yml
+    uses: $/.github/workflows/_ci.yml
 
   build:
-    uses: ./.github/workflows/_build.yml
+    uses: $/.github/workflows/_build.yml
 
   publish-testpypi:
     needs: build
