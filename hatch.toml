@@ -32,6 +32,7 @@ extra-dependencies = [
   "pytest-asyncio",
   "responses",
   "aioresponses",
+  "aiohttp<3.14",             # aioresponses is incompatible with aiohttp>=3.14's ClientResponse signature
   "pytest-mock",
   "pytest-aiohttp",
 ]
@@ -48,15 +49,18 @@ extra-dependencies = [
   # type checking
   "mypy",
   "mypy-protobuf",
+  "numpy<2.4",               # newer NumPy stubs require Python 3.12 syntax
   "pytest==8.4.2",         # pin to avoid errors in mypy tests
   "pytest-asyncio",
   "responses>=0.25",
   "aioresponses",
+  "aiohttp<3.14",             # aioresponses is incompatible with aiohttp>=3.14's ClientResponse signature
   "pytest-mock",
   "pytest-aiohttp",
   "typing-extensions",
   "types-requests",
   "types-protobuf",
+  "types-pytz",
   # docs
   "astroid==3.3.11",       # pin to avoid sphinx [autoapi.not_readable] error
   "sphinx",
@@ -73,8 +77,8 @@ extra-dependencies = [
 ]
 
 [envs.dev.scripts]
-type-check-src   = "mypy --install-types --non-interactive {args:./epicsarchiver}"
-type-check-tests = "mypy --install-types --non-interactive --explicit-package-bases {args:./tests}"
+type-check-src   = "mypy {args:./epicsarchiver}"
+type-check-tests = "mypy --explicit-package-bases {args:./tests}"
 type-check       = ["type-check-src", "type-check-tests"]
 protoc-gen       = "protoc -I=epicsarchiver --python_out=epicsarchiver --mypy_out=epicsarchiver epicsarchiver/retrieval/EPICSEvent.proto"
 docs-build       = "make -C docs html"
