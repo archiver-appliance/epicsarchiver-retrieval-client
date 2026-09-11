@@ -1,6 +1,6 @@
 import datetime
 import logging
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from pytz import UTC
@@ -16,6 +16,7 @@ from epicsarchiver.retrieval.EPICSEvent_pb2 import (
     PayloadInfo,
 )
 from epicsarchiver.retrieval.pb import to_field_value
+from tests.retrieval.conftest import make_response_mock
 from tests.retrieval.fake_data import TEST_EVENTS, TEST_EVENTS_2, create_pb_bytes
 
 logging.basicConfig(
@@ -23,12 +24,6 @@ logging.basicConfig(
     handlers=[RichHandler(rich_tracebacks=True)],
 )
 LOG: logging.Logger = logging.getLogger(__name__)
-
-
-def make_response_mock(body: bytes) -> MagicMock:
-    mock = MagicMock()
-    mock.content.read = AsyncMock(return_value=body)
-    return mock
 
 
 @pytest.mark.asyncio
