@@ -6,5 +6,4 @@ sphinx-autobuild
 sphinx-autoapi>=3.6.0
 sphinx_rtd_theme
 myst_nb
-responses>=0.25
 matplotlib>=3.8.3

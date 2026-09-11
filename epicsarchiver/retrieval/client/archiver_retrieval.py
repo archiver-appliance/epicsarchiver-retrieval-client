@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, cast
 
 from pytz import UTC
 
-from epicsarchiver.common.base_archiver import (
+from epicsarchiver.common.client import (
     DEFAULT_RETRIEVAL_PORT,
+    DEFAULT_TIMEOUT,
     BaseArchiverAppliance,
 )
 from epicsarchiver.common.date_util import (
@@ -24,8 +25,9 @@ from epicsarchiver.common.validation import (
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
+    import httpx
     import polars as pl
-    from requests import Response
+    from httpx import Response
 
     from epicsarchiver.retrieval.archive_event import ArchiveEventsData
     from epicsarchiver.retrieval.client.processor import Processor
@@ -45,6 +47,7 @@ class ArchiverRetrieval(BaseArchiverAppliance):
     Args:
         hostname: EPICS Archiver Appliance hostname
         port: EPICS Archiver Appliance retrieval port
+        timeout: timeout applied to every request
 
     Examples:
 
@@ -57,17 +60,27 @@ class ArchiverRetrieval(BaseArchiverAppliance):
         df = archappl.get_data("my:pv", start="2018-07-04 13:00", end=datetime.utcnow())
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_RETRIEVAL_PORT):
+    def __init__(
+        self,
+        hostname: str = "localhost",
+        port: int = DEFAULT_RETRIEVAL_PORT,
+        timeout: httpx.Timeout | float | None = DEFAULT_TIMEOUT,
+    ):
         """Create Archiver Appliance object.
 
         Args:
             hostname (str, optional): hostname of archiver.
             port (int, optional): port number of retrieval interface.
+            timeout (httpx.Timeout | float | None, optional): timeout applied to
+                every request. Set to None to disable timeouts.
         """
-        super().__init__(hostname, port)
-        self._base_url = f"http://{self.hostname}:{self.port}/retrieval"
-        self.data_url: str = self._base_url + ENDPOINT_GET_DATA
-        self.matching_pvs_url: str = self._base_url + ENDPOINT_GET_MATCHING_PVS
+        self.hostname = hostname
+        self.port = port
+
+        super().__init__(f"http://{hostname}:{port}/retrieval", timeout)
+
+        self.data_url: str = self.base_url + ENDPOINT_GET_DATA
+        self.matching_pvs_url: str = self.base_url + ENDPOINT_GET_MATCHING_PVS
 
     def get_data_raw(
         self,

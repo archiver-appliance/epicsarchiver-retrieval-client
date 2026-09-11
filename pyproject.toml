@@ -26,16 +26,15 @@ classifiers = [
 dynamic = [ "version" ]
 
 dependencies = [
+  "httpx>=0.27",
   "protobuf>=7,<8",
   "pytz>=2024.1",
   "typing-extensions>=4.12",
 ]
 
-optional-dependencies.all = [ "epicsarchiver-retrieval-client[async,cli,polars,sync]" ]
-optional-dependencies.async = [ "aiohttp>=3" ]
+optional-dependencies.all = [ "epicsarchiver-retrieval-client[cli,polars]" ]
 optional-dependencies.cli = [ "click>=8", "rich>=13" ]
 optional-dependencies.polars = [ "polars>=1" ]
-optional-dependencies.sync = [ "requests>=2" ]
 urls.Source = "https://github.com/archiver-appliance/epicsarchiver-retrieval-client"
 scripts.arch-retrieval = "epicsarchiver.command:cli"
 
@@ -45,6 +44,8 @@ extend = "ruff.toml"
 [tool.pytest.ini_options]
 log_cli = true
 log_cli_level = "DEBUG"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.paths]
 epicsarchiver = [ "epicsarchiver" ]

@@ -10,8 +10,11 @@ from typing import TYPE_CHECKING, cast
 from pytz import UTC
 from typing_extensions import Self
 
-from epicsarchiver.common.async_service import ServiceClient
-from epicsarchiver.common.base_archiver import DEFAULT_RETRIEVAL_PORT
+from epicsarchiver.common.client import (
+    DEFAULT_RETRIEVAL_PORT,
+    DEFAULT_TIMEOUT,
+    ServiceClient,
+)
 from epicsarchiver.common.date_util import (
     QueryTimestamp,
     ensure_utc,
@@ -24,7 +27,8 @@ from epicsarchiver.common.validation import (
 from epicsarchiver.retrieval.pb import parse_pb_data
 
 if TYPE_CHECKING:
-    from aiohttp import ClientResponse
+    import httpx
+    from httpx import Response
 
     from epicsarchiver.retrieval.archive_event import ArchiveEvent, ArchiveEventsData
     from epicsarchiver.retrieval.client.processor import Processor
@@ -43,6 +47,7 @@ class AsyncArchiverRetrieval(ServiceClient):
     Args:
         hostname: EPICS Archiver Appliance hostname
         port: EPICS Archiver Appliance retrieval port
+        timeout: timeout applied to every request
 
     Examples:
 
@@ -58,17 +63,24 @@ class AsyncArchiverRetrieval(ServiceClient):
             )
     """
 
-    def __init__(self, hostname: str = "localhost", port: int = DEFAULT_RETRIEVAL_PORT):
+    def __init__(
+        self,
+        hostname: str = "localhost",
+        port: int = DEFAULT_RETRIEVAL_PORT,
+        timeout: httpx.Timeout | float | None = DEFAULT_TIMEOUT,
+    ):
         """Create Async archiver retrieval client.
 
         Args:
             hostname (str, optional): hostname of archiver.
             port (int, optional): port of archiver retrieval.
+            timeout (httpx.Timeout | float | None, optional): timeout applied to
+                every request. Set to None to disable timeouts.
         """
         self.hostname = hostname
         self.port = port
 
-        super().__init__(f"http://{hostname}:{port}/retrieval")
+        super().__init__(f"http://{hostname}:{port}/retrieval", timeout)
 
         self.data_url: str = ""
         self.matching_pvs_url: str = ""
@@ -96,7 +108,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         start: datetime.datetime,
         end: datetime.datetime,
         fetch_latest_metadata: bool = True,  # noqa: FBT001, FBT002
-    ) -> ClientResponse:
+    ) -> Response:
         """Fetch raw response from archiver data retrieval URL.
 
         Args:
@@ -106,7 +118,7 @@ class AsyncArchiverRetrieval(ServiceClient):
             fetch_latest_metadata (bool): Include latest EGU metadata in response.
 
         Returns:
-            ClientResponse: Raw response from the archiver.
+            Response: Raw response from the archiver.
         """
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         params: dict[str, str] = {
@@ -234,7 +246,7 @@ class AsyncArchiverRetrieval(ServiceClient):
         # http://slacmshankar.github.io/epicsarchiver_docs/userguide.html
         pv_request = processor.calc_pv_name(pv) if processor else pv
         r = await self.get_data_raw(pv_request, start, end)
-        pb_data = await r.content.read()
+        pb_data = r.content
         return parse_pb_data(pb_data)
 
     async def get_all_events(

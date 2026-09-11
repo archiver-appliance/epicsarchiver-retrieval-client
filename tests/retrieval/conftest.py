@@ -1,7 +1,5 @@
-from unittest.mock import AsyncMock, MagicMock
+import httpx
 
 
-def make_response_mock(body: bytes) -> MagicMock:
-    mock = MagicMock()
-    mock.content.read = AsyncMock(return_value=body)
-    return mock
+def make_response_mock(body: bytes) -> httpx.Response:
+    return httpx.Response(200, content=body)
