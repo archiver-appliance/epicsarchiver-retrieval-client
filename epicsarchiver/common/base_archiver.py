@@ -35,9 +35,16 @@ class BaseArchiverAppliance:
             hostname (str, optional): hostname of archiver.
             port (int, optional): port number of retrieval interface.
         """
+        if ":" in hostname:
+            temp_hostname, temp_port = hostname.split(":")
+            self.hostname = temp_hostname
+            self.port = int(temp_port)
+        else:
+            self.hostname = hostname
+            self.port = port
         self.hostname = hostname
         self.port = port
-        self._base_url: str = f"http://{hostname}:{port}"
+        self._base_url: str = f"http://{self.hostname}:{self.port}"
         self.session = requests.Session()
 
     def __repr__(self) -> str:

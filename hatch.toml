@@ -43,6 +43,7 @@ cov-report = "coverage xml"
 
 [envs.dev]
 features = ["all"]
+locked = true
 extra-dependencies = [
   # type checking
   "mypy",
